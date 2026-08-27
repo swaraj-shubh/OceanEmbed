@@ -37,13 +37,24 @@ L = Σ_d Σ_xy  m(xy) · (Ŷ_d(xy) − Y_d(xy))²  /  Σ m
 ### Track A — dense, vs GLORYS test year (2022)
 Fast, per-pixel, per-depth. Used for model development and the ablation table.
 
-### Track B — independent, vs held-out Argo (the headline)
-For each Argo profile in the region, 2021–2022:
-1. Match date → the model's daily prediction; nearest 0.25° grid cell (≤ ~18 km mismatch — same order as OceanDepths' tolerance).
-2. Interpolate profile to the 15 SIH depths (acceptance rule in doc 04 §3).
-3. Compute per-depth errors; aggregate over all profiles.
+### Track B — independent observations (the headline)
 
-Argo profiles are **never** inputs or targets at any stage. If asked "but GLORYS assimilated those Argo floats" — correct, and that's why Track B is still the strictest available test (industry-standard protocol per OceanBench/OceanForecastBench); truly assimilation-free validation would require withheld cruise data we don't have. Honest answer, judges respect it.
+The PS names **INCOIS LAS Gridded ARGO** as the in-situ dataset, and it also explicitly permits interpolation where resolutions differ (requirement 7). Since that product is 1° / 10-day while we output 0.25° / daily, we run **two sub-tracks** — B1 for compliance, B2 for rigour.
+
+#### B1 — vs INCOIS LAS Gridded ARGO *(PS-mandated)*
+1. Pull the gridded Argo T field for the test period (1°, 10-day or monthly).
+2. **Aggregate our prediction up to the comparison grid** — average our 0.25° daily field over each 1° cell and over the 10-day window. Aggregate *our* output up; never interpolate the coarse observation down. Downscaling the reference invents detail it does not have and flatters the score.
+3. Interpolate the gridded product's depth levels onto the 15 SIH depths (or compare on the intersection of levels — state which).
+4. Depth-wise metrics over ocean cells only.
+
+#### B2 — vs raw Argo profiles *(stricter, our scientific claim)*
+1. Match each profile's date → that day's prediction; nearest 0.25° cell (≤ ~18 km mismatch, same order as OceanDepths' tolerance).
+2. Interpolate the profile to the 15 SIH depths (acceptance rule in doc 04 §3 — no extrapolation).
+3. Depth-wise metrics over all valid (profile, depth) pairs.
+
+Report both tables. B1 is what the PS asked for; B2 is the one that proves we resolve structure the 1° product cannot. Where they differ, that gap quantifies what objective analysis smooths away — a result, not an embarrassment.
+
+Argo data is **never** an input or a training target at any stage, in either sub-track. If asked *"but GLORYS assimilated those Argo floats"* — correct, and it's why we report Track B at all rather than resting on Track A; this is the standard protocol (OceanBench, OceanForecastBench, OceanDepths). Genuinely assimilation-free validation would need withheld cruise data we don't have. State the limitation plainly; judges reward that more than an overclaim.
 
 ### Metrics (all reported per depth)
 

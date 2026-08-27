@@ -19,8 +19,8 @@ Satellites see only the ocean surface (SST, SSS, SSH, currents, winds) at high r
 | Input X | `[7, H, W]` — SST, SSS, SSH/SLA, Current U, Current V, Wind U, Wind V |
 | Output Y | `[15, H, W]` — T at depths 0, 5, 10, 20, 30, 50, 75, 100, 125, 150, 200, 300, 500, 700, 1000 m |
 | Architecture | CNN encoder → ConvLSTM (~7-day window) → Attention fusion (= OceanEmbed latent) → U-Net decoder |
-| Training target | GLORYS12V1 3D temperature, regridded + interpolated to the 15 SIH depths |
-| Validation | Held-out Argo/INCOIS profiles: depth-wise RMSE, MAE, Bias, Correlation |
+| Training target | **GLORYS12V1** (PS-named, `doi:10.48670/moi-00021` = `GLOBAL_MULTIYEAR_PHY_001_030`), regridded + interpolated to the 15 SIH depths |
+| Validation | Two tracks: **B1 INCOIS LAS Gridded ARGO** (PS-named, 1°/10-day — aggregate our output up to it) and **B2 raw Argo profiles** (stricter). Depth-wise RMSE, MAE, Bias, Correlation |
 | Loss | MSE first; depth-weighted loss only if results justify it |
 | Demo | Streamlit: pick date/depth → reconstructed map; click location → 0–1000 m profile + nearby Argo overlay + metrics |
 | DL framework | PyTorch |
@@ -48,8 +48,9 @@ Report every stage against M0. If a stage doesn't beat the previous one, investi
 | SSH/SLA | Copernicus Marine DUACS altimetry L4 | regrid to 0.25° |
 | Currents U/V | NASA OSCAR v2.0 (PO.DAAC) | daily 0.25° |
 | Wind U/V | Copernicus scatterometer/ASCAT | pick a gridded product, regrid |
-| Target T | Copernicus GLORYS12V1 (`GLOBAL_MULTIYEAR_PHY_001_030`) | 1/12°, 50 levels → regrid to 0.25°, interp to 15 depths |
-| Validation | Argo (via INCOIS / EN4 / argopy) | never used as training target |
+| Target T | Copernicus GLORYS12V1 (`GLOBAL_MULTIYEAR_PHY_001_030`, `doi:10.48670/moi-00021`) — **named by the PS** | 1/12°, 50 levels → regrid to 0.25°, interp to 15 depths |
+| Validation B1 | **INCOIS LAS Gridded ARGO** — **named by the PS** | 1°×1°, 10-day/monthly objective analysis; aggregate our 0.25° output up to compare |
+| Validation B2 | Raw Argo profiles (argopy / EN4) | point observations; stricter test. Neither track ever used as a training target |
 | Bootstrap | **ESA Φ-lab OceanDepths** (HuggingFace `ESA-philab/OceanDepths`) | ~120 GiB global; use its patches for M0/M1 before the 7-source pipeline exists |
 
 Copernicus Marine requires a (free) account — use `copernicusmarine` Python client. PO.DAAC needs NASA Earthdata login. Register both early; credentials go in `.env` / `~/.netrc`, **never committed**.
@@ -67,7 +68,7 @@ The model never touches raw provider files. **Frozen region bbox (docs/04): lat 
 
 1. **Time-based split.** Train on earlier years, validate on a later year, test on later still (e.g. train ≤2020, val 2021, test 2022+). Never random pixel/patch mixing; no overlapping patches across split boundaries.
 2. **Normalization stats from train split only** — computed once, saved as an artifact, applied everywhere.
-3. **Argo is sacred.** Held-out Argo profiles are never model inputs or targets. Match by date/location, interpolate to common depths, compute depth-wise metrics.
+3. **Argo is sacred.** Argo data is never a model input or target, in either validation track. Match by date/location, interpolate to common depths, compute depth-wise metrics. PS requirement 7 explicitly permits the regridding this needs — when resolutions differ, **aggregate our prediction up to the coarser reference**, never downscale the reference.
 4. **Depth-wise metrics table** (RMSE/MAE/Bias/Corr at 0, 50, 100, 200, 500, 1000 m) is the primary result, not one blended number.
 5. **Masks:** land and missing-data masked out of the loss. Never let the model be scored on land pixels.
 6. **Checkpoint everything** (model + optimizer + epoch + config + norm stats) — required for Spot/preemptible GPUs and demo reproducibility.

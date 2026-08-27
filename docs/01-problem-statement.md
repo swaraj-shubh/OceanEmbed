@@ -18,10 +18,29 @@ nav_order: 2
 2. A **satellite embedding engine** leveraging deep learning architectures (CNN, Vision Transformers, autoencoders, GNNs are *mentioned*, not all required).
 3. A **reconstruction model** estimating temperature at **15 standard depth levels**.
 4. **Daily outputs at 0.25° spatial resolution**.
-5. **Validation using independent Argo observations**.
+5. **Validation using independent Argo observations** with correlation, RMSE, Bias etc. — regridding/interpolation explicitly permitted where resolutions differ (see requirement 7 below).
 6. **Functional proof-of-concept over the Bay of Bengal / Arabian Sea** (North Indian Ocean).
 
 Input variables named by the PS: SST, sea surface salinity, sea surface height, surface currents, surface winds — **7 channels** total (SST, SSS, SSH/SLA, U-current, V-current, U-wind, V-wind).
+
+### Datasets the PS names explicitly
+
+| Role | Dataset named in the PS | What it actually is |
+|---|---|---|
+| **Training target** (subsurface temperature) | **GLORYS Global Ocean Reanalysis**, [`doi.org/10.48670/moi-00021`](https://doi.org/10.48670/moi-00021) — variable: Temperature | Resolves to Copernicus **`GLOBAL_MULTIYEAR_PHY_001_030`** = GLORYS12V1, 1/12°, daily, 50 levels. Confirms our committed target |
+| **In-situ observations** (validation) | **Gridded ARGO — INCOIS Live Access Server (LAS)** | Objectively-analysed Argo fields, **1°×1°, 10-day and monthly**. *Not* raw profiles — see the caveat below |
+| Training inputs | "recommended datasets" table | Our per-variable choices are in [04 · Data Pipeline](04-data.md) |
+
+### PS requirement 7 — verbatim, and why it protects us
+
+> "Evaluate the reconstruction using independent observations and standard skill metrics like correlation, RMSE, Bias etc. **(If a dataset is not available at required resolution, the team may select the openly available product and perform appropriate spatial and temporal interpolation/regridding.)**"
+
+Two things follow directly from this clause:
+
+1. **Regridding is explicitly sanctioned.** Our whole pipeline rests on interpolating heterogeneous products (0.05°–1/12°) onto one 0.25° daily grid, and on interpolating GLORYS's 50 native levels onto the 15 SIH depths. The PS authorises exactly that, so it is a documented design decision, not a shortcut. Say so if challenged.
+2. **The named validation product is coarser than our output.** INCOIS LAS Gridded ARGO is 1° / 10-day; we predict 0.25° / daily. Comparing them *requires* the interpolation this clause permits — and it means the PS-named product cannot, by itself, test our full resolution.
+
+**Our response: validate twice.** Track B1 against the PS-named gridded Argo (compliance + it is what INCOIS operationally trusts), Track B2 against **raw Argo profiles** at their true point locations (stricter — no objective-analysis smoothing between us and the observation). Protocol in [05 · Training & Evaluation](05-training-evaluation.md). Reporting both is a credibility gain, not extra work: the same metric code runs on both.
 
 ## What the PS is really asking (interpretation)
 

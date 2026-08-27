@@ -155,11 +155,11 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </tr>
 <tr>
 <td>Training target</td>
-<td>GLORYS12V1 3D temperature, regridded + interpolated to the 15 SIH depths</td>
+<td><strong>GLORYS12V1</strong> (PS-named, <code>doi:10.48670/moi-00021</code> = <code>GLOBAL_MULTIYEAR_PHY_001_030</code>), regridded + interpolated to the 15 SIH depths</td>
 </tr>
 <tr>
 <td>Validation</td>
-<td>Held-out Argo/INCOIS profiles: depth-wise RMSE, MAE, Bias, Correlation</td>
+<td>Two tracks: <strong>B1 INCOIS LAS Gridded ARGO</strong> (PS-named, 1°/10-day — aggregate our output up to it) and <strong>B2 raw Argo profiles</strong> (stricter). Depth-wise RMSE, MAE, Bias, Correlation</td>
 </tr>
 <tr>
 <td>Loss</td>
@@ -230,13 +230,18 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </tr>
 <tr>
 <td>Target T</td>
-<td>Copernicus GLORYS12V1 (<code>GLOBAL_MULTIYEAR_PHY_001_030</code>)</td>
+<td>Copernicus GLORYS12V1 (<code>GLOBAL_MULTIYEAR_PHY_001_030</code>, <code>doi:10.48670/moi-00021</code>) — <strong>named by the PS</strong></td>
 <td>1/12°, 50 levels → regrid to 0.25°, interp to 15 depths</td>
 </tr>
 <tr>
-<td>Validation</td>
-<td>Argo (via INCOIS / EN4 / argopy)</td>
-<td>never used as training target</td>
+<td>Validation B1</td>
+<td><strong>INCOIS LAS Gridded ARGO</strong> — <strong>named by the PS</strong></td>
+<td>1°×1°, 10-day/monthly objective analysis; aggregate our 0.25° output up to compare</td>
+</tr>
+<tr>
+<td>Validation B2</td>
+<td>Raw Argo profiles (argopy / EN4)</td>
+<td>point observations; stricter test. Neither track ever used as a training target</td>
 </tr>
 <tr>
 <td>Bootstrap</td>
@@ -255,7 +260,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <ol>
 <li><strong>Time-based split.</strong> Train on earlier years, validate on a later year, test on later still (e.g. train ≤2020, val 2021, test 2022+). Never random pixel/patch mixing; no overlapping patches across split boundaries.</li>
 <li><strong>Normalization stats from train split only</strong> — computed once, saved as an artifact, applied everywhere.</li>
-<li><strong>Argo is sacred.</strong> Held-out Argo profiles are never model inputs or targets. Match by date/location, interpolate to common depths, compute depth-wise metrics.</li>
+<li><strong>Argo is sacred.</strong> Argo data is never a model input or target, in either validation track. Match by date/location, interpolate to common depths, compute depth-wise metrics. PS requirement 7 explicitly permits the regridding this needs — when resolutions differ, <strong>aggregate our prediction up to the coarser reference</strong>, never downscale the reference.</li>
 <li><strong>Depth-wise metrics table</strong> (RMSE/MAE/Bias/Corr at 0, 50, 100, 200, 500, 1000 m) is the primary result, not one blended number.</li>
 <li><strong>Masks:</strong> land and missing-data masked out of the loss. Never let the model be scored on land pixels.</li>
 <li><strong>Checkpoint everything</strong> (model + optimizer + epoch + config + norm stats) — required for Spot/preemptible GPUs and demo reproducibility.</li>

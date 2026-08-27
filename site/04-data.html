@@ -174,16 +174,24 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <tr>
 <td>Target</td>
 <td>3D Temperature</td>
-<td>GLORYS12V1 <code>GLOBAL_MULTIYEAR_PHY_001_030</code>, var <code>thetao</code></td>
+<td><strong>GLORYS12V1</strong> <code>GLOBAL_MULTIYEAR_PHY_001_030</code>, var <code>thetao</code> — <em>PS-named,</em> <a href="https://doi.org/10.48670/moi-00021"><code>doi:10.48670/moi-00021</code></a></td>
 <td>1/12°, daily, 50 levels</td>
 <td><code>copernicusmarine</code></td>
 <td>CMEMS</td>
 </tr>
 <tr>
-<td>Validation</td>
-<td>Argo T profiles</td>
-<td>Argo GDAC via <code>argopy</code> (or INCOIS mirror)</td>
-<td>point</td>
+<td>Validation B1</td>
+<td>Gridded Argo T</td>
+<td><strong>INCOIS Live Access Server (LAS) Gridded ARGO</strong> — <em>PS-named</em></td>
+<td><strong>1°×1°, 10-day &amp; monthly</strong> (objective analysis)</td>
+<td><a href="https://incois.gov.in/site/dataholdings.jsp">INCOIS LAS</a> OPeNDAP/THREDDS</td>
+<td>none</td>
+</tr>
+<tr>
+<td>Validation B2</td>
+<td>Raw Argo T profiles</td>
+<td>Argo GDAC via <code>argopy</code> (or EN4)</td>
+<td>point, ~10-day cycle</td>
 <td><code>pip install argopy</code></td>
 <td>none</td>
 </tr>
@@ -197,7 +205,11 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </tr>
 </tbody>
 </table></div>
-<p><strong>Register both accounts (Earthdata + Copernicus Marine) on day 1.</strong> Credentials in <code>~/.netrc</code> / <code>copernicusmarine login</code>, never in git.</p>
+<p><strong>On the two validation tracks.</strong> The PS names INCOIS LAS <strong>Gridded</strong> ARGO, so B1 is mandatory for compliance and is the product INCOIS itself operates on. But it is an <em>objectively-analysed</em> field (DIVA/OI-interpolated onto 1°, 10-day) — it has already been smoothed, and at 1° it is 4× coarser than our output, so it cannot test our full resolution and it partly shares the smoothing character of a reanalysis. B2 (raw profiles at their true lat/lon/time) is therefore the stricter test and the better scientific story. Run both; the metric code is identical, only the matching step differs. If the two disagree, that difference is itself a result worth showing (it quantifies what objective analysis smooths away).</p>
+<p><strong>Register both accounts (Earthdata + Copernicus Marine) on day 1.</strong> Credentials in <code>~/.netrc</code> / <code>copernicusmarine login</code>, never in git. INCOIS LAS and Argo GDAC need no account.</p>
+<blockquote>
+<p><strong>PS requirement 7 sanctions all of this regridding:</strong> <em>"If a dataset is not available at required resolution, the team may select the openly available product and perform appropriate spatial and temporal interpolation/regridding."</em> Every interpolation below is therefore a documented, permitted choice — record the method used for each product so it can be stated in the report.</p>
+</blockquote>
 <h3 id="download-example-glorys-our-region">Download example (GLORYS, our region)</h3>
 <pre><code class="language-python">import copernicusmarine
 copernicusmarine.subset(

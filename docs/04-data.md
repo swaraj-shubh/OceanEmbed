@@ -14,11 +14,16 @@ nav_order: 5
 | 3 | SSH/SLA (ADT) | Copernicus DUACS L4 `SEALEVEL_GLO_PHY_L4_MY_008_047` | 0.125°, daily | `copernicusmarine` client | CMEMS (free) |
 | 4–5 | Currents U/V | NASA OSCAR v2.0 final | 0.25°, daily | PO.DAAC | Earthdata |
 | 6–7 | Winds U/V | Copernicus `WIND_GLO_PHY_L4` (or ASCAT L4) | 0.125–0.25° | `copernicusmarine` | CMEMS |
-| Target | 3D Temperature | GLORYS12V1 `GLOBAL_MULTIYEAR_PHY_001_030`, var `thetao` | 1/12°, daily, 50 levels | `copernicusmarine` | CMEMS |
-| Validation | Argo T profiles | Argo GDAC via `argopy` (or INCOIS mirror) | point | `pip install argopy` | none |
+| Target | 3D Temperature | **GLORYS12V1** `GLOBAL_MULTIYEAR_PHY_001_030`, var `thetao` — *PS-named,* [`doi:10.48670/moi-00021`](https://doi.org/10.48670/moi-00021) | 1/12°, daily, 50 levels | `copernicusmarine` | CMEMS |
+| Validation B1 | Gridded Argo T | **INCOIS Live Access Server (LAS) Gridded ARGO** — *PS-named* | **1°×1°, 10-day & monthly** (objective analysis) | [INCOIS LAS](https://incois.gov.in/site/dataholdings.jsp) OPeNDAP/THREDDS | none |
+| Validation B2 | Raw Argo T profiles | Argo GDAC via `argopy` (or EN4) | point, ~10-day cycle | `pip install argopy` | none |
 | Bootstrap | Everything above, pre-paired | **ESA OceanDepths** (HF `ESA-philab/OceanDepths`) | 0.1°, weekly | `huggingface_hub` | none |
 
-**Register both accounts (Earthdata + Copernicus Marine) on day 1.** Credentials in `~/.netrc` / `copernicusmarine login`, never in git.
+**On the two validation tracks.** The PS names INCOIS LAS **Gridded** ARGO, so B1 is mandatory for compliance and is the product INCOIS itself operates on. But it is an *objectively-analysed* field (DIVA/OI-interpolated onto 1°, 10-day) — it has already been smoothed, and at 1° it is 4× coarser than our output, so it cannot test our full resolution and it partly shares the smoothing character of a reanalysis. B2 (raw profiles at their true lat/lon/time) is therefore the stricter test and the better scientific story. Run both; the metric code is identical, only the matching step differs. If the two disagree, that difference is itself a result worth showing (it quantifies what objective analysis smooths away).
+
+**Register both accounts (Earthdata + Copernicus Marine) on day 1.** Credentials in `~/.netrc` / `copernicusmarine login`, never in git. INCOIS LAS and Argo GDAC need no account.
+
+> **PS requirement 7 sanctions all of this regridding:** *"If a dataset is not available at required resolution, the team may select the openly available product and perform appropriate spatial and temporal interpolation/regridding."* Every interpolation below is therefore a documented, permitted choice — record the method used for each product so it can be stated in the report.
 
 ### Download example (GLORYS, our region)
 

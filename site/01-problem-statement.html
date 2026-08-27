@@ -131,10 +131,47 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <li>A <strong>satellite embedding engine</strong> leveraging deep learning architectures (CNN, Vision Transformers, autoencoders, GNNs are <em>mentioned</em>, not all required).</li>
 <li>A <strong>reconstruction model</strong> estimating temperature at <strong>15 standard depth levels</strong>.</li>
 <li><strong>Daily outputs at 0.25° spatial resolution</strong>.</li>
-<li><strong>Validation using independent Argo observations</strong>.</li>
+<li><strong>Validation using independent Argo observations</strong> with correlation, RMSE, Bias etc. — regridding/interpolation explicitly permitted where resolutions differ (see requirement 7 below).</li>
 <li><strong>Functional proof-of-concept over the Bay of Bengal / Arabian Sea</strong> (North Indian Ocean).</li>
 </ol>
 <p>Input variables named by the PS: SST, sea surface salinity, sea surface height, surface currents, surface winds — <strong>7 channels</strong> total (SST, SSS, SSH/SLA, U-current, V-current, U-wind, V-wind).</p>
+<h3 id="datasets-the-ps-names-explicitly">Datasets the PS names explicitly</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Dataset named in the PS</th>
+<th>What it actually is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Training target</strong> (subsurface temperature)</td>
+<td><strong>GLORYS Global Ocean Reanalysis</strong>, <a href="https://doi.org/10.48670/moi-00021"><code>doi.org/10.48670/moi-00021</code></a> — variable: Temperature</td>
+<td>Resolves to Copernicus <strong><code>GLOBAL_MULTIYEAR_PHY_001_030</code></strong> = GLORYS12V1, 1/12°, daily, 50 levels. Confirms our committed target</td>
+</tr>
+<tr>
+<td><strong>In-situ observations</strong> (validation)</td>
+<td><strong>Gridded ARGO — INCOIS Live Access Server (LAS)</strong></td>
+<td>Objectively-analysed Argo fields, <strong>1°×1°, 10-day and monthly</strong>. <em>Not</em> raw profiles — see the caveat below</td>
+</tr>
+<tr>
+<td>Training inputs</td>
+<td>"recommended datasets" table</td>
+<td>Our per-variable choices are in <a href="04-data.html">04 · Data Pipeline</a></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="ps-requirement-7-verbatim-and-why-it-protects-us">PS requirement 7 — verbatim, and why it protects us</h3>
+<blockquote>
+<p>"Evaluate the reconstruction using independent observations and standard skill metrics like correlation, RMSE, Bias etc. <strong>(If a dataset is not available at required resolution, the team may select the openly available product and perform appropriate spatial and temporal interpolation/regridding.)</strong>"</p>
+</blockquote>
+<p>Two things follow directly from this clause:</p>
+<ol>
+<li><strong>Regridding is explicitly sanctioned.</strong> Our whole pipeline rests on interpolating heterogeneous products (0.05°–1/12°) onto one 0.25° daily grid, and on interpolating GLORYS's 50 native levels onto the 15 SIH depths. The PS authorises exactly that, so it is a documented design decision, not a shortcut. Say so if challenged.</li>
+<li><strong>The named validation product is coarser than our output.</strong> INCOIS LAS Gridded ARGO is 1° / 10-day; we predict 0.25° / daily. Comparing them <em>requires</em> the interpolation this clause permits — and it means the PS-named product cannot, by itself, test our full resolution.</li>
+</ol>
+<p><strong>Our response: validate twice.</strong> Track B1 against the PS-named gridded Argo (compliance + it is what INCOIS operationally trusts), Track B2 against <strong>raw Argo profiles</strong> at their true point locations (stricter — no objective-analysis smoothing between us and the observation). Protocol in <a href="05-training-evaluation.html">05 · Training &amp; Evaluation</a>. Reporting both is a credibility gain, not extra work: the same metric code runs on both.</p>
 <h2 id="what-the-ps-is-really-asking-interpretation">What the PS is really asking (interpretation)</h2>
 <p>The ocean absorbs &gt;90% of excess anthropogenic heat and ~30% of CO₂ emissions. Subsurface thermal structure controls:</p>
 <ul>
