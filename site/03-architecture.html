@@ -169,7 +169,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <tr>
 <td>Backbone</td>
 <td>CNN, not ViT</td>
-<td>CNN beats Transformer at this data scale; local features (fronts/eddies) dominate the task</td>
+<td>Best skill-per-unit-compute at our data scale (~2,800 samples, free T4); local features (fronts/eddies) dominate. ViTs <em>can</em> do this task (see DUViT, doc 02) — this is a resource argument, not a capability one</td>
 </tr>
 <tr>
 <td>Norm</td>
@@ -204,7 +204,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </tbody>
 </table></div>
 <h3 id="tensor-shapes-at-025-over-the-poc-region">Tensor shapes at 0.25° over the PoC region</h3>
-<p>Region (freeze once confirmed): <strong>lat 0–25°N, lon 55–100°E</strong> → H=100, W=180. Pad/crop to <strong>H=96, W=176</strong> (divisible by 4 for two downsamplings) or train on 96×96 random crops and infer full-field (fully convolutional — both work; crops give data augmentation for free).</p>
+<p>Region (<strong>frozen</strong> — see doc 04 §2): <strong>lat 0–25°N, lon 55–100°E</strong> → H=100, W=180. Pad/crop to <strong>H=96, W=176</strong> (divisible by 4 for two downsamplings) or train on 96×96 random crops and infer full-field (fully convolutional — both work; crops give data augmentation for free).</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -266,6 +266,7 @@ Applied sequentially (CBAM order). The output feature map is what we call the Oc
 <li><strong>Physics-informed loss</strong> (e.g., stratification constraints) — documented upgrade path (Zhao et al. 2025), not needed to win the internal round.</li>
 <li><strong>3D convolutions, ViT, GNN, diffusion</strong> — see doc 02 §1; complexity without evidence of gain at our data scale.</li>
 <li><strong>Uncertainty estimation</strong> — MC-dropout is a one-line flex if there's time; not a milestone.</li>
+<li><strong>Significant wave height as an 8th input</strong> — best-evidenced future upgrade (up to 40% thermocline NRMSE reduction in tropical basins, doc 02); deliberately out of scope until M4 works, because the PS specifies 7 variables.</li>
 </ul></article>
   <footer>Ministry of Earth Sciences · INCOIS · Space Technology — Smart India Hackathon 2026</footer>
 </main>

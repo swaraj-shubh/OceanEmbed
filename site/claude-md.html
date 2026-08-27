@@ -211,7 +211,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <tr>
 <td>SSS</td>
 <td>NASA SMAP L3 SSS (RSS 8-day running mean V4)</td>
-<td>0.25°; document the composite window</td>
+<td>0.25°, from 2015-03-27; 8-day composite (only non-daily input) — document the window</td>
 </tr>
 <tr>
 <td>SSH/SLA</td>
@@ -221,12 +221,12 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <tr>
 <td>Currents U/V</td>
 <td>NASA OSCAR v2.0 (PO.DAAC)</td>
-<td>daily 0.25°</td>
+<td>daily 0.25°; use <code>u</code>,<code>v</code> (total) not <code>ug</code>,<code>vg</code>; it is a 0–30 m mean</td>
 </tr>
 <tr>
 <td>Wind U/V</td>
-<td>Copernicus scatterometer/ASCAT</td>
-<td>pick a gridded product, regrid</td>
+<td>Copernicus <code>WIND_GLO_PHY_L3_MY_012_005</code> (daily gridded L3 scatterometer)</td>
+<td>0.125° daily → regrid to 0.25°; check swath-gap fraction, fallback <code>WIND_GLO_PHY_L4_MY_012_006</code></td>
 </tr>
 <tr>
 <td>Target T</td>

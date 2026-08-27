@@ -53,7 +53,7 @@ flowchart TD
 
 | Component | Choice | Why |
 |---|---|---|
-| Backbone | CNN, not ViT | CNN beats Transformer at this data scale; local features (fronts/eddies) dominate the task |
+| Backbone | CNN, not ViT | Best skill-per-unit-compute at our data scale (~2,800 samples, free T4); local features (fronts/eddies) dominate. ViTs *can* do this task (see DUViT, doc 02) — this is a resource argument, not a capability one |
 | Norm | GroupNorm, not BatchNorm | Small batches on 16–24 GB GPUs; ocean fields have region-dependent stats |
 | Temporal | ConvLSTM on encoder features (not raw fields) | Cheaper; DORS proved ConvLSTM for this task; preserves map structure vs plain LSTM |
 | Attention | SE channel + spatial attention at the bottleneck | EBAM-CNN and 3D-U-Net++ both show attention-in-CNN wins in this exact task; this IS the "embedding engine" the PS asks for |
@@ -63,7 +63,7 @@ flowchart TD
 
 ### Tensor shapes at 0.25° over the PoC region
 
-Region (freeze once confirmed): **lat 0–25°N, lon 55–100°E** → H=100, W=180. Pad/crop to **H=96, W=176** (divisible by 4 for two downsamplings) or train on 96×96 random crops and infer full-field (fully convolutional — both work; crops give data augmentation for free).
+Region (**frozen** — see doc 04 §2): **lat 0–25°N, lon 55–100°E** → H=100, W=180. Pad/crop to **H=96, W=176** (divisible by 4 for two downsamplings) or train on 96×96 random crops and infer full-field (fully convolutional — both work; crops give data augmentation for free).
 
 | Tensor | Shape | ~Size (fp32) |
 |---|---|---|
@@ -110,3 +110,4 @@ Full-region single forward pass, ~milliseconds on CPU. The demo needs **no GPU**
 - **Physics-informed loss** (e.g., stratification constraints) — documented upgrade path (Zhao et al. 2025), not needed to win the internal round.
 - **3D convolutions, ViT, GNN, diffusion** — see doc 02 §1; complexity without evidence of gain at our data scale.
 - **Uncertainty estimation** — MC-dropout is a one-line flex if there's time; not a milestone.
+- **Significant wave height as an 8th input** — best-evidenced future upgrade (up to 40% thermocline NRMSE reduction in tropical basins, doc 02); deliberately out of scope until M4 works, because the PS specifies 7 variables.

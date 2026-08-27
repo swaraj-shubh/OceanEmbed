@@ -23,8 +23,19 @@ The point of this review: every architecture decision we made is backed by a pub
 
 ## Three findings that shape our design
 
-### 1. CNN > Transformer at this data scale
-Reconstruction of 3D equatorial T/S (Remote Sens. 17:2005, 2025) explicitly compared architectures: **Transformer performed worse than CNN** — self-attention is good at global features but poor at the locally small-scale structures (fronts, eddies) that dominate subsurface reconstruction, and ViTs are data-hungry. This is our documented justification for CNN-first, and for using attention only as a *fusion* mechanism inside a convolutional backbone (as EBAM-CNN and the 3D-U-Net++ paper do). **Do not build a ViT for the internal round.**
+### 1. CNN-first is right *for our data scale* — but do not overclaim it
+
+The defensible claim, and the one to make on stage:
+
+> At our data scale (~2,800 daily samples, one basin, a free T4 GPU), a convolutional backbone with attention where it demonstrably helps is the highest-skill-per-unit-compute choice. Transformers are data-hungry, and the structures that dominate subsurface reconstruction — fronts, eddies, thermocline gradients — are local.
+
+Supporting evidence: every top-performing regional system we found is convolutional with attention added inside it, not a pure ViT — [EBAM-CNN](https://www.sciencedirect.com/science/article/pii/S146350032500040X) (block attention CNN, tropical Indian Ocean) and [attention 3D-U-Net++](https://essd.copernicus.org/articles/18/4617/2026/) (NW Pacific). OceanDepths' own baselines also show spatial U-Nets beating point-wise models decisively.
+
+**⚠️ Counter-evidence — know this before you claim "Transformers don't work":** **DUViT** (dual U-Vision-Transformer) reconstructs eddy-resolving 3D T/S/currents to 2000 m in the South China Sea from multi-resolution satellite data. Transformers demonstrably *can* do this task well. A judge who knows the field may raise exactly this.
+
+**So the honest framing is a resource argument, not a capability argument.** "A ViT is not the best use of our data and compute budget" is defensible and true. "Transformers lose at this task" is not, and would collapse under one informed question. Use the former.
+
+> **Citation confidence note.** An earlier draft of this doc asserted that Remote Sens. 17:2005 ran an explicit CNN-vs-Transformer head-to-head with CNN winning. That claim traced only to a search-engine snippet we could not attribute to a specific paper (MDPI blocks automated fetching), so it has been removed rather than cited. The paper itself exists and is real — *Reconstruction of Three-Dimensional Temperature and Salinity in the Equatorial Ocean with Deep-Learning* — but **read it before quoting any head-to-head result from it.** Do not put an unverified comparison in the deck.
 
 ### 2. Climatology is embarrassingly strong — respect the baseline
 OceanDepths baseline table (temperature, vs held-out EN4):
@@ -42,6 +53,12 @@ Naive ML **loses to climatology**. Spatial U-Nets are competitive; point-wise mo
 
 ### 3. Error concentrates at the thermocline — report depth-wise
 All papers show RMSE peaks around 50–200 m (thermocline) where vertical gradients are sharpest, and is small at surface and below 500 m. So: a single averaged RMSE hides everything; the depth-wise table/curve is the honest and standard reporting format. Also motivates the optional depth-weighted loss (upweight 50–200 m) as an M4+ experiment.
+
+### Bonus finding — significant wave height is a cheap accuracy win (upgrade path)
+
+A 2025 JMSE study ([10.3390/jmse13050910](https://doi.org/10.3390/jmse13050910)) added **significant wave height (SWH)** as an input to U-Net / VI-U-Net T-S reconstruction and reported NRMSE reductions of **up to 40% for temperature** in the thermocline band (100–300 m), with the largest gains in *"tropical regions with active wind-waves (such as the Indian Ocean…)"* — i.e. exactly our basin, exactly the depths where our error will concentrate.
+
+We are **not** adding SWH for the internal round: the PS specifies 7 surface variables, and an 8th channel is scope creep before M4 works. But this is the single best-evidenced "what's next" slide we have — an 8th channel, one line in the config, targeted at our known weak band. Mention it as future work; it shows we read past the requirements.
 
 ## Why GLORYS-as-target + Argo-as-validation is the right split
 
@@ -61,7 +78,7 @@ Reanalyses (GLORYS12) are dense but are *model outputs* with documented biases (
 - [TS-Cast (Ocean Science)](https://os.copernicus.org/articles/22/2161/2026/)
 - [EBAM-CNN thermocline Indian Ocean](https://www.sciencedirect.com/science/article/pii/S146350032500040X)
 - [NeSPReSO (Ocean Modelling)](https://www.sciencedirect.com/science/article/abs/pii/S1463500325000538)
-- [Equatorial 3D T/S reconstruction — CNN vs Transformer](https://doi.org/10.3390/rs17122005)
+- [Equatorial 3D T/S reconstruction with deep learning](https://doi.org/10.3390/rs17122005) — *read before citing any head-to-head result; see confidence note above*
 - [DORS-0.25° Deep Forest (ISPRS)](https://www.sciencedirect.com/science/article/abs/pii/S0924271624003617)
 - [South China Sea physics-guided DL](https://doi.org/10.3390/rs17172954)
 - [Adaptive spatiotemporal clustering 3D reconstruction (arXiv 2605.00860)](https://arxiv.org/abs/2605.00860)

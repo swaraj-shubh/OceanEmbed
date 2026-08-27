@@ -10,16 +10,21 @@ nav_order: 5
 | # | Variable | Product | Native res. | Access | Account |
 |---|---|---|---|---|---|
 | 1 | SST | NOAA OISST v2.1 | 0.25°, daily | HTTPS/THREDDS from NCEI, plain NetCDF | none |
-| 2 | SSS | NASA SMAP RSS L3 8-day running mean v4 | 0.25° | PO.DAAC (`podaac-data-subscriber` or HTTPS) | NASA Earthdata (free) |
+| 2 | SSS | NASA SMAP RSS L3 SSS v4, 8-day running mean | 0.25°, **8-day running mean** (not daily), from **2015-03-27** | PO.DAAC (`podaac-data-subscriber` or HTTPS) | NASA Earthdata (free) |
 | 3 | SSH/SLA (ADT) | Copernicus DUACS L4 `SEALEVEL_GLO_PHY_L4_MY_008_047` | 0.125°, daily | `copernicusmarine` client | CMEMS (free) |
-| 4–5 | Currents U/V | NASA OSCAR v2.0 final | 0.25°, daily | PO.DAAC | Earthdata |
-| 6–7 | Winds U/V | Copernicus `WIND_GLO_PHY_L4` (or ASCAT L4) | 0.125–0.25° | `copernicusmarine` | CMEMS |
+| 4–5 | Currents U/V | NASA OSCAR v2.0 final — use variables **`u`,`v`** (total current), *not* `ug`,`vg` (geostrophic-only) | 0.25°, daily, 1993 → 2026 | PO.DAAC | Earthdata |
+| 6–7 | Winds U/V | Copernicus **`WIND_GLO_PHY_L3_MY_012_005`** — *Global Ocean Daily Gridded Reprocessed L3 Sea Surface Winds from Scatterometer* | **0.125°, daily**, covers 1991-08 → 2026-04 | `copernicusmarine` | CMEMS |
 | Target | 3D Temperature | **GLORYS12V1** `GLOBAL_MULTIYEAR_PHY_001_030`, var `thetao` — *PS-named,* [`doi:10.48670/moi-00021`](https://doi.org/10.48670/moi-00021) | 1/12°, daily, 50 levels | `copernicusmarine` | CMEMS |
 | Validation B1 | Gridded Argo T | **INCOIS Live Access Server (LAS) Gridded ARGO** — *PS-named* | **1°×1°, 10-day & monthly** (objective analysis) | [INCOIS LAS](https://incois.gov.in/site/dataholdings.jsp) OPeNDAP/THREDDS | none |
 | Validation B2 | Raw Argo T profiles | Argo GDAC via `argopy` (or EN4) | point, ~10-day cycle | `pip install argopy` | none |
 | Bootstrap | Everything above, pre-paired | **ESA OceanDepths** (HF `ESA-philab/OceanDepths`) | 0.1°, weekly | `huggingface_hub` | none |
 
 **On the two validation tracks.** The PS names INCOIS LAS **Gridded** ARGO, so B1 is mandatory for compliance and is the product INCOIS itself operates on. But it is an *objectively-analysed* field (DIVA/OI-interpolated onto 1°, 10-day) — it has already been smoothed, and at 1° it is 4× coarser than our output, so it cannot test our full resolution and it partly shares the smoothing character of a reanalysis. B2 (raw profiles at their true lat/lon/time) is therefore the stricter test and the better scientific story. Run both; the metric code is identical, only the matching step differs. If the two disagree, that difference is itself a result worth showing (it quantifies what objective analysis smooths away).
+
+**Wind product — verified, and a caveat.** `WIND_GLO_PHY_L3_MY_012_005` is the right choice: daily, gridded, reprocessed multi-year, spans our whole 2015–2022 period, and provides eastward/northward wind directly. Two things to handle on first download:
+
+- It is **0.125°**, not 0.25° — regrid down to our target grid (permitted by PS req. 7).
+- Ascending and descending satellite passes are **gridded as separate fields**. A single scatterometer does not see the whole globe every day, so expect swath gaps; combine the passes and let the missing-mask carry whatever is still empty. **Measure the actual daily gap fraction over our box before committing** — if it is severe, fall back to `WIND_GLO_PHY_L4_MY_012_006` (hourly, scatterometer+model blended, gap-free) averaged to daily, and document that it is model-blended rather than pure observation.
 
 **Register both accounts (Earthdata + Copernicus Marine) on day 1.** Credentials in `~/.netrc` / `copernicusmarine login`, never in git. INCOIS LAS and Argo GDAC need no account.
 
@@ -45,7 +50,7 @@ Size control: our region at 1/12° × 35 levels (≤1100 m) × daily is large �
 ## 2. Region and period (freeze these)
 
 - **Bounding box:** 0–25°N, 55–100°E (Arabian Sea + Bay of Bengal + eq. Indian Ocean). At 0.25°: 100×180 → pad to **96×176 model grid**.
-- **Period:** 2015–2022 (SMAP SSS starts April 2015 — the binding constraint). ~2,800 daily samples.
+- **Period:** 2015–2022. **SMAP SSS begins 2015-03-27** — the binding constraint; start the record at **2015-04-01** for a clean month boundary. ~2,830 daily samples.
 - **Split (time-based, non-negotiable):** train 2015–2020 · validation 2021 · test 2022. Argo profiles from 2021–2022 in the region = independent evaluation set.
 
 ## 3. The 15 SIH depth levels
@@ -78,6 +83,8 @@ Implementation notes:
 - **SMAP SSS near coasts** is noisy/land-contaminated within ~40 km of the coast — expect a degraded coastal ring; the missing/quality mask handles it, mention it as a known limitation.
 - **Monsoon seasonality** dominates variance — this is why climatology (M0) will look strong, and why we report anomaly correlation, not just RMSE.
 - **Argo density** in the region is decent (INCOIS is a major Argo player) but sparser near coasts and in the northern Bay.
+- **OSCAR currents are a 0–30 m average**, not a true skin-layer current. Harmless for us (the mixed layer is what carries subsurface signal) but state it accurately — do not call it "surface current" in the report without the qualifier.
+- **SMAP is an 8-day running mean, not a daily field.** It is the only non-daily input. Assign each composite to its centre date and forward-fill; record the window in the Zarr metadata so the temporal smoothing is auditable. Expect it to limit how sharp a day-to-day signal the model can learn from salinity.
 
 ## 6. OceanDepths bootstrap path (week 1, before our pipeline exists)
 

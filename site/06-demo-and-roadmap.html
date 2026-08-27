@@ -231,7 +231,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </table></div>
 <h2 id="4-qa-ammunition-one-liners">4. Q&amp;A ammunition (one-liners)</h2>
 <ul>
-<li><em>Why not ViT/GNN (the PS mentions them)?</em> — Published head-to-head (RS 17:2005): Transformer loses to CNN at this data scale; attention is included where it demonstrably helps — as fusion inside the CNN. GNNs suit irregular point data; our inputs are regular grids.</li>
+<li><em>Why not ViT/GNN (the PS mentions them)?</em> — A resource argument: with ~2,800 daily samples in one basin on a free T4, a convolutional backbone gives the most skill per unit of compute, and the structures that matter here (fronts, eddies, thermocline) are local. Attention is included where it demonstrably helps — as fusion inside the CNN, like EBAM-CNN and the attention 3D-U-Net++. GNNs suit irregular point data; our inputs are regular grids. <strong>Do not say Transformers fail at this task</strong> — DUViT does it well in the South China Sea; say a ViT is not the best use of <em>our</em> data and compute budget.</li>
 <li><em>Why 7 variables?</em> — Bay of Bengal barrier layer: salinity stratification decouples SST from subsurface heat, so SSS/currents/winds carry real signal here; ablation SST-only vs 7-var quantifies it.</li>
 <li><em>Isn't GLORYS circular with Argo?</em> — Partially; that's exactly why we hold out Argo and report anomaly correlation. Same protocol as OceanBench/NeurIPS benchmarks.</li>
 <li><em>Operational use?</em> — All inputs are near-real-time products; the same weights run daily in &lt;1 s CPU — a plausible INCOIS service component (cyclone heat content, PFZ support).</li>
