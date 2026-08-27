@@ -7,11 +7,47 @@ nav_order: 4
 
 ## 1. End-to-end system
 
-```mermaid<br/>flowchart TD<br/>    subgraph SOURCES["Multi-source ocean data"]<br/>        A1["SST\nNOAA OISST v2.1"]<br/>        A2["SSS\nNASA SMAP L3"]<br/>        A3["SSH/SLA\nCopernicus DUACS"]<br/>        A4["Currents U/V\nNASA OSCAR v2.0"]<br/>        A5["Winds U/V\nASCAT/Copernicus"]<br/>        A6["GLORYS12V1\n3D temperature (target)"]<br/>        A7["Argo / INCOIS\nprofiles (validation only)"]<br/>    end<br/><br/>    SOURCES --> B["DATA HARMONIZATION\nQC → region subset → regrid 0.25° →\ndaily align → units → masks → normalize"]<br/>    B --> C["Model-ready samples\nX = [7, H, W] daily\nY = [15, H, W] from GLORYS"]<br/>    C --> D["OCEANEMBED MODEL\n(see §2)"]<br/>    D --> E["Predicted T\n[15, H, W]"]<br/>    E --> F["Evaluation\nvs GLORYS (dense)\nvs held-out Argo (independent)"]<br/>    E --> G["Streamlit demo\nmaps · profiles · metrics"]<br/>    A7 -. "never enters training" .-> F<br/>```
+```mermaid
+flowchart TD
+    subgraph SOURCES["Multi-source ocean data"]
+        A1["SST\nNOAA OISST v2.1"]
+        A2["SSS\nNASA SMAP L3"]
+        A3["SSH/SLA\nCopernicus DUACS"]
+        A4["Currents U/V\nNASA OSCAR v2.0"]
+        A5["Winds U/V\nASCAT/Copernicus"]
+        A6["GLORYS12V1\n3D temperature (target)"]
+        A7["Argo / INCOIS\nprofiles (validation only)"]
+    end
+
+    SOURCES --> B["DATA HARMONIZATION\nQC → region subset → regrid 0.25° →\ndaily align → units → masks → normalize"]
+    B --> C["Model-ready samples\nX = [7, H, W] daily\nY = [15, H, W] from GLORYS"]
+    C --> D["OCEANEMBED MODEL\n(see §2)"]
+    D --> E["Predicted T\n[15, H, W]"]
+    E --> F["Evaluation\nvs GLORYS (dense)\nvs held-out Argo (independent)"]
+    E --> G["Streamlit demo\nmaps · profiles · metrics"]
+    A7 -. "never enters training" .-> F
+```
 
 ## 2. OceanEmbed model (M4, final PoC form)
 
-```mermaid<br/>flowchart TD<br/>    X["Input sequence\n[T=7 days, 7, H, W]"] --> ENC<br/>    subgraph ENC["CNN ENCODER (shared across days)"]<br/>        E1["ConvBlock 1: 7→64\n3×3 conv ×2 + GroupNorm + GELU"] --> P1["down ×2"]<br/>        P1 --> E2["ConvBlock 2: 64→128"] --> P2["down ×2"]<br/>        P2 --> E3["ConvBlock 3: 128→256"]<br/>    end<br/>    E3 --> CL["ConvLSTM\n256 hidden, over 7 days\ntake last hidden state"]<br/>    CL --> ATT["ATTENTION FUSION\nchannel attention (SE) +\nspatial attention (CBAM-style)\n= OCEANEMBED latent [256, H/4, W/4]"]<br/>    ATT --> DEC<br/>    subgraph DEC["U-NET DECODER"]<br/>        D1["up ×2 → concat skip(E2, last day) → ConvBlock 256→128"]<br/>        D1 --> D2["up ×2 → concat skip(E1, last day) → ConvBlock 128→64"]<br/>        D2 --> HEAD["1×1 conv → 15 channels"]<br/>    end<br/>    HEAD --> Y["Ŷ = [15, H, W]\nT at 0…1000 m"]<br/>```
+```mermaid
+flowchart TD
+    X["Input sequence\n[T=7 days, 7, H, W]"] --> ENC
+    subgraph ENC["CNN ENCODER (shared across days)"]
+        E1["ConvBlock 1: 7→64\n3×3 conv ×2 + GroupNorm + GELU"] --> P1["down ×2"]
+        P1 --> E2["ConvBlock 2: 64→128"] --> P2["down ×2"]
+        P2 --> E3["ConvBlock 3: 128→256"]
+    end
+    E3 --> CL["ConvLSTM\n256 hidden, over 7 days\ntake last hidden state"]
+    CL --> ATT["ATTENTION FUSION\nchannel attention (SE) +\nspatial attention (CBAM-style)\n= OCEANEMBED latent [256, H/4, W/4]"]
+    ATT --> DEC
+    subgraph DEC["U-NET DECODER"]
+        D1["up ×2 → concat skip(E2, last day) → ConvBlock 256→128"]
+        D1 --> D2["up ×2 → concat skip(E1, last day) → ConvBlock 128→64"]
+        D2 --> HEAD["1×1 conv → 15 channels"]
+    end
+    HEAD --> Y["Ŷ = [15, H, W]\nT at 0…1000 m"]
+```
 
 ### Design rationale (each choice is cited in doc 02)
 
@@ -40,7 +76,15 @@ Region (freeze once confirmed): **lat 0–25°N, lon 55–100°E** → H=100, W=
 
 ## 3. Progressive builds (what each M-stage actually is)
 
-```mermaid<br/>flowchart LR<br/>    M0["M0\nClimatology\nper-pixel, per-month\nmean from GLORYS train yrs"]<br/>    M1["M1\nTiny CNN\n3 conv layers, SST+SSH→15 depths\nsingle day"] <br/>    M2["M2\nU-Net\nall 7 channels, single day\n(encoder+decoder, no ConvLSTM/attn)"]<br/>    M3["M3\n+ attention bottleneck\n= OceanEmbed embedding"]<br/>    M4["M4\n+ ConvLSTM 7-day window\nfinal PoC"]<br/>    M0 --> M1 --> M2 --> M3 --> M4<br/>```
+```mermaid
+flowchart LR
+    M0["M0\nClimatology\nper-pixel, per-month\nmean from GLORYS train yrs"]
+    M1["M1\nTiny CNN\n3 conv layers, SST+SSH→15 depths\nsingle day"] 
+    M2["M2\nU-Net\nall 7 channels, single day\n(encoder+decoder, no ConvLSTM/attn)"]
+    M3["M3\n+ attention bottleneck\n= OceanEmbed embedding"]
+    M4["M4\n+ ConvLSTM 7-day window\nfinal PoC"]
+    M0 --> M1 --> M2 --> M3 --> M4
+```
 
 Rule: each stage must beat the previous on the **same validation year, same metrics**, or we stop and debug before adding the next component. The ablation table this produces is itself a presentation deliverable.
 

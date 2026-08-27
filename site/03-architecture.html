@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 — System &amp; Model Architecture — OceanEmbed</title>
+<meta name="description" content="Satellite Embedding-Based Deep Learning Framework for Reconstruction of Subsurface Ocean Temperature — SIH 2026 PS 26066">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#08131e; --bg-soft:#0d1b2a; --panel:#101f30; --line:#1c3448;
+  --fg:#dbe7f2; --fg-dim:#8ba3ba; --accent:#4cc4e0; --accent-2:#6ee7b7;
+  --code-bg:#0b1926;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+  font-size:16px;line-height:1.7;display:flex;
+  background-image:radial-gradient(1200px 600px at 80% -10%,rgba(76,196,224,.10),transparent 60%),
+                   radial-gradient(900px 500px at -10% 110%,rgba(110,231,183,.07),transparent 60%);
+  background-attachment:fixed;
+}
+/* sidebar */
+aside{
+  position:sticky;top:0;height:100vh;flex:0 0 288px;overflow-y:auto;
+  background:rgba(13,27,42,.85);backdrop-filter:blur(8px);
+  border-right:1px solid var(--line);padding:22px 16px;
+}
+.brand{display:flex;gap:11px;align-items:center;text-decoration:none;color:var(--fg);
+  padding:6px 10px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.brand .wave{font-size:26px;filter:drop-shadow(0 0 10px rgba(76,196,224,.5))}
+.brand strong{display:block;font-size:18px;letter-spacing:.2px}
+.brand small{display:block;color:var(--fg-dim);font-size:11.5px;letter-spacing:.3px;margin-top:2px}
+nav ul{list-style:none;margin:0;padding:0}
+nav li{margin:1px 0}
+nav a{display:block;padding:8px 12px;border-radius:7px;color:var(--fg-dim);
+  text-decoration:none;font-size:14px;transition:.15s;border-left:2px solid transparent}
+nav a:hover{background:rgba(76,196,224,.09);color:var(--fg)}
+nav a.active{background:rgba(76,196,224,.14);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+nav li.sep{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.aside-foot{margin-top:24px;padding:0 12px;font-size:13px}
+.aside-foot a{color:var(--fg-dim);text-decoration:none}
+.aside-foot a:hover{color:var(--accent)}
+/* main */
+main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;padding:0 32px}
+article{width:100%;max-width:900px;padding:48px 0 24px}
+footer{width:100%;max-width:900px;border-top:1px solid var(--line);margin-top:40px;
+  padding:20px 0 56px;color:var(--fg-dim);font-size:13px}
+/* typography */
+h1,h2,h3,h4{line-height:1.3;font-weight:650;letter-spacing:-.01em}
+h1{font-size:2.05rem;margin:0 0 .6em;padding-bottom:.4em;border-bottom:1px solid var(--line)}
+h2{font-size:1.42rem;margin:2.2em 0 .7em;color:var(--accent)}
+h3{font-size:1.13rem;margin:1.8em 0 .5em}
+h4{font-size:1rem;margin:1.4em 0 .4em;color:var(--fg-dim)}
+p{margin:.9em 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(76,196,224,.3)}
+a:hover{border-bottom-color:var(--accent)}
+strong{color:#fff;font-weight:650}
+em{color:var(--accent-2)}
+hr{border:0;border-top:1px solid var(--line);margin:2.4em 0}
+ul,ol{padding-left:1.35em}
+li{margin:.35em 0}
+blockquote{border-left:3px solid var(--accent);margin:1.2em 0;padding:.1em 1em;
+  color:var(--fg-dim);background:rgba(76,196,224,.05);border-radius:0 6px 6px 0}
+/* code */
+code{font-family:var(--mono);font-size:.87em;background:var(--code-bg);
+  padding:.16em .42em;border-radius:4px;border:1px solid var(--line);color:var(--accent-2)}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;
+  padding:16px 18px;overflow-x:auto;margin:1.3em 0;font-size:13.5px;line-height:1.55}
+pre code{background:none;border:0;padding:0;color:#cfe3f0;font-size:inherit}
+pre.mermaid{background:var(--bg-soft);text-align:center;padding:24px;border:1px solid var(--line)}
+/* tables */
+.tablewrap{overflow-x:auto;margin:1.4em 0;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:rgba(76,196,224,.10);color:var(--accent);font-weight:600;
+  white-space:nowrap;position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+td code{white-space:nowrap}
+/* checkbox lists in the deliverables section */
+li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
+/* responsive */
+#navtoggle{display:none;position:fixed;top:14px;left:14px;z-index:30;
+  background:var(--panel);color:var(--fg);border:1px solid var(--line);
+  border-radius:8px;font-size:19px;padding:6px 12px;cursor:pointer}
+@media(max-width:900px){
+  #navtoggle{display:block}
+  aside{position:fixed;z-index:20;transform:translateX(-100%);transition:.22s;box-shadow:0 0 40px #000}
+  body.nav-open aside{transform:none}
+  main{padding:0 18px}
+  article{padding:64px 0 24px}
+  h1{font-size:1.65rem}
+}
+</style>
+</head>
+<body>
+<button id="navtoggle" aria-label="Toggle navigation">☰</button>
+<aside>
+  <a class="brand" href="index.html">
+    <span class="wave">🌊</span>
+    <span><strong>OceanEmbed</strong><small>SIH 2026 · PS 26066 · INCOIS</small></span>
+  </a>
+  <nav><ul><li><a href="index.html">Overview</a></li>
+<li><a href="01-problem-statement.html">01 · Problem Statement</a></li>
+<li><a href="02-research-review.html">02 · Research Review</a></li>
+<li><a href="03-architecture.html" class="active">03 · Architecture</a></li>
+<li><a href="04-data.html">04 · Data Pipeline</a></li>
+<li><a href="05-training-evaluation.html">05 · Training & Eval</a></li>
+<li><a href="06-demo-and-roadmap.html">06 · Demo & Roadmap</a></li>
+<li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
+  <div class="aside-foot">
+    <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
+  </div>
+</aside>
+<main>
+  <article><h1 id="03-system-model-architecture">03 — System &amp; Model Architecture</h1>
+<h2 id="1-end-to-end-system">1. End-to-end system</h2>
+<pre class="mermaid">flowchart TD
+    subgraph SOURCES["Multi-source ocean data"]
+        A1["SST<br/>NOAA OISST v2.1"]
+        A2["SSS<br/>NASA SMAP L3"]
+        A3["SSH/SLA<br/>Copernicus DUACS"]
+        A4["Currents U/V<br/>NASA OSCAR v2.0"]
+        A5["Winds U/V<br/>ASCAT/Copernicus"]
+        A6["GLORYS12V1<br/>3D temperature (target)"]
+        A7["Argo / INCOIS<br/>profiles (validation only)"]
+    end
+
+    SOURCES --> B["DATA HARMONIZATION<br/>QC → region subset → regrid 0.25° →<br/>daily align → units → masks → normalize"]
+    B --> C["Model-ready samples<br/>X = [7, H, W] daily<br/>Y = [15, H, W] from GLORYS"]
+    C --> D["OCEANEMBED MODEL<br/>(see §2)"]
+    D --> E["Predicted T<br/>[15, H, W]"]
+    E --> F["Evaluation<br/>vs GLORYS (dense)<br/>vs held-out Argo (independent)"]
+    E --> G["Streamlit demo<br/>maps · profiles · metrics"]
+    A7 -. "never enters training" .-> F
+</pre>
+<h2 id="2-oceanembed-model-m4-final-poc-form">2. OceanEmbed model (M4, final PoC form)</h2>
+<pre class="mermaid">flowchart TD
+    X["Input sequence<br/>[T=7 days, 7, H, W]"] --> ENC
+    subgraph ENC["CNN ENCODER (shared across days)"]
+        E1["ConvBlock 1: 7→64<br/>3×3 conv ×2 + GroupNorm + GELU"] --> P1["down ×2"]
+        P1 --> E2["ConvBlock 2: 64→128"] --> P2["down ×2"]
+        P2 --> E3["ConvBlock 3: 128→256"]
+    end
+    E3 --> CL["ConvLSTM<br/>256 hidden, over 7 days<br/>take last hidden state"]
+    CL --> ATT["ATTENTION FUSION<br/>channel attention (SE) +<br/>spatial attention (CBAM-style)<br/>= OCEANEMBED latent [256, H/4, W/4]"]
+    ATT --> DEC
+    subgraph DEC["U-NET DECODER"]
+        D1["up ×2 → concat skip(E2, last day) → ConvBlock 256→128"]
+        D1 --> D2["up ×2 → concat skip(E1, last day) → ConvBlock 128→64"]
+        D2 --> HEAD["1×1 conv → 15 channels"]
+    end
+    HEAD --> Y["Ŷ = [15, H, W]<br/>T at 0…1000 m"]
+</pre>
+<h3 id="design-rationale-each-choice-is-cited-in-doc-02">Design rationale (each choice is cited in doc 02)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Choice</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backbone</td>
+<td>CNN, not ViT</td>
+<td>CNN beats Transformer at this data scale; local features (fronts/eddies) dominate the task</td>
+</tr>
+<tr>
+<td>Norm</td>
+<td>GroupNorm, not BatchNorm</td>
+<td>Small batches on 16–24 GB GPUs; ocean fields have region-dependent stats</td>
+</tr>
+<tr>
+<td>Temporal</td>
+<td>ConvLSTM on encoder features (not raw fields)</td>
+<td>Cheaper; DORS proved ConvLSTM for this task; preserves map structure vs plain LSTM</td>
+</tr>
+<tr>
+<td>Attention</td>
+<td>SE channel + spatial attention at the bottleneck</td>
+<td>EBAM-CNN and 3D-U-Net++ both show attention-in-CNN wins in this exact task; this IS the "embedding engine" the PS asks for</td>
+</tr>
+<tr>
+<td>Decoder</td>
+<td>U-Net skips from the <strong>last day's</strong> encoder features</td>
+<td>Skip connections preserve spatial detail; last day is the prediction date</td>
+</tr>
+<tr>
+<td>Output head</td>
+<td>15 channels, one per SIH depth</td>
+<td>Map-to-map, matches PS deliverable exactly; avoids 3D convs (heavier, no proven gain — OceanDepths: 2D U-Net ≥ 3D U-Net)</td>
+</tr>
+<tr>
+<td>Masking</td>
+<td>Land + missing masks multiply the loss</td>
+<td>Never scored on land; missing satellite pixels don't poison gradients</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="tensor-shapes-at-025-over-the-poc-region">Tensor shapes at 0.25° over the PoC region</h3>
+<p>Region (freeze once confirmed): <strong>lat 0–25°N, lon 55–100°E</strong> → H=100, W=180. Pad/crop to <strong>H=96, W=176</strong> (divisible by 4 for two downsamplings) or train on 96×96 random crops and infer full-field (fully convolutional — both work; crops give data augmentation for free).</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Tensor</th>
+<th>Shape</th>
+<th>~Size (fp32)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>One day X</td>
+<td>[7, 96, 176]</td>
+<td>0.45 MB</td>
+</tr>
+<tr>
+<td>Sequence input</td>
+<td>[7, 7, 96, 176]</td>
+<td>3.2 MB</td>
+</tr>
+<tr>
+<td>Target Y</td>
+<td>[15, 96, 176]</td>
+<td>1.0 MB</td>
+</tr>
+<tr>
+<td>Model params (est.)</td>
+<td>~8–15 M</td>
+<td>60 MB</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Conclusion: this comfortably trains on a free Kaggle T4.</strong> Batch 16 sequences ≈ a few GB of activations. No excuse to buy compute before M4.</p>
+<h2 id="3-progressive-builds-what-each-m-stage-actually-is">3. Progressive builds (what each M-stage actually is)</h2>
+<pre class="mermaid">flowchart LR
+    M0["M0<br/>Climatology<br/>per-pixel, per-month<br/>mean from GLORYS train yrs"]
+    M1["M1<br/>Tiny CNN<br/>3 conv layers, SST+SSH→15 depths<br/>single day"] 
+    M2["M2<br/>U-Net<br/>all 7 channels, single day<br/>(encoder+decoder, no ConvLSTM/attn)"]
+    M3["M3<br/>+ attention bottleneck<br/>= OceanEmbed embedding"]
+    M4["M4<br/>+ ConvLSTM 7-day window<br/>final PoC"]
+    M0 --> M1 --> M2 --> M3 --> M4
+</pre>
+<p>Rule: each stage must beat the previous on the <strong>same validation year, same metrics</strong>, or we stop and debug before adding the next component. The ablation table this produces is itself a presentation deliverable.</p>
+<h2 id="4-component-specs-implementation-reference">4. Component specs (implementation reference)</h2>
+<h3 id="convblock">ConvBlock</h3>
+<p><code>Conv3×3 → GroupNorm(8) → GELU → Conv3×3 → GroupNorm(8) → GELU</code>, padding=1. Downsample via stride-2 conv (not maxpool — learnable, standard in modern U-Nets).</p>
+<h3 id="convlstm-cell">ConvLSTM cell</h3>
+<p>Standard Shi et al. 2015 formulation: gates computed by convolutions over <code>[h, x]</code> concat. One layer, hidden=256, kernel 3×3. Input: sequence of encoder bottleneck features <code>[B, T, 256, H/4, W/4]</code>. Output: last hidden state. (M4 only; in M2/M3 the bottleneck features pass straight through.)</p>
+<h3 id="attention-fusion-oceanembed-core">Attention fusion (OceanEmbed core)</h3>
+<ol>
+<li><strong>Channel attention (SE):</strong> global-avg-pool → FC(256→16) → GELU → FC(16→256) → sigmoid → scale channels. Learns which surface variables' features matter.</li>
+<li><strong>Spatial attention:</strong> channel-wise mean+max → concat → 7×7 conv → sigmoid → scale positions. Learns <em>where</em> (eddies, fronts) to focus.
+Applied sequentially (CBAM order). The output feature map is what we call the OceanEmbed representation; it is also what we visualize for the demo "embedding view" (PCA of channels → RGB).</li>
+</ol>
+<h3 id="inference">Inference</h3>
+<p>Full-region single forward pass, ~milliseconds on CPU. The demo needs <strong>no GPU</strong>.</p>
+<h2 id="5-what-we-deliberately-did-not-include">5. What we deliberately did NOT include</h2>
+<ul>
+<li><strong>Salinity output</strong> — PS asks for temperature only; adding S doubles the target pipeline. Trivial extension later (head 15→30 channels), say so if asked.</li>
+<li><strong>Physics-informed loss</strong> (e.g., stratification constraints) — documented upgrade path (Zhao et al. 2025), not needed to win the internal round.</li>
+<li><strong>3D convolutions, ViT, GNN, diffusion</strong> — see doc 02 §1; complexity without evidence of gain at our data scale.</li>
+<li><strong>Uncertainty estimation</strong> — MC-dropout is a one-line flex if there's time; not a milestone.</li>
+</ul></article>
+  <footer>Ministry of Earth Sciences · INCOIS · Space Technology — Smart India Hackathon 2026</footer>
+</main>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    background: '#0d1b2a', primaryColor: '#14304a', primaryTextColor: '#dce8f2',
+    primaryBorderColor: '#2f6f9f', lineColor: '#4a9fd4', secondaryColor: '#123',
+    tertiaryColor: '#0f2436', fontSize: '14px'
+  }
+});
+</script>
+<script>
+document.getElementById('navtoggle').onclick = () => document.body.classList.toggle('nav-open');
+</script>
+</body>
+</html>

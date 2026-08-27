@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 — Data: Sources, Access, and Preprocessing Pipeline — OceanEmbed</title>
+<meta name="description" content="Satellite Embedding-Based Deep Learning Framework for Reconstruction of Subsurface Ocean Temperature — SIH 2026 PS 26066">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#08131e; --bg-soft:#0d1b2a; --panel:#101f30; --line:#1c3448;
+  --fg:#dbe7f2; --fg-dim:#8ba3ba; --accent:#4cc4e0; --accent-2:#6ee7b7;
+  --code-bg:#0b1926;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+  font-size:16px;line-height:1.7;display:flex;
+  background-image:radial-gradient(1200px 600px at 80% -10%,rgba(76,196,224,.10),transparent 60%),
+                   radial-gradient(900px 500px at -10% 110%,rgba(110,231,183,.07),transparent 60%);
+  background-attachment:fixed;
+}
+/* sidebar */
+aside{
+  position:sticky;top:0;height:100vh;flex:0 0 288px;overflow-y:auto;
+  background:rgba(13,27,42,.85);backdrop-filter:blur(8px);
+  border-right:1px solid var(--line);padding:22px 16px;
+}
+.brand{display:flex;gap:11px;align-items:center;text-decoration:none;color:var(--fg);
+  padding:6px 10px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.brand .wave{font-size:26px;filter:drop-shadow(0 0 10px rgba(76,196,224,.5))}
+.brand strong{display:block;font-size:18px;letter-spacing:.2px}
+.brand small{display:block;color:var(--fg-dim);font-size:11.5px;letter-spacing:.3px;margin-top:2px}
+nav ul{list-style:none;margin:0;padding:0}
+nav li{margin:1px 0}
+nav a{display:block;padding:8px 12px;border-radius:7px;color:var(--fg-dim);
+  text-decoration:none;font-size:14px;transition:.15s;border-left:2px solid transparent}
+nav a:hover{background:rgba(76,196,224,.09);color:var(--fg)}
+nav a.active{background:rgba(76,196,224,.14);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+nav li.sep{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.aside-foot{margin-top:24px;padding:0 12px;font-size:13px}
+.aside-foot a{color:var(--fg-dim);text-decoration:none}
+.aside-foot a:hover{color:var(--accent)}
+/* main */
+main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;padding:0 32px}
+article{width:100%;max-width:900px;padding:48px 0 24px}
+footer{width:100%;max-width:900px;border-top:1px solid var(--line);margin-top:40px;
+  padding:20px 0 56px;color:var(--fg-dim);font-size:13px}
+/* typography */
+h1,h2,h3,h4{line-height:1.3;font-weight:650;letter-spacing:-.01em}
+h1{font-size:2.05rem;margin:0 0 .6em;padding-bottom:.4em;border-bottom:1px solid var(--line)}
+h2{font-size:1.42rem;margin:2.2em 0 .7em;color:var(--accent)}
+h3{font-size:1.13rem;margin:1.8em 0 .5em}
+h4{font-size:1rem;margin:1.4em 0 .4em;color:var(--fg-dim)}
+p{margin:.9em 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(76,196,224,.3)}
+a:hover{border-bottom-color:var(--accent)}
+strong{color:#fff;font-weight:650}
+em{color:var(--accent-2)}
+hr{border:0;border-top:1px solid var(--line);margin:2.4em 0}
+ul,ol{padding-left:1.35em}
+li{margin:.35em 0}
+blockquote{border-left:3px solid var(--accent);margin:1.2em 0;padding:.1em 1em;
+  color:var(--fg-dim);background:rgba(76,196,224,.05);border-radius:0 6px 6px 0}
+/* code */
+code{font-family:var(--mono);font-size:.87em;background:var(--code-bg);
+  padding:.16em .42em;border-radius:4px;border:1px solid var(--line);color:var(--accent-2)}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;
+  padding:16px 18px;overflow-x:auto;margin:1.3em 0;font-size:13.5px;line-height:1.55}
+pre code{background:none;border:0;padding:0;color:#cfe3f0;font-size:inherit}
+pre.mermaid{background:var(--bg-soft);text-align:center;padding:24px;border:1px solid var(--line)}
+/* tables */
+.tablewrap{overflow-x:auto;margin:1.4em 0;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:rgba(76,196,224,.10);color:var(--accent);font-weight:600;
+  white-space:nowrap;position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+td code{white-space:nowrap}
+/* checkbox lists in the deliverables section */
+li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
+/* responsive */
+#navtoggle{display:none;position:fixed;top:14px;left:14px;z-index:30;
+  background:var(--panel);color:var(--fg);border:1px solid var(--line);
+  border-radius:8px;font-size:19px;padding:6px 12px;cursor:pointer}
+@media(max-width:900px){
+  #navtoggle{display:block}
+  aside{position:fixed;z-index:20;transform:translateX(-100%);transition:.22s;box-shadow:0 0 40px #000}
+  body.nav-open aside{transform:none}
+  main{padding:0 18px}
+  article{padding:64px 0 24px}
+  h1{font-size:1.65rem}
+}
+</style>
+</head>
+<body>
+<button id="navtoggle" aria-label="Toggle navigation">☰</button>
+<aside>
+  <a class="brand" href="index.html">
+    <span class="wave">🌊</span>
+    <span><strong>OceanEmbed</strong><small>SIH 2026 · PS 26066 · INCOIS</small></span>
+  </a>
+  <nav><ul><li><a href="index.html">Overview</a></li>
+<li><a href="01-problem-statement.html">01 · Problem Statement</a></li>
+<li><a href="02-research-review.html">02 · Research Review</a></li>
+<li><a href="03-architecture.html">03 · Architecture</a></li>
+<li><a href="04-data.html" class="active">04 · Data Pipeline</a></li>
+<li><a href="05-training-evaluation.html">05 · Training & Eval</a></li>
+<li><a href="06-demo-and-roadmap.html">06 · Demo & Roadmap</a></li>
+<li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
+  <div class="aside-foot">
+    <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
+  </div>
+</aside>
+<main>
+  <article><h1 id="04-data-sources-access-and-preprocessing-pipeline">04 — Data: Sources, Access, and Preprocessing Pipeline</h1>
+<h2 id="1-source-products-frozen-list">1. Source products (frozen list)</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Variable</th>
+<th>Product</th>
+<th>Native res.</th>
+<th>Access</th>
+<th>Account</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>SST</td>
+<td>NOAA OISST v2.1</td>
+<td>0.25°, daily</td>
+<td>HTTPS/THREDDS from NCEI, plain NetCDF</td>
+<td>none</td>
+</tr>
+<tr>
+<td>2</td>
+<td>SSS</td>
+<td>NASA SMAP RSS L3 8-day running mean v4</td>
+<td>0.25°</td>
+<td>PO.DAAC (<code>podaac-data-subscriber</code> or HTTPS)</td>
+<td>NASA Earthdata (free)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>SSH/SLA (ADT)</td>
+<td>Copernicus DUACS L4 <code>SEALEVEL_GLO_PHY_L4_MY_008_047</code></td>
+<td>0.125°, daily</td>
+<td><code>copernicusmarine</code> client</td>
+<td>CMEMS (free)</td>
+</tr>
+<tr>
+<td>4–5</td>
+<td>Currents U/V</td>
+<td>NASA OSCAR v2.0 final</td>
+<td>0.25°, daily</td>
+<td>PO.DAAC</td>
+<td>Earthdata</td>
+</tr>
+<tr>
+<td>6–7</td>
+<td>Winds U/V</td>
+<td>Copernicus <code>WIND_GLO_PHY_L4</code> (or ASCAT L4)</td>
+<td>0.125–0.25°</td>
+<td><code>copernicusmarine</code></td>
+<td>CMEMS</td>
+</tr>
+<tr>
+<td>Target</td>
+<td>3D Temperature</td>
+<td>GLORYS12V1 <code>GLOBAL_MULTIYEAR_PHY_001_030</code>, var <code>thetao</code></td>
+<td>1/12°, daily, 50 levels</td>
+<td><code>copernicusmarine</code></td>
+<td>CMEMS</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td>Argo T profiles</td>
+<td>Argo GDAC via <code>argopy</code> (or INCOIS mirror)</td>
+<td>point</td>
+<td><code>pip install argopy</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td>Bootstrap</td>
+<td>Everything above, pre-paired</td>
+<td><strong>ESA OceanDepths</strong> (HF <code>ESA-philab/OceanDepths</code>)</td>
+<td>0.1°, weekly</td>
+<td><code>huggingface_hub</code></td>
+<td>none</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Register both accounts (Earthdata + Copernicus Marine) on day 1.</strong> Credentials in <code>~/.netrc</code> / <code>copernicusmarine login</code>, never in git.</p>
+<h3 id="download-example-glorys-our-region">Download example (GLORYS, our region)</h3>
+<pre><code class="language-python">import copernicusmarine
+copernicusmarine.subset(
+    dataset_id=&quot;cmems_mod_glo_phy_my_0.083deg_P1D-m&quot;,
+    variables=[&quot;thetao&quot;],
+    minimum_longitude=55, maximum_longitude=100,
+    minimum_latitude=0,  maximum_latitude=25,
+    start_datetime=&quot;2015-01-01&quot;, end_datetime=&quot;2022-12-31&quot;,
+    minimum_depth=0, maximum_depth=1100,
+    output_filename=&quot;glorys_nio.nc&quot;,
+)
+</code></pre>
+<p>Size control: our region at 1/12° × 35 levels (≤1100 m) × daily is large — download <strong>year by year</strong>, immediately regrid+interp to the 15 SIH depths at 0.25°, keep only the processed Zarr, delete raw. Budget ~2–5 GB processed for 8 years.</p>
+<h2 id="2-region-and-period-freeze-these">2. Region and period (freeze these)</h2>
+<ul>
+<li><strong>Bounding box:</strong> 0–25°N, 55–100°E (Arabian Sea + Bay of Bengal + eq. Indian Ocean). At 0.25°: 100×180 → pad to <strong>96×176 model grid</strong>.</li>
+<li><strong>Period:</strong> 2015–2022 (SMAP SSS starts April 2015 — the binding constraint). ~2,800 daily samples.</li>
+<li><strong>Split (time-based, non-negotiable):</strong> train 2015–2020 · validation 2021 · test 2022. Argo profiles from 2021–2022 in the region = independent evaluation set.</li>
+</ul>
+<h2 id="3-the-15-sih-depth-levels">3. The 15 SIH depth levels</h2>
+<p><code>0, 5, 10, 20, 30, 50, 75, 100, 125, 150, 200, 300, 500, 700, 1000 m</code> — linear interpolation of GLORYS's 50 native levels onto these (xarray <code>interp</code> on the depth coordinate). Same interpolation applied to Argo profiles at evaluation time (only within a profile's observed depth range; no extrapolation — mirror the OceanDepths acceptance rule: reject a level if the nearest observed depth is farther than <code>max(0.1·z, 10 m)</code>).</p>
+<h2 id="4-preprocessing-pipeline-stage-by-stage">4. Preprocessing pipeline (stage by stage)</h2>
+<pre class="mermaid">flowchart TD
+    R["Raw NetCDF per source"] --> QC["QC: apply product quality flags,<br/>physical range clip (SST −2…36 °C,<br/>SSS 25–41 PSU, |SLA| ≤ 2 m)"]
+    QC --> SUB["Subset region 0–25°N 55–100°E"]
+    SUB --> RG["Regrid → common 0.25° grid<br/>bilinear (xarray interp; xESMF if on linux)"]
+    RG --> TA["Temporal align → daily<br/>SSS 8-day composite: assign to center day, ffill;<br/>record the window in metadata"]
+    TA --> MASK["Masks:<br/>land (from GLORYS mask) +<br/>per-variable missing mask"]
+    MASK --> NORM["Normalize per channel:<br/>(x − μ_train) / σ_train<br/>μ,σ computed on 2015–2020 ONLY,<br/>saved to norm_stats.json"]
+    NORM --> OUT["Write samples to Zarr:<br/>X[date] = [7,96,176] float32<br/>Y[date] = [15,96,176] float32<br/>M[date] = masks"]
+</pre>
+<p>Implementation notes:</p>
+<ul>
+<li>One script per source in <code>src/download/</code>, one harmonizer in <code>src/preprocess/</code> — each idempotent (skip if output exists) so pipeline reruns are cheap.</li>
+<li>Missing satellite pixels: fill with 0 <strong>after</strong> normalization (i.e., the mean) and pass the missing mask; the loss also ignores masked <em>target</em> cells. Do not interpolate over data gaps silently.</li>
+<li>Store everything as one Zarr store <code>data/processed/nio_daily.zarr</code> with dims <code>(time, channel, y, x)</code> — random access by date is O(1), works identically on Kaggle after upload as a Kaggle Dataset.</li>
+<li>The <code>Dataset.__getitem__</code> for M4 returns <code>(X[t−6…t], Y[t], M[t])</code>; for M1–M3 just <code>(X[t], Y[t], M[t])</code>.</li>
+</ul>
+<h2 id="5-bay-of-bengal-gotchas-know-these-for-qa">5. Bay of Bengal gotchas (know these for Q&amp;A)</h2>
+<ul>
+<li><strong>Barrier layer:</strong> massive river discharge (Ganga-Brahmaputra) creates a shallow salinity-stratified layer that decouples SST from subsurface heat — this is <em>why</em> SSS is a critical input here, and a great answer to "why 7 variables?".</li>
+<li><strong>SMAP SSS near coasts</strong> is noisy/land-contaminated within ~40 km of the coast — expect a degraded coastal ring; the missing/quality mask handles it, mention it as a known limitation.</li>
+<li><strong>Monsoon seasonality</strong> dominates variance — this is why climatology (M0) will look strong, and why we report anomaly correlation, not just RMSE.</li>
+<li><strong>Argo density</strong> in the region is decent (INCOIS is a major Argo player) but sparser near coasts and in the northern Bay.</li>
+</ul>
+<h2 id="6-oceandepths-bootstrap-path-week-1-before-our-pipeline-exists">6. OceanDepths bootstrap path (week 1, before our pipeline exists)</h2>
+<pre><code>pip install huggingface_hub
+# pull a few Indian Ocean patches + the provided DataLoader code
+</code></pre>
+<p>Use its 128×128 patches (SST/SSS/ADT + GLORYS cube + EN4 profiles, eval year 2018) to: (1) run M0 and M1 end-to-end, (2) validate our training loop and metrics code against their published baseline numbers (climatology RMSE ≈ 0.97 °C — if our M0 code reproduces that, our metrics code is correct). Then swap in our own 7-channel daily pipeline for M2+.</p></article>
+  <footer>Ministry of Earth Sciences · INCOIS · Space Technology — Smart India Hackathon 2026</footer>
+</main>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    background: '#0d1b2a', primaryColor: '#14304a', primaryTextColor: '#dce8f2',
+    primaryBorderColor: '#2f6f9f', lineColor: '#4a9fd4', secondaryColor: '#123',
+    tertiaryColor: '#0f2436', fontSize: '14px'
+  }
+});
+</script>
+<script>
+document.getElementById('navtoggle').onclick = () => document.body.classList.toggle('nav-open');
+</script>
+</body>
+</html>

@@ -7,7 +7,15 @@ nav_order: 7
 
 ## 1. Streamlit demo (what the judge does)
 
-```mermaid<br/>flowchart LR<br/>    U["Judge"] --> UI["Streamlit app"]<br/>    UI --> S1["Sidebar:\ndate picker · depth selector ·\nregion (AS / BoB / full)"]<br/>    UI --> V1["Tab 1 — Inputs:\n7 surface fields for the date\n(Cartopy maps)"]<br/>    UI --> V2["Tab 2 — Reconstruction:\ntemperature map at chosen depth\n+ colorbar + GLORYS side-by-side toggle"]<br/>    UI --> V3["Tab 3 — Profile:\nclick map → 0–1000 m predicted profile\n+ nearest held-out Argo overlay\n+ RMSE/Bias at that point"]<br/>    UI --> V4["Tab 4 — Skill:\ndepth-wise metrics table,\nRMSE-vs-depth curve M0…M4,\nOceanEmbed embedding PCA-RGB view"]<br/>```
+```mermaid
+flowchart LR
+    U["Judge"] --> UI["Streamlit app"]
+    UI --> S1["Sidebar:\ndate picker · depth selector ·\nregion (AS / BoB / full)"]
+    UI --> V1["Tab 1 — Inputs:\n7 surface fields for the date\n(Cartopy maps)"]
+    UI --> V2["Tab 2 — Reconstruction:\ntemperature map at chosen depth\n+ colorbar + GLORYS side-by-side toggle"]
+    UI --> V3["Tab 3 — Profile:\nclick map → 0–1000 m predicted profile\n+ nearest held-out Argo overlay\n+ RMSE/Bias at that point"]
+    UI --> V4["Tab 4 — Skill:\ndepth-wise metrics table,\nRMSE-vs-depth curve M0…M4,\nOceanEmbed embedding PCA-RGB view"]
+```
 
 Implementation rules:
 

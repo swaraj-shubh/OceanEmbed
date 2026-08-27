@@ -49,7 +49,16 @@ Size control: our region at 1/12° × 35 levels (≤1100 m) × daily is large �
 
 ## 4. Preprocessing pipeline (stage by stage)
 
-```mermaid<br/>flowchart TD<br/>    R["Raw NetCDF per source"] --> QC["QC: apply product quality flags,\nphysical range clip (SST −2…36 °C,\nSSS 25–41 PSU, |SLA| ≤ 2 m)"]<br/>    QC --> SUB["Subset region 0–25°N 55–100°E"]<br/>    SUB --> RG["Regrid → common 0.25° grid\nbilinear (xarray interp; xESMF if on linux)"]<br/>    RG --> TA["Temporal align → daily\nSSS 8-day composite: assign to center day, ffill;\nrecord the window in metadata"]<br/>    TA --> MASK["Masks:\nland (from GLORYS mask) +\nper-variable missing mask"]<br/>    MASK --> NORM["Normalize per channel:\n(x − μ_train) / σ_train\nμ,σ computed on 2015–2020 ONLY,\nsaved to norm_stats.json"]<br/>    NORM --> OUT["Write samples to Zarr:\nX[date] = [7,96,176] float32\nY[date] = [15,96,176] float32\nM[date] = masks"]<br/>```
+```mermaid
+flowchart TD
+    R["Raw NetCDF per source"] --> QC["QC: apply product quality flags,\nphysical range clip (SST −2…36 °C,\nSSS 25–41 PSU, |SLA| ≤ 2 m)"]
+    QC --> SUB["Subset region 0–25°N 55–100°E"]
+    SUB --> RG["Regrid → common 0.25° grid\nbilinear (xarray interp; xESMF if on linux)"]
+    RG --> TA["Temporal align → daily\nSSS 8-day composite: assign to center day, ffill;\nrecord the window in metadata"]
+    TA --> MASK["Masks:\nland (from GLORYS mask) +\nper-variable missing mask"]
+    MASK --> NORM["Normalize per channel:\n(x − μ_train) / σ_train\nμ,σ computed on 2015–2020 ONLY,\nsaved to norm_stats.json"]
+    NORM --> OUT["Write samples to Zarr:\nX[date] = [7,96,176] float32\nY[date] = [15,96,176] float32\nM[date] = masks"]
+```
 
 Implementation notes:
 

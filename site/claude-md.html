@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CLAUDE.md — OceanEmbed (SIH PS 26066) — OceanEmbed</title>
+<meta name="description" content="Satellite Embedding-Based Deep Learning Framework for Reconstruction of Subsurface Ocean Temperature — SIH 2026 PS 26066">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#08131e; --bg-soft:#0d1b2a; --panel:#101f30; --line:#1c3448;
+  --fg:#dbe7f2; --fg-dim:#8ba3ba; --accent:#4cc4e0; --accent-2:#6ee7b7;
+  --code-bg:#0b1926;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+  font-size:16px;line-height:1.7;display:flex;
+  background-image:radial-gradient(1200px 600px at 80% -10%,rgba(76,196,224,.10),transparent 60%),
+                   radial-gradient(900px 500px at -10% 110%,rgba(110,231,183,.07),transparent 60%);
+  background-attachment:fixed;
+}
+/* sidebar */
+aside{
+  position:sticky;top:0;height:100vh;flex:0 0 288px;overflow-y:auto;
+  background:rgba(13,27,42,.85);backdrop-filter:blur(8px);
+  border-right:1px solid var(--line);padding:22px 16px;
+}
+.brand{display:flex;gap:11px;align-items:center;text-decoration:none;color:var(--fg);
+  padding:6px 10px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.brand .wave{font-size:26px;filter:drop-shadow(0 0 10px rgba(76,196,224,.5))}
+.brand strong{display:block;font-size:18px;letter-spacing:.2px}
+.brand small{display:block;color:var(--fg-dim);font-size:11.5px;letter-spacing:.3px;margin-top:2px}
+nav ul{list-style:none;margin:0;padding:0}
+nav li{margin:1px 0}
+nav a{display:block;padding:8px 12px;border-radius:7px;color:var(--fg-dim);
+  text-decoration:none;font-size:14px;transition:.15s;border-left:2px solid transparent}
+nav a:hover{background:rgba(76,196,224,.09);color:var(--fg)}
+nav a.active{background:rgba(76,196,224,.14);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+nav li.sep{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.aside-foot{margin-top:24px;padding:0 12px;font-size:13px}
+.aside-foot a{color:var(--fg-dim);text-decoration:none}
+.aside-foot a:hover{color:var(--accent)}
+/* main */
+main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;padding:0 32px}
+article{width:100%;max-width:900px;padding:48px 0 24px}
+footer{width:100%;max-width:900px;border-top:1px solid var(--line);margin-top:40px;
+  padding:20px 0 56px;color:var(--fg-dim);font-size:13px}
+/* typography */
+h1,h2,h3,h4{line-height:1.3;font-weight:650;letter-spacing:-.01em}
+h1{font-size:2.05rem;margin:0 0 .6em;padding-bottom:.4em;border-bottom:1px solid var(--line)}
+h2{font-size:1.42rem;margin:2.2em 0 .7em;color:var(--accent)}
+h3{font-size:1.13rem;margin:1.8em 0 .5em}
+h4{font-size:1rem;margin:1.4em 0 .4em;color:var(--fg-dim)}
+p{margin:.9em 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(76,196,224,.3)}
+a:hover{border-bottom-color:var(--accent)}
+strong{color:#fff;font-weight:650}
+em{color:var(--accent-2)}
+hr{border:0;border-top:1px solid var(--line);margin:2.4em 0}
+ul,ol{padding-left:1.35em}
+li{margin:.35em 0}
+blockquote{border-left:3px solid var(--accent);margin:1.2em 0;padding:.1em 1em;
+  color:var(--fg-dim);background:rgba(76,196,224,.05);border-radius:0 6px 6px 0}
+/* code */
+code{font-family:var(--mono);font-size:.87em;background:var(--code-bg);
+  padding:.16em .42em;border-radius:4px;border:1px solid var(--line);color:var(--accent-2)}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;
+  padding:16px 18px;overflow-x:auto;margin:1.3em 0;font-size:13.5px;line-height:1.55}
+pre code{background:none;border:0;padding:0;color:#cfe3f0;font-size:inherit}
+pre.mermaid{background:var(--bg-soft);text-align:center;padding:24px;border:1px solid var(--line)}
+/* tables */
+.tablewrap{overflow-x:auto;margin:1.4em 0;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:rgba(76,196,224,.10);color:var(--accent);font-weight:600;
+  white-space:nowrap;position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+td code{white-space:nowrap}
+/* checkbox lists in the deliverables section */
+li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
+/* responsive */
+#navtoggle{display:none;position:fixed;top:14px;left:14px;z-index:30;
+  background:var(--panel);color:var(--fg);border:1px solid var(--line);
+  border-radius:8px;font-size:19px;padding:6px 12px;cursor:pointer}
+@media(max-width:900px){
+  #navtoggle{display:block}
+  aside{position:fixed;z-index:20;transform:translateX(-100%);transition:.22s;box-shadow:0 0 40px #000}
+  body.nav-open aside{transform:none}
+  main{padding:0 18px}
+  article{padding:64px 0 24px}
+  h1{font-size:1.65rem}
+}
+</style>
+</head>
+<body>
+<button id="navtoggle" aria-label="Toggle navigation">☰</button>
+<aside>
+  <a class="brand" href="index.html">
+    <span class="wave">🌊</span>
+    <span><strong>OceanEmbed</strong><small>SIH 2026 · PS 26066 · INCOIS</small></span>
+  </a>
+  <nav><ul><li><a href="index.html">Overview</a></li>
+<li><a href="01-problem-statement.html">01 · Problem Statement</a></li>
+<li><a href="02-research-review.html">02 · Research Review</a></li>
+<li><a href="03-architecture.html">03 · Architecture</a></li>
+<li><a href="04-data.html">04 · Data Pipeline</a></li>
+<li><a href="05-training-evaluation.html">05 · Training & Eval</a></li>
+<li><a href="06-demo-and-roadmap.html">06 · Demo & Roadmap</a></li>
+<li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
+  <div class="aside-foot">
+    <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
+  </div>
+</aside>
+<main>
+  <article><h1 id="claudemd-oceanembed-sih-ps-26066">CLAUDE.md — OceanEmbed (SIH PS 26066)</h1>
+<p><strong>Project:</strong> Satellite Embedding-Based Deep Learning Framework for Reconstruction of Subsurface Ocean Temperature
+<strong>Team goal:</strong> Working demo + solid research story to clear the SIH internal round, then nationals.
+<strong>Codename:</strong> OceanEmbed — the learned latent representation that maps observable surface ocean state → hidden subsurface temperature structure.</p>
+<hr />
+<h2 id="1-the-problem-in-one-paragraph">1. The Problem in One Paragraph</h2>
+<p>Satellites see only the ocean surface (SST, SSS, SSH, currents, winds) at high resolution; Argo floats measure subsurface temperature down to ~2000 m but are extremely sparse (~4000 floats globally, ~0.01% coverage per depth level). The PS asks us to learn the surface→subsurface relationship: given 7 surface fields, reconstruct the 3D temperature structure (0–1000 m) as gridded maps. Training target is GLORYS12 reanalysis (dense); <strong>final validation is against held-out Argo observations</strong> (independent, observational — this is the credibility story judges care about).</p>
+<h2 id="2-the-committed-design-do-not-re-litigate">2. The Committed Design (do not re-litigate)</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Choice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Region (PoC)</td>
+<td>Arabian Sea + Bay of Bengal</td>
+</tr>
+<tr>
+<td>Grid</td>
+<td>0.25° × 0.25°, daily</td>
+</tr>
+<tr>
+<td>Input X</td>
+<td><code>[7, H, W]</code> — SST, SSS, SSH/SLA, Current U, Current V, Wind U, Wind V</td>
+</tr>
+<tr>
+<td>Output Y</td>
+<td><code>[15, H, W]</code> — T at depths 0, 5, 10, 20, 30, 50, 75, 100, 125, 150, 200, 300, 500, 700, 1000 m</td>
+</tr>
+<tr>
+<td>Architecture</td>
+<td>CNN encoder → ConvLSTM (~7-day window) → Attention fusion (= OceanEmbed latent) → U-Net decoder</td>
+</tr>
+<tr>
+<td>Training target</td>
+<td>GLORYS12V1 3D temperature, regridded + interpolated to the 15 SIH depths</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td>Held-out Argo/INCOIS profiles: depth-wise RMSE, MAE, Bias, Correlation</td>
+</tr>
+<tr>
+<td>Loss</td>
+<td>MSE first; depth-weighted loss only if results justify it</td>
+</tr>
+<tr>
+<td>Demo</td>
+<td>Streamlit: pick date/depth → reconstructed map; click location → 0–1000 m profile + nearby Argo overlay + metrics</td>
+</tr>
+<tr>
+<td>DL framework</td>
+<td>PyTorch</td>
+</tr>
+<tr>
+<td>Data stack</td>
+<td>xarray, NumPy, SciPy, xESMF (regridding), NetCDF/Zarr, Dask if needed</td>
+</tr>
+<tr>
+<td>Viz</td>
+<td>Matplotlib, Cartopy, Plotly</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Why not ViT/GNN/foundation model:</strong> PS mentions them but doesn't require them. CNN is data/compute-efficient for gridded fields; ViT needs more data, GNN adds graph-construction complexity. Attention is included as the fusion layer — that satisfies the "attention-based" checkbox honestly.</p>
+<h2 id="3-model-stages-build-progressively-never-skip-ahead">3. Model Stages (build progressively — never skip ahead)</h2>
+<ul>
+<li><strong>M0</strong> — Climatology / mean-profile baseline (non-AI). <em>Must exist before any DL claim; the OceanDepths paper shows climatology beats naive ML.</em></li>
+<li><strong>M1</strong> — Tiny CNN, SST-only or few channels, small subset. Prove the mapping is learnable.</li>
+<li><strong>M2</strong> — CNN/U-Net with all 7 variables. Meets the full SIH input requirement.</li>
+<li><strong>M3</strong> — + attention fusion → this <em>is</em> OceanEmbed.</li>
+<li><strong>M4</strong> — + ConvLSTM 7-day temporal context. Final PoC model.</li>
+</ul>
+<p>Report every stage against M0. If a stage doesn't beat the previous one, investigate before adding complexity.</p>
+<h2 id="4-data-sources-exact-products">4. Data Sources (exact products)</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Product</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SST</td>
+<td>NOAA OISST v2.1</td>
+<td>daily, 0.25° — already on target grid</td>
+</tr>
+<tr>
+<td>SSS</td>
+<td>NASA SMAP L3 SSS (RSS 8-day running mean V4)</td>
+<td>0.25°; document the composite window</td>
+</tr>
+<tr>
+<td>SSH/SLA</td>
+<td>Copernicus Marine DUACS altimetry L4</td>
+<td>regrid to 0.25°</td>
+</tr>
+<tr>
+<td>Currents U/V</td>
+<td>NASA OSCAR v2.0 (PO.DAAC)</td>
+<td>daily 0.25°</td>
+</tr>
+<tr>
+<td>Wind U/V</td>
+<td>Copernicus scatterometer/ASCAT</td>
+<td>pick a gridded product, regrid</td>
+</tr>
+<tr>
+<td>Target T</td>
+<td>Copernicus GLORYS12V1 (<code>GLOBAL_MULTIYEAR_PHY_001_030</code>)</td>
+<td>1/12°, 50 levels → regrid to 0.25°, interp to 15 depths</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td>Argo (via INCOIS / EN4 / argopy)</td>
+<td>never used as training target</td>
+</tr>
+<tr>
+<td>Bootstrap</td>
+<td><strong>ESA Φ-lab OceanDepths</strong> (HuggingFace <code>ESA-philab/OceanDepths</code>)</td>
+<td>~120 GiB global; use its patches for M0/M1 before the 7-source pipeline exists</td>
+</tr>
+</tbody>
+</table></div>
+<p>Copernicus Marine requires a (free) account — use <code>copernicusmarine</code> Python client. PO.DAAC needs NASA Earthdata login. Register both early; credentials go in <code>.env</code> / <code>~/.netrc</code>, <strong>never committed</strong>.</p>
+<h3 id="oceandepths-facts-worth-remembering">OceanDepths facts worth remembering</h3>
+<p>0.1° global, weekly, 2000–2024; 9.5M EN4 profiles interpolated to 50 GLORYS depth levels; 128×128 patches; eval year = 2018; comes with PyTorch DataLoaders. Its baselines: 2D U-Net beat LSTM/1D-CNN, climatology is a strong baseline. Use it to get a model training on day 1 without building any pipeline.</p>
+<h2 id="5-data-pipeline-contract">5. Data Pipeline Contract</h2>
+<p>Raw products → QC → subset Arabian Sea + Bay of Bengal → regrid 0.25° → daily alignment → unit standardization → land/missing masks → normalize <strong>using TRAIN-split stats only</strong> → save model-ready <code>(X=[7,H,W], Y=[15,H,W])</code> samples (NetCDF/Zarr).</p>
+<p>The model never touches raw provider files. <strong>Frozen region bbox (docs/04): lat 0–25°N, lon 55–100°E → 100×180 at 0.25°, padded to 96×176 model grid. Period 2015–2022 (SMAP SSS constraint); split: train 2015–20 / val 2021 / test 2022.</strong></p>
+<h2 id="6-non-negotiable-methodology-rules">6. Non-Negotiable Methodology Rules</h2>
+<ol>
+<li><strong>Time-based split.</strong> Train on earlier years, validate on a later year, test on later still (e.g. train ≤2020, val 2021, test 2022+). Never random pixel/patch mixing; no overlapping patches across split boundaries.</li>
+<li><strong>Normalization stats from train split only</strong> — computed once, saved as an artifact, applied everywhere.</li>
+<li><strong>Argo is sacred.</strong> Held-out Argo profiles are never model inputs or targets. Match by date/location, interpolate to common depths, compute depth-wise metrics.</li>
+<li><strong>Depth-wise metrics table</strong> (RMSE/MAE/Bias/Corr at 0, 50, 100, 200, 500, 1000 m) is the primary result, not one blended number.</li>
+<li><strong>Masks:</strong> land and missing-data masked out of the loss. Never let the model be scored on land pixels.</li>
+<li><strong>Checkpoint everything</strong> (model + optimizer + epoch + config + norm stats) — required for Spot/preemptible GPUs and demo reproducibility.</li>
+<li>Every experiment gets a config file (YAML) and a run name; results logged (CSV or W&amp;B free tier). No untracked "it worked yesterday" runs.</li>
+</ol>
+<h2 id="7-compute-strategy">7. Compute Strategy</h2>
+<ul>
+<li><strong>Phase 1 (free):</strong> Kaggle (T4 16 GB) / Colab for all development, M0–M2. This region at 0.25° is small — a 16 GB GPU is plenty.</li>
+<li><strong>Phase 2 (paid, only when needed):</strong> RunPod RTX 4090 (~$0.74–1.15/hr) or AWS g6.2xlarge Spot (~$0.43/hr, L4 24 GB). ~₹5–10k covers 100 GPU-hours. Do NOT rent A100/H100; do NOT run anything 24/7.</li>
+<li><strong>Free credits to chase:</strong> Azure for Students ($100, no card), GitHub Student Pack, college institutional AWS/GCP/Azure credits, AWS Activate only if a legit startup route exists.</li>
+<li>Training code must survive preemption: auto-resume from latest checkpoint.</li>
+</ul>
+<h2 id="8-repo-layout-create-as-needed-keep-flat">8. Repo Layout (create as needed, keep flat)</h2>
+<pre><code>sih26/
+  CLAUDE.md              # this file — project constitution
+  docs/                 # 01-06: PS analysis, research, architecture, data, training, demo
+  configs/               # YAML per experiment
+  data/                  # gitignored; raw/ interim/ processed/
+  src/
+    download/            # per-source download scripts
+    preprocess/          # QC, regrid, align, normalize, sample builder
+    datasets.py          # PyTorch Dataset/DataLoader
+    models/              # cnn.py, unet.py, convlstm.py, attention.py, oceanembed.py
+    train.py             # single entrypoint, config-driven
+    evaluate.py          # depth-wise metrics vs GLORYS and vs Argo
+  notebooks/             # exploration only, never pipeline logic
+  app/                   # Streamlit demo
+  checkpoints/           # gitignored
+  results/               # metric tables, figures
+</code></pre>
+<p>Rules: pipeline logic lives in <code>src/</code>, notebooks only explore. <code>data/</code>, <code>checkpoints/</code>, <code>.env</code> in <code>.gitignore</code>. Small, boring, readable modules — no premature abstraction, no framework-of-frameworks.</p>
+<h2 id="9-demo-requirements-what-the-judge-must-be-able-to-do">9. Demo Requirements (what the judge must be able to do)</h2>
+<ol>
+<li>Select region (Arabian Sea / Bay of Bengal) and a date.</li>
+<li>View the 7 surface input fields.</li>
+<li>Pick any of the 15 depths → reconstructed temperature map.</li>
+<li>Click a location → full 0–1000 m predicted profile.</li>
+<li>Overlay a nearby independent Argo profile where available.</li>
+<li>See RMSE / Bias / Correlation numbers on screen.</li>
+<li>(Optional flex) embedding visualization of what OceanEmbed learned.</li>
+</ol>
+<p>Demo runs <strong>offline from a frozen checkpoint + precomputed samples</strong>. No live data ingestion, no 3D web engines.</p>
+<h2 id="10-explicitly-out-of-scope-internal-round">10. Explicitly Out of Scope (internal round)</h2>
+<p>Global operational model · satellite foundation model from scratch · giant ViT/Transformer before CNN works · global GNN · physics-based simulator · real-time ingestion · complicated 3D visualization. If tempted, re-read §3.</p>
+<h2 id="11-implementation-order-the-checklist">11. Implementation Order (the checklist)</h2>
+<ol>
+<li>OceanDepths → load one sample → visualize ✅ = first milestone</li>
+<li>Tiny CNN on a small subset → prove reconstruction</li>
+<li>Build SIH preprocessing → produce X=[7,H,W], Y=[15,H,W]</li>
+<li>Train CNN/U-Net with all seven variables</li>
+<li>Add attention → OceanEmbed</li>
+<li>Add ~7-day ConvLSTM temporal context</li>
+<li>Validate against held-out Argo</li>
+<li>Ablations + depth-wise metric tables</li>
+<li>Streamlit demo</li>
+<li>Freeze checkpoint, document exact data products/versions, prepare presentation</li>
+</ol>
+<h2 id="12-presentation-research-story-for-the-internal-round">12. Presentation / Research Story (for the internal round)</h2>
+<ul>
+<li>Motivation: ocean absorbs &gt;90% of excess heat; subsurface structure drives heat content, cyclone intensification (very relevant for Bay of Bengal), fisheries, INCOIS services.</li>
+<li>Honesty points that win credibility: climatology baseline reported; GLORYS is a reanalysis (has biases) so we validate on independent Argo; time-based splits prevent leakage.</li>
+<li>Cite: OceanDepths (Donike et al., arXiv 2608.16373), DORS (Su et al. 2022), NeSPReSO (Gulf of Mexico), Smith et al. 2023 CNN reconstruction, OceanBench/OceanForecastBench — position OceanEmbed as regional, observation-validated, Indian-Ocean-focused.</li>
+<li>Keep an ablation table: M0 → M4, same test set, depth-wise RMSE. That single table is the core evidence.</li>
+</ul>
+<h2 id="13-working-conventions-for-claude-sessions">13. Working Conventions for Claude Sessions</h2>
+<ul>
+<li>Python 3.10+, PyTorch. Windows dev machine (this box) is for code/small tests; GPU training happens on Kaggle/cloud — keep code environment-agnostic (pathlib, no hardcoded Windows paths in <code>src/</code>).</li>
+<li>xESMF needs conda/linux — if regridding locally on Windows is painful, use <code>xarray.interp</code>/<code>scipy</code> bilinear for 0.25° targets (all sources are ≤0.25° native or close; document the method used).</li>
+<li>Prefer small runnable scripts with <code>if __name__ == "__main__"</code> self-checks over test frameworks at this stage.</li>
+<li>When adding any model component, wire it behind the config, train the smallest version that can overfit 10 samples first, then scale.</li>
+<li>Update this file when a decision is frozen (bbox, split years, product versions, hyperparameters that worked).</li>
+</ul>
+<h2 id="14-key-links">14. Key Links</h2>
+<ul>
+<li>OceanDepths: https://huggingface.co/datasets/ESA-philab/OceanDepths</li>
+<li>NOAA OISST: https://www.ncei.noaa.gov/products/optimum-interpolation-sst</li>
+<li>SMAP SSS: https://podaac.jpl.nasa.gov/dataset/SMAP_RSS_L3_SSS_SMI_8DAY-RUNNINGMEAN_V4</li>
+<li>OSCAR currents: https://podaac.jpl.nasa.gov/dataset/OSCAR_L4_OC_FINAL_V2.0</li>
+<li>GLORYS12: https://data.marine.copernicus.eu/product/GLOBAL_MULTIYEAR_PHY_001_030/description</li>
+<li>Copernicus winds: https://data.marine.copernicus.eu/product/WIND_GLO_PHY_L3_MY_012_005/description</li>
+<li>INCOIS data: https://incois.gov.in/site/dataholdings.jsp</li>
+<li>Argo via python: https://argopy.readthedocs.io</li>
+</ul></article>
+  <footer>Ministry of Earth Sciences · INCOIS · Space Technology — Smart India Hackathon 2026</footer>
+</main>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    background: '#0d1b2a', primaryColor: '#14304a', primaryTextColor: '#dce8f2',
+    primaryBorderColor: '#2f6f9f', lineColor: '#4a9fd4', secondaryColor: '#123',
+    tertiaryColor: '#0f2436', fontSize: '14px'
+  }
+});
+</script>
+<script>
+document.getElementById('navtoggle').onclick = () => document.body.classList.toggle('nav-open');
+</script>
+</body>
+</html>

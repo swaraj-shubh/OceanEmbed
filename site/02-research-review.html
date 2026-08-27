@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 — Research Review: What the Literature Says — OceanEmbed</title>
+<meta name="description" content="Satellite Embedding-Based Deep Learning Framework for Reconstruction of Subsurface Ocean Temperature — SIH 2026 PS 26066">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#08131e; --bg-soft:#0d1b2a; --panel:#101f30; --line:#1c3448;
+  --fg:#dbe7f2; --fg-dim:#8ba3ba; --accent:#4cc4e0; --accent-2:#6ee7b7;
+  --code-bg:#0b1926;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+  font-size:16px;line-height:1.7;display:flex;
+  background-image:radial-gradient(1200px 600px at 80% -10%,rgba(76,196,224,.10),transparent 60%),
+                   radial-gradient(900px 500px at -10% 110%,rgba(110,231,183,.07),transparent 60%);
+  background-attachment:fixed;
+}
+/* sidebar */
+aside{
+  position:sticky;top:0;height:100vh;flex:0 0 288px;overflow-y:auto;
+  background:rgba(13,27,42,.85);backdrop-filter:blur(8px);
+  border-right:1px solid var(--line);padding:22px 16px;
+}
+.brand{display:flex;gap:11px;align-items:center;text-decoration:none;color:var(--fg);
+  padding:6px 10px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.brand .wave{font-size:26px;filter:drop-shadow(0 0 10px rgba(76,196,224,.5))}
+.brand strong{display:block;font-size:18px;letter-spacing:.2px}
+.brand small{display:block;color:var(--fg-dim);font-size:11.5px;letter-spacing:.3px;margin-top:2px}
+nav ul{list-style:none;margin:0;padding:0}
+nav li{margin:1px 0}
+nav a{display:block;padding:8px 12px;border-radius:7px;color:var(--fg-dim);
+  text-decoration:none;font-size:14px;transition:.15s;border-left:2px solid transparent}
+nav a:hover{background:rgba(76,196,224,.09);color:var(--fg)}
+nav a.active{background:rgba(76,196,224,.14);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+nav li.sep{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.aside-foot{margin-top:24px;padding:0 12px;font-size:13px}
+.aside-foot a{color:var(--fg-dim);text-decoration:none}
+.aside-foot a:hover{color:var(--accent)}
+/* main */
+main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;padding:0 32px}
+article{width:100%;max-width:900px;padding:48px 0 24px}
+footer{width:100%;max-width:900px;border-top:1px solid var(--line);margin-top:40px;
+  padding:20px 0 56px;color:var(--fg-dim);font-size:13px}
+/* typography */
+h1,h2,h3,h4{line-height:1.3;font-weight:650;letter-spacing:-.01em}
+h1{font-size:2.05rem;margin:0 0 .6em;padding-bottom:.4em;border-bottom:1px solid var(--line)}
+h2{font-size:1.42rem;margin:2.2em 0 .7em;color:var(--accent)}
+h3{font-size:1.13rem;margin:1.8em 0 .5em}
+h4{font-size:1rem;margin:1.4em 0 .4em;color:var(--fg-dim)}
+p{margin:.9em 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(76,196,224,.3)}
+a:hover{border-bottom-color:var(--accent)}
+strong{color:#fff;font-weight:650}
+em{color:var(--accent-2)}
+hr{border:0;border-top:1px solid var(--line);margin:2.4em 0}
+ul,ol{padding-left:1.35em}
+li{margin:.35em 0}
+blockquote{border-left:3px solid var(--accent);margin:1.2em 0;padding:.1em 1em;
+  color:var(--fg-dim);background:rgba(76,196,224,.05);border-radius:0 6px 6px 0}
+/* code */
+code{font-family:var(--mono);font-size:.87em;background:var(--code-bg);
+  padding:.16em .42em;border-radius:4px;border:1px solid var(--line);color:var(--accent-2)}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;
+  padding:16px 18px;overflow-x:auto;margin:1.3em 0;font-size:13.5px;line-height:1.55}
+pre code{background:none;border:0;padding:0;color:#cfe3f0;font-size:inherit}
+pre.mermaid{background:var(--bg-soft);text-align:center;padding:24px;border:1px solid var(--line)}
+/* tables */
+.tablewrap{overflow-x:auto;margin:1.4em 0;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:rgba(76,196,224,.10);color:var(--accent);font-weight:600;
+  white-space:nowrap;position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+td code{white-space:nowrap}
+/* checkbox lists in the deliverables section */
+li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
+/* responsive */
+#navtoggle{display:none;position:fixed;top:14px;left:14px;z-index:30;
+  background:var(--panel);color:var(--fg);border:1px solid var(--line);
+  border-radius:8px;font-size:19px;padding:6px 12px;cursor:pointer}
+@media(max-width:900px){
+  #navtoggle{display:block}
+  aside{position:fixed;z-index:20;transform:translateX(-100%);transition:.22s;box-shadow:0 0 40px #000}
+  body.nav-open aside{transform:none}
+  main{padding:0 18px}
+  article{padding:64px 0 24px}
+  h1{font-size:1.65rem}
+}
+</style>
+</head>
+<body>
+<button id="navtoggle" aria-label="Toggle navigation">☰</button>
+<aside>
+  <a class="brand" href="index.html">
+    <span class="wave">🌊</span>
+    <span><strong>OceanEmbed</strong><small>SIH 2026 · PS 26066 · INCOIS</small></span>
+  </a>
+  <nav><ul><li><a href="index.html">Overview</a></li>
+<li><a href="01-problem-statement.html">01 · Problem Statement</a></li>
+<li><a href="02-research-review.html" class="active">02 · Research Review</a></li>
+<li><a href="03-architecture.html">03 · Architecture</a></li>
+<li><a href="04-data.html">04 · Data Pipeline</a></li>
+<li><a href="05-training-evaluation.html">05 · Training & Eval</a></li>
+<li><a href="06-demo-and-roadmap.html">06 · Demo & Roadmap</a></li>
+<li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
+  <div class="aside-foot">
+    <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
+  </div>
+</aside>
+<main>
+  <article><h1 id="02-research-review-what-the-literature-says">02 — Research Review: What the Literature Says</h1>
+<p>The point of this review: every architecture decision we made is backed by a published result. Use these citations in the presentation.</p>
+<h2 id="the-task-family-surface-subsurface-reconstruction">The task family: surface → subsurface reconstruction</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Work</th>
+<th>Region</th>
+<th>Method</th>
+<th>Inputs</th>
+<th>Key takeaway for us</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Su et al. 2022 (<strong>DORS</strong>)</td>
+<td>Global 1° monthly</td>
+<td>ConvLSTM</td>
+<td>SST, ADT, wind + EN4</td>
+<td>ConvLSTM works for this task; coarse resolution though</td>
+</tr>
+<tr>
+<td>Su et al. 2024 (<strong>DORS-0.25°</strong>)</td>
+<td>Global 0.25° monthly</td>
+<td>Deep Forest</td>
+<td>same</td>
+<td>0.25° is achievable globally</td>
+</tr>
+<tr>
+<td>Smith et al. 2023 (Frontiers Mar. Sci.)</td>
+<td>—</td>
+<td>CNN</td>
+<td>satellite + in-situ</td>
+<td>The point-wise CNN baseline our PoC beats</td>
+</tr>
+<tr>
+<td><strong>NeSPReSO</strong> 2025 (Ocean Modelling)</td>
+<td>Gulf of Mexico</td>
+<td>PCA + NN</td>
+<td>ADT, SST, SSS + Argo</td>
+<td>Compressing the vertical profile (PCA / few depths) makes learning easier — supports our 15-depth output head</td>
+</tr>
+<tr>
+<td><strong>TS-Cast</strong> 2026 (Ocean Science)</td>
+<td>NW Pacific</td>
+<td>deep learning</td>
+<td>satellite obs</td>
+<td>Regional satellite-only reconstruction is publishable, current SOTA task framing</td>
+</tr>
+<tr>
+<td><strong>Attention 3D-U-Net++</strong> 2026 (ESSD 18:4617)</td>
+<td>NW Pacific, 1/4°, daily, 26 layers 5–2000 m</td>
+<td>attention-enhanced U-Net++ + transfer learning</td>
+<td>SST, SSH</td>
+<td><strong>Closest published system to our design.</strong> Daily, 0.25°, attention + U-Net. Validated vs WOD; captures thermocline gradient at 200 m. Our plan = this idea, Indian Ocean, +5 more input variables</td>
+</tr>
+<tr>
+<td>EBAM-CNN 2025 (Sci. Direct)</td>
+<td><strong>Tropical Indian Ocean</strong></td>
+<td>block-attention CNN</td>
+<td>ADT, SST, wind</td>
+<td>Attention-enhanced CNN beats plain CNN <em>in our region</em> (thermocline depth RMSE 5.29 m, R 0.87)</td>
+</tr>
+<tr>
+<td>Zhao et al. 2025 (Remote Sens. 17:2954)</td>
+<td>South China Sea</td>
+<td>DL + physical guidance</td>
+<td>satellite</td>
+<td>Physics-informed loss is a later upgrade path, not needed for PoC</td>
+</tr>
+<tr>
+<td><strong>OceanDepths</strong> 2026 (arXiv 2608.16373, ESA Φ-lab)</td>
+<td>Global 0.1° weekly</td>
+<td>dataset + baselines</td>
+<td>SST, SSS, ADT + EN4 + GLORYS12</td>
+<td>Our bootstrap dataset. Its baseline table is a warning (below)</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="three-findings-that-shape-our-design">Three findings that shape our design</h2>
+<h3 id="1-cnn-transformer-at-this-data-scale">1. CNN &gt; Transformer at this data scale</h3>
+<p>Reconstruction of 3D equatorial T/S (Remote Sens. 17:2005, 2025) explicitly compared architectures: <strong>Transformer performed worse than CNN</strong> — self-attention is good at global features but poor at the locally small-scale structures (fronts, eddies) that dominate subsurface reconstruction, and ViTs are data-hungry. This is our documented justification for CNN-first, and for using attention only as a <em>fusion</em> mechanism inside a convolutional backbone (as EBAM-CNN and the 3D-U-Net++ paper do). <strong>Do not build a ViT for the internal round.</strong></p>
+<h3 id="2-climatology-is-embarrassingly-strong-respect-the-baseline">2. Climatology is embarrassingly strong — respect the baseline</h3>
+<p>OceanDepths baseline table (temperature, vs held-out EN4):</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>RMSE (°C)</th>
+<th>R²</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Climatology</td>
+<td><strong>0.974</strong></td>
+<td>0.964</td>
+</tr>
+<tr>
+<td>IDW interpolation</td>
+<td>0.979</td>
+<td>0.964</td>
+</tr>
+<tr>
+<td>Point-wise LSTM</td>
+<td>2.420</td>
+<td>0.701</td>
+</tr>
+<tr>
+<td>Point-wise 1D CNN</td>
+<td>3.073</td>
+<td>0.370</td>
+</tr>
+<tr>
+<td>2D U-Net</td>
+<td>1.092</td>
+<td>0.941</td>
+</tr>
+<tr>
+<td>3D U-Net</td>
+<td>1.101</td>
+<td>0.937</td>
+</tr>
+</tbody>
+</table></div>
+<p>Naive ML <strong>loses to climatology</strong>. Spatial U-Nets are competitive; point-wise models are not. Two consequences: (a) M0 climatology baseline is mandatory and must be reported honestly; (b) our model must use spatial context (U-Net-style), never per-pixel MLPs. A judge-winning claim is "we beat climatology at thermocline depths", not a bare RMSE.</p>
+<h3 id="3-error-concentrates-at-the-thermocline-report-depth-wise">3. Error concentrates at the thermocline — report depth-wise</h3>
+<p>All papers show RMSE peaks around 50–200 m (thermocline) where vertical gradients are sharpest, and is small at surface and below 500 m. So: a single averaged RMSE hides everything; the depth-wise table/curve is the honest and standard reporting format. Also motivates the optional depth-weighted loss (upweight 50–200 m) as an M4+ experiment.</p>
+<h2 id="why-glorys-as-target-argo-as-validation-is-the-right-split">Why GLORYS-as-target + Argo-as-validation is the right split</h2>
+<p>Reanalyses (GLORYS12) are dense but are <em>model outputs</em> with documented biases (seasonal T bias above 100 m; heat-content discrepancies at 700–2000 m — Verezemskaya et al. 2021). Training on GLORYS is fine (dense supervision), but <strong>evaluating only on GLORYS risks rewarding reproduction of its errors</strong>. OceanDepths, OceanBench, and OceanForecastBench all converge on the same protocol we use: train on reanalysis, validate on independent in-situ profiles. This is the single most defensible methodological choice in our stack — lead with it when questioned.</p>
+<h2 id="where-oceanembed-is-novel-our-pitch">Where OceanEmbed is novel (our pitch)</h2>
+<ol>
+<li><strong>North Indian Ocean focus</strong> — most published regional systems are NW Pacific / Gulf of Mexico / South China Sea. Bay of Bengal has unique physics (huge freshwater input → salinity-stratified barrier layer → SSS matters far more than elsewhere), which justifies our 7-variable input over the SST+SSH-only SOTA.</li>
+<li><strong>Full 7-variable multivariate fusion with attention</strong> — published Indian Ocean work (EBAM-CNN) uses 3 inputs; we fuse 7.</li>
+<li><strong>Observation-validated</strong> — depth-wise metrics against INCOIS-relevant Argo floats, not just reanalysis self-consistency.</li>
+<li><strong>Temporal context</strong> — ~7-day ConvLSTM window, which the daily-snapshot papers omit.</li>
+</ol>
+<h2 id="sources">Sources</h2>
+<ul>
+<li><a href="https://arxiv.org/abs/2608.16373">OceanDepths (arXiv 2608.16373)</a> · <a href="https://huggingface.co/datasets/ESA-philab/OceanDepths">dataset</a></li>
+<li><a href="https://essd.copernicus.org/articles/18/4617/2026/">Attention 3D-U-Net++ NW Pacific (ESSD)</a></li>
+<li><a href="https://os.copernicus.org/articles/22/2161/2026/">TS-Cast (Ocean Science)</a></li>
+<li><a href="https://www.sciencedirect.com/science/article/pii/S146350032500040X">EBAM-CNN thermocline Indian Ocean</a></li>
+<li><a href="https://www.sciencedirect.com/science/article/abs/pii/S1463500325000538">NeSPReSO (Ocean Modelling)</a></li>
+<li><a href="https://doi.org/10.3390/rs17122005">Equatorial 3D T/S reconstruction — CNN vs Transformer</a></li>
+<li><a href="https://www.sciencedirect.com/science/article/abs/pii/S0924271624003617">DORS-0.25° Deep Forest (ISPRS)</a></li>
+<li><a href="https://doi.org/10.3390/rs17172954">South China Sea physics-guided DL</a></li>
+<li><a href="https://arxiv.org/abs/2605.00860">Adaptive spatiotemporal clustering 3D reconstruction (arXiv 2605.00860)</a></li>
+<li><a href="https://github.com/vedantchalke36/sih-2026-problem-statements">SIH 2026 PS catalogue (26066)</a></li>
+</ul></article>
+  <footer>Ministry of Earth Sciences · INCOIS · Space Technology — Smart India Hackathon 2026</footer>
+</main>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    background: '#0d1b2a', primaryColor: '#14304a', primaryTextColor: '#dce8f2',
+    primaryBorderColor: '#2f6f9f', lineColor: '#4a9fd4', secondaryColor: '#123',
+    tertiaryColor: '#0f2436', fontSize: '14px'
+  }
+});
+</script>
+<script>
+document.getElementById('navtoggle').onclick = () => document.body.classList.toggle('nav-open');
+</script>
+</body>
+</html>

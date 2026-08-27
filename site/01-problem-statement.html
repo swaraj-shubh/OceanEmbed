@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 — Problem Statement Analysis (SIH PS 26066) — OceanEmbed</title>
+<meta name="description" content="Satellite Embedding-Based Deep Learning Framework for Reconstruction of Subsurface Ocean Temperature — SIH 2026 PS 26066">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#08131e; --bg-soft:#0d1b2a; --panel:#101f30; --line:#1c3448;
+  --fg:#dbe7f2; --fg-dim:#8ba3ba; --accent:#4cc4e0; --accent-2:#6ee7b7;
+  --code-bg:#0b1926;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+  font-size:16px;line-height:1.7;display:flex;
+  background-image:radial-gradient(1200px 600px at 80% -10%,rgba(76,196,224,.10),transparent 60%),
+                   radial-gradient(900px 500px at -10% 110%,rgba(110,231,183,.07),transparent 60%);
+  background-attachment:fixed;
+}
+/* sidebar */
+aside{
+  position:sticky;top:0;height:100vh;flex:0 0 288px;overflow-y:auto;
+  background:rgba(13,27,42,.85);backdrop-filter:blur(8px);
+  border-right:1px solid var(--line);padding:22px 16px;
+}
+.brand{display:flex;gap:11px;align-items:center;text-decoration:none;color:var(--fg);
+  padding:6px 10px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.brand .wave{font-size:26px;filter:drop-shadow(0 0 10px rgba(76,196,224,.5))}
+.brand strong{display:block;font-size:18px;letter-spacing:.2px}
+.brand small{display:block;color:var(--fg-dim);font-size:11.5px;letter-spacing:.3px;margin-top:2px}
+nav ul{list-style:none;margin:0;padding:0}
+nav li{margin:1px 0}
+nav a{display:block;padding:8px 12px;border-radius:7px;color:var(--fg-dim);
+  text-decoration:none;font-size:14px;transition:.15s;border-left:2px solid transparent}
+nav a:hover{background:rgba(76,196,224,.09);color:var(--fg)}
+nav a.active{background:rgba(76,196,224,.14);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+nav li.sep{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.aside-foot{margin-top:24px;padding:0 12px;font-size:13px}
+.aside-foot a{color:var(--fg-dim);text-decoration:none}
+.aside-foot a:hover{color:var(--accent)}
+/* main */
+main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;padding:0 32px}
+article{width:100%;max-width:900px;padding:48px 0 24px}
+footer{width:100%;max-width:900px;border-top:1px solid var(--line);margin-top:40px;
+  padding:20px 0 56px;color:var(--fg-dim);font-size:13px}
+/* typography */
+h1,h2,h3,h4{line-height:1.3;font-weight:650;letter-spacing:-.01em}
+h1{font-size:2.05rem;margin:0 0 .6em;padding-bottom:.4em;border-bottom:1px solid var(--line)}
+h2{font-size:1.42rem;margin:2.2em 0 .7em;color:var(--accent)}
+h3{font-size:1.13rem;margin:1.8em 0 .5em}
+h4{font-size:1rem;margin:1.4em 0 .4em;color:var(--fg-dim)}
+p{margin:.9em 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(76,196,224,.3)}
+a:hover{border-bottom-color:var(--accent)}
+strong{color:#fff;font-weight:650}
+em{color:var(--accent-2)}
+hr{border:0;border-top:1px solid var(--line);margin:2.4em 0}
+ul,ol{padding-left:1.35em}
+li{margin:.35em 0}
+blockquote{border-left:3px solid var(--accent);margin:1.2em 0;padding:.1em 1em;
+  color:var(--fg-dim);background:rgba(76,196,224,.05);border-radius:0 6px 6px 0}
+/* code */
+code{font-family:var(--mono);font-size:.87em;background:var(--code-bg);
+  padding:.16em .42em;border-radius:4px;border:1px solid var(--line);color:var(--accent-2)}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;
+  padding:16px 18px;overflow-x:auto;margin:1.3em 0;font-size:13.5px;line-height:1.55}
+pre code{background:none;border:0;padding:0;color:#cfe3f0;font-size:inherit}
+pre.mermaid{background:var(--bg-soft);text-align:center;padding:24px;border:1px solid var(--line)}
+/* tables */
+.tablewrap{overflow-x:auto;margin:1.4em 0;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:rgba(76,196,224,.10);color:var(--accent);font-weight:600;
+  white-space:nowrap;position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+td code{white-space:nowrap}
+/* checkbox lists in the deliverables section */
+li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
+/* responsive */
+#navtoggle{display:none;position:fixed;top:14px;left:14px;z-index:30;
+  background:var(--panel);color:var(--fg);border:1px solid var(--line);
+  border-radius:8px;font-size:19px;padding:6px 12px;cursor:pointer}
+@media(max-width:900px){
+  #navtoggle{display:block}
+  aside{position:fixed;z-index:20;transform:translateX(-100%);transition:.22s;box-shadow:0 0 40px #000}
+  body.nav-open aside{transform:none}
+  main{padding:0 18px}
+  article{padding:64px 0 24px}
+  h1{font-size:1.65rem}
+}
+</style>
+</head>
+<body>
+<button id="navtoggle" aria-label="Toggle navigation">☰</button>
+<aside>
+  <a class="brand" href="index.html">
+    <span class="wave">🌊</span>
+    <span><strong>OceanEmbed</strong><small>SIH 2026 · PS 26066 · INCOIS</small></span>
+  </a>
+  <nav><ul><li><a href="index.html">Overview</a></li>
+<li><a href="01-problem-statement.html" class="active">01 · Problem Statement</a></li>
+<li><a href="02-research-review.html">02 · Research Review</a></li>
+<li><a href="03-architecture.html">03 · Architecture</a></li>
+<li><a href="04-data.html">04 · Data Pipeline</a></li>
+<li><a href="05-training-evaluation.html">05 · Training & Eval</a></li>
+<li><a href="06-demo-and-roadmap.html">06 · Demo & Roadmap</a></li>
+<li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
+  <div class="aside-foot">
+    <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
+  </div>
+</aside>
+<main>
+  <article><h1 id="01-problem-statement-analysis-sih-ps-26066">01 — Problem Statement Analysis (SIH PS 26066)</h1>
+<h2 id="official-ps-verified-against-the-sih-2026-catalogue">Official PS (verified against the SIH 2026 catalogue)</h2>
+<ul>
+<li><strong>ID:</strong> SIH26066</li>
+<li><strong>Title:</strong> <em>OceanEmbed — Satellite Embedding-Based Deep Learning Framework for Reconstruction of Subsurface Ocean Temperature from Surface Satellite Observations</em></li>
+<li><strong>Organization:</strong> Ministry of Earth Sciences (MoES) — Indian National Centre for Ocean Information Services (INCOIS)</li>
+<li><strong>Category:</strong> Software · <strong>Theme:</strong> Space Technology</li>
+</ul>
+<h3 id="expected-outcomes-verbatim-requirements">Expected outcomes (verbatim requirements)</h3>
+<ol>
+<li>Complete <strong>preprocessing pipeline</strong> harmonizing multi-source satellite datasets.</li>
+<li>A <strong>satellite embedding engine</strong> leveraging deep learning architectures (CNN, Vision Transformers, autoencoders, GNNs are <em>mentioned</em>, not all required).</li>
+<li>A <strong>reconstruction model</strong> estimating temperature at <strong>15 standard depth levels</strong>.</li>
+<li><strong>Daily outputs at 0.25° spatial resolution</strong>.</li>
+<li><strong>Validation using independent Argo observations</strong>.</li>
+<li><strong>Functional proof-of-concept over the Bay of Bengal / Arabian Sea</strong> (North Indian Ocean).</li>
+</ol>
+<p>Input variables named by the PS: SST, sea surface salinity, sea surface height, surface currents, surface winds — <strong>7 channels</strong> total (SST, SSS, SSH/SLA, U-current, V-current, U-wind, V-wind).</p>
+<h2 id="what-the-ps-is-really-asking-interpretation">What the PS is really asking (interpretation)</h2>
+<p>The ocean absorbs &gt;90% of excess anthropogenic heat and ~30% of CO₂ emissions. Subsurface thermal structure controls:</p>
+<ul>
+<li><strong>Cyclone intensification</strong> in the Bay of Bengal (upper-ocean heat content, not just SST, feeds cyclones — directly in INCOIS's mandate).</li>
+<li><strong>Ocean heat content</strong> monitoring for climate.</li>
+<li><strong>Fisheries advisories</strong> (thermocline depth ↔ fish aggregation — INCOIS PFZ service).</li>
+<li><strong>Navy/underwater acoustics</strong> (sound speed depends on the T-profile).</li>
+</ul>
+<p>Satellites can't see below the skin of the ocean. Argo floats can, but one float covers ~3°×3° and surfaces every ~10 days — ~99.9% of grid cells at any depth have no observation in a given week (OceanDepths paper). The physics that makes reconstruction possible: <strong>surface expressions of subsurface dynamics</strong> — SSH integrates the density (and hence temperature) structure of the whole water column; SST fronts, eddies and salinity signatures correlate with the thermocline. A neural network can learn this mapping much cheaper than a physics-based data-assimilation system.</p>
+<h2 id="what-oceanembed-means">What "OceanEmbed" means</h2>
+<p>The PS name signals: <strong>learn an embedding of the surface state</strong> that captures information relevant to the subsurface. In our design, OceanEmbed is the latent representation after the CNN encoder + temporal ConvLSTM + attention fusion — not a separate magic model. The decoder reads this embedding into 15 temperature maps.</p>
+<h2 id="judging-criteria-we-optimize-for-internal-round">Judging criteria we optimize for (internal round)</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Our answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Understanding of the problem</td>
+<td>This doc + the research review (doc 02)</td>
+</tr>
+<tr>
+<td>Technical soundness</td>
+<td>Progressive M0→M4 model plan, time-based splits, independent Argo validation</td>
+</tr>
+<tr>
+<td>Working demo</td>
+<td>Streamlit PoC — map + profile + Argo overlay + live metrics</td>
+</tr>
+<tr>
+<td>Feasibility</td>
+<td>Regional 0.25° scope, free/cheap compute, staged milestones</td>
+</tr>
+<tr>
+<td>Innovation</td>
+<td>Attention-fused multivariate embedding + temporal context, validated against observations (most published Indian Ocean work validates only against reanalysis)</td>
+</tr>
+<tr>
+<td>Impact</td>
+<td>Cyclone heat-content, PFZ, INCOIS operational relevance</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="deliverables-checklist-for-the-internal-round">Deliverables checklist for the internal round</h2>
+<ul>
+<li>[ ] Preprocessing pipeline producing model-ready <code>X=[7,H,W]</code>, <code>Y=[15,H,W]</code> daily samples</li>
+<li>[ ] Trained OceanEmbed model (M3 minimum, M4 target)</li>
+<li>[ ] Depth-wise metrics table vs GLORYS <em>and</em> vs held-out Argo</li>
+<li>[ ] Ablation table M0 → M4</li>
+<li>[ ] Streamlit demo running offline from frozen checkpoint</li>
+<li>[ ] Presentation deck + this documentation set</li>
+</ul></article>
+  <footer>Ministry of Earth Sciences · INCOIS · Space Technology — Smart India Hackathon 2026</footer>
+</main>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    background: '#0d1b2a', primaryColor: '#14304a', primaryTextColor: '#dce8f2',
+    primaryBorderColor: '#2f6f9f', lineColor: '#4a9fd4', secondaryColor: '#123',
+    tertiaryColor: '#0f2436', fontSize: '14px'
+  }
+});
+</script>
+<script>
+document.getElementById('navtoggle').onclick = () => document.body.classList.toggle('nav-open');
+</script>
+</body>
+</html>
