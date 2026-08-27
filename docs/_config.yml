@@ -1,0 +1,21 @@
+title: OceanEmbed
+description: Satellite Embedding-Based Deep Learning for Subsurface Ocean Temperature Reconstruction — SIH 2026 PS 26066
+
+remote_theme: just-the-docs/just-the-docs@v0.7.0
+
+# Renders ```mermaid fenced blocks as diagrams
+mermaid:
+  version: "10.9.0"
+
+color_scheme: dark
+search_enabled: true
+heading_anchors: true
+
+aux_links:
+  "GitHub Repo":
+    - "https://github.com/REPLACE_ME/oceanembed-sih26"
+
+footer_content: "SIH 2026 · PS 26066 · Ministry of Earth Sciences (INCOIS)"
+
+exclude:
+  - _config.yml
