@@ -47,7 +47,8 @@ class DepthStats:
             df = pd.DataFrame({"depth_m": self.depths, "n": n.astype(int),
                                "rmse": np.sqrt(sd2 / n), "mae": sad / n,
                                "bias": sd / n, "corr": corr})
-        return df.where(df["n"] >= 2, df.assign(rmse=np.nan, mae=np.nan, bias=np.nan, corr=np.nan))
+        # n == 0 -> 0/0 -> NaN; n == 1 -> zero variance -> corr NaN but RMSE/MAE/bias valid
+        return df
 
 
 def depthwise(pred, true, mask=None, depths=DEPTHS):
