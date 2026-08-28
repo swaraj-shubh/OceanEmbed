@@ -9,7 +9,9 @@ scipy
 torch
 # data access (accounts required: CMEMS, NASA Earthdata)
 copernicusmarine
-argopy
+# argopy dropped: it pins an aiohttp with no wheel for recent Python and needs MSVC;
+# src/download/argo.py hits the Ifremer ERDDAP endpoint directly instead
+certifi
 # viz / demo
 matplotlib
 cartopy
