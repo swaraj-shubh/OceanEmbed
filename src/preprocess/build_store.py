@@ -16,33 +16,34 @@ import xarray as xr
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from config import CHANNELS, DEPTHS, END, INTERIM, LAT, LON, QC_RANGE, START, ZARR
+from consolidate import year_file
 from regrid import qc, to_grid
+
+
+def _read(product, var, days):
+    """Read one variable from the consolidated per-year files covering `days`."""
+    files = [year_file(product, y) for y in sorted({d.year for d in days})]
+    missing = [f.name for f in files if not f.exists()]
+    assert not missing, (f"{missing} absent -- run "
+                         f"python src/preprocess/consolidate.py {product}")
+    return xr.concat([xr.open_dataset(f)[var] for f in files], "time").sortby("time")
 
 
 def load_sst(days):
     """NOAA OISST v2.1 -- already on the target grid, so no interpolation is applied."""
-    root = INTERIM / "oisst"
-    files = [root / f"{d:%Y}" / f"oisst_{d:%Y%m%d}.nc" for d in days]
-    missing = [f.name for f in files if not f.exists()]
-    assert not missing, f"{len(missing)} OISST days missing, first {missing[0]}"
-    da = xr.concat([xr.open_dataset(f).sst.squeeze(drop=True) for f in files], "time")
-    da = da.assign_coords(time=days)
+    da = _read("oisst", "sst", days).sel(time=days)
     assert np.allclose(da.lat, LAT) and np.allclose(da.lon, LON), "OISST off the frozen grid"
     return qc(da.astype("float32"), "sst")
 
 
 def _daily(product, var, days, ffill=0):
-    """Read one PO.DAAC-style per-day directory, regrid, and align onto `days`.
+    """Regrid a consolidated product onto the frozen grid and align it onto `days`.
 
     Days with no granule stay NaN (the missing mask carries them). `ffill` allows a
     short carry-forward for SMAP, whose 8-day composite genuinely covers the gap --
     but only a few days, so the 2019 and 2022 outages are never papered over.
     """
-    root = INTERIM / product
-    want = {f"{d:%Y%m%d}" for d in days}
-    files = [f for f in sorted(root.rglob(f"{product}_*.nc")) if f.stem.split("_")[-1] in want]
-    assert files, f"no {product} files under {root} -- run src/download/podaac.py {product}"
-    da = xr.concat([xr.open_dataset(f)[var] for f in files], "time").sortby("time")
+    da = _read(product, var, days)
     # OSCAR's variables are (time, lon, lat); pin the axis order rather than inherit it
     da = to_grid(da).transpose("time", "lat", "lon")
     tol = {"method": "ffill", "tolerance": pd.Timedelta(days=ffill)} if ffill else {}
