@@ -25,7 +25,11 @@ SPLITS = {"train": ("2015-04-01", "2020-12-31"),
           "test":  ("2022-01-01", "2022-12-31")}
 
 # Physical range QC (docs/04 §4)
-QC_RANGE = {"sst": (-2.0, 36.0), "sss": (25.0, 41.0), "sla": (-2.0, 2.0),
+# sss floor is 5, not the 25 first written down: the Ganga-Brahmaputra plume really does
+# push northern Bay of Bengal salinity into the teens, and that freshwater cap is exactly
+# the barrier-layer signal SSS is an input for (docs/04 sec.5). Observed 15.6 PSU on
+# 2018-05-28. A 25 floor would have masked the signal away as bad data.
+QC_RANGE = {"sst": (-2.0, 36.0), "sss": (5.0, 41.0), "sla": (-2.0, 2.0),
             "cur_u": (-3.0, 3.0), "cur_v": (-3.0, 3.0),
             "wind_u": (-40.0, 40.0), "wind_v": (-40.0, 40.0), "thetao": (-2.0, 36.0)}
 

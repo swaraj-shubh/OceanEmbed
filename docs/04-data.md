@@ -88,7 +88,7 @@ Implementation notes:
 - **OSCAR currents are a 0–30 m average**, not a true skin-layer current. Harmless for us (the mixed layer is what carries subsurface signal) but state it accurately — do not call it "surface current" in the report without the qualifier.
 - **SMAP is an 8-day running mean, not a daily field.** It is the only non-daily input. Assign each composite to its centre date and forward-fill; record the window in the Zarr metadata so the temporal smoothing is auditable. Expect it to limit how sharp a day-to-day signal the model can learn from salinity.
 
-- **Argo profile counts in our box** (from the OceanDepths `indices/profiles.parquet` index, free single-file download, 9.5M global profiles with lat/lon/date): 69,364 profiles in 0-25N/55-100E for 2015-04..2022, but only **2,089 in 2021 and 4,022 in 2022** - i.e. the independent val/test evaluation set is a few thousand profiles, not tens of thousands. Enough for depth-wise metrics; not enough to slice finely by season *and* sub-region at once.
+- **Argo profile counts in our box.** The OceanDepths `indices/profiles.parquet` index (EN4-derived) suggested ~2,089 profiles in 2021 and 4,022 in 2022. The direct Ifremer ERDDAP GDAC query used by `src/download/argo.py` actually returns **7,865 profiles / 3.08M good-QC levels** for 2021-2022 in 0-25N/55-100E, because it includes real-time floats the EN4 index does not. After the acceptance rule, ~87% of profiles yield a usable 0 m value and ~72% reach all 15 depths, so the independent evaluation set is a few thousand full profiles -- enough for depth-wise metrics, not enough to slice finely by season *and* sub-region at once.
 
 ## 6. OceanDepths bootstrap path (week 1, before our pipeline exists)
 
