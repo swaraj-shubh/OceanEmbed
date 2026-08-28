@@ -1,0 +1,94 @@
+"""Config-driven training entrypoint. One YAML per experiment (CLAUDE.md rule 7).
+
+    python src/train.py configs/m2_unet.yaml
+
+Resumes from the latest checkpoint automatically -- required for Spot/preemptible GPUs
+(rule 6). Per-epoch depth-wise val metrics are appended to results/<run>.csv.
+"""
+import argparse
+import sys
+import time
+from pathlib import Path
+
+import numpy as np
+import torch
+import yaml
+from torch.utils.data import DataLoader
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from config import ROOT, ZARR
+from datasets import NIODataset
+from metrics import DepthStats, summary
+from models.unet import UNet, masked_mse
+
+CKPT = ROOT / "checkpoints"
+RESULTS = ROOT / "results"
+MODELS = {"unet": UNet}
+
+
+def build(cfg):
+    m = dict(cfg["model"])
+    return MODELS[m.pop("kind")](**m)
+
+
+def run_val(net, loader, dev):
+    net.eval()
+    acc = DepthStats()
+    with torch.no_grad():
+        for x, y, m in loader:
+            p = net(x.to(dev)).cpu().numpy()
+            acc.update(p.transpose(1, 0, 2, 3), y.numpy().transpose(1, 0, 2, 3),
+                       m.numpy().transpose(1, 0, 2, 3))
+    net.train()
+    return acc.table()
+
+
+def main(cfg_path):
+    cfg = yaml.safe_load(Path(cfg_path).read_text())
+    run = cfg.get("run") or Path(cfg_path).stem
+    zarr = cfg.get("zarr", ZARR)
+    stats = cfg.get("stats")
+    torch.manual_seed(cfg.get("seed", 0))
+    dev = cfg.get("device") or ("cuda" if torch.cuda.is_available() else "cpu")
+
+    kw = {"window": cfg.get("window", 1), **({} if stats is None else {"stats": stats})}
+    tr = DataLoader(NIODataset("train", zarr, **kw), batch_size=cfg.get("batch_size", 8),
+                    shuffle=True, drop_last=True)
+    va = DataLoader(NIODataset("val", zarr, **kw), batch_size=cfg.get("batch_size", 8))
+
+    net = build(cfg).to(dev)
+    opt = torch.optim.Adam(net.parameters(), cfg.get("lr", 1e-3))
+    CKPT.mkdir(exist_ok=True); RESULTS.mkdir(exist_ok=True)
+    ckpt_path, start = CKPT / f"{run}.pt", 0
+    if ckpt_path.exists():                                   # auto-resume after preemption
+        st = torch.load(ckpt_path, map_location=dev, weights_only=False)
+        net.load_state_dict(st["model"]); opt.load_state_dict(st["opt"])
+        start = st["epoch"] + 1
+        print(f"resumed {run} from epoch {start}")
+
+    log = RESULTS / f"{run}.csv"
+    if not log.exists():
+        log.write_text("epoch,train_loss,val_rmse,secs\n")
+    for ep in range(start, cfg.get("epochs", 30)):
+        t0, losses = time.time(), []
+        for x, y, m in tr:
+            opt.zero_grad()
+            loss = masked_mse(net(x.to(dev)), y.to(dev), m.to(dev))
+            loss.backward(); opt.step()
+            losses.append(float(loss.detach()))
+        df = run_val(net, va, dev)
+        vr = summary(df)
+        print(f"ep {ep:3d}  train {np.mean(losses):.4f}  val RMSE {vr:.4f} degC "
+              f"({time.time() - t0:.0f}s)")
+        with log.open("a") as f:
+            f.write(f"{ep},{np.mean(losses):.5f},{vr:.5f},{time.time() - t0:.0f}\n")
+        torch.save({"model": net.state_dict(), "opt": opt.state_dict(), "epoch": ep,
+                    "cfg": cfg, "stats": str(stats or "")}, ckpt_path)
+        df.to_csv(RESULTS / f"{run}_val_depthwise.csv", index=False)
+    return net
+
+
+if __name__ == "__main__":
+    p = argparse.ArgumentParser()
+    p.add_argument("config")
+    main(p.parse_args().config)

@@ -1,0 +1,17 @@
+# core
+numpy
+pandas
+xarray
+netCDF4
+zarr
+scipy
+# model
+torch
+# data access (accounts required: CMEMS, NASA Earthdata)
+copernicusmarine
+argopy
+# viz / demo
+matplotlib
+cartopy
+streamlit
+plotly
