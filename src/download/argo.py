@@ -65,11 +65,21 @@ def main():
         return
     edges = pd.date_range(a.start, a.end, freq="MS").union(
         pd.DatetimeIndex([a.start, a.end]))      # month at a time: one GET each, ~1-2 min
+    # Each month is cached on disk as it lands: an interrupted run resumes instead of
+    # throwing away hours of requests.
+    cache = out.parent / "argo_months"
+    cache.mkdir(parents=True, exist_ok=True)
     parts = []
     for t0, t1 in zip(edges[:-1], edges[1:]):
+        part = cache / f"argo_{t0:%Y%m}.parquet"
+        if part.exists():
+            parts.append(pd.read_parquet(part))
+            continue
         df = tidy(query(t0, t1))
+        df.to_parquet(part)
         parts.append(df)
-        print(f"{t0:%Y-%m}: {df['profile'].nunique():4d} profiles, {len(df):6d} good levels")
+        print(f"{t0:%Y-%m}: {df['profile'].nunique():4d} profiles, {len(df):6d} good levels",
+              flush=True)
     df = pd.concat(parts).drop_duplicates(["profile", "pres"]).reset_index(drop=True)
     out.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(out)
