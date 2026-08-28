@@ -81,8 +81,10 @@ def list_granules(short_name, start, end, page=2000):
             beg = b + (e - b) / 2
         else:
             beg = t["SingleDateTime"]
+        # The OPeNDAP link is typed "USE SERVICE API" on some granules and "GET DATA" on
+        # others (and the two use different URL shapes), so match on the host instead.
         opendap = next((r["URL"] for r in it["umm"]["RelatedUrls"]
-                        if r.get("Type") == "USE SERVICE API" and "opendap" in r["URL"]), None)
+                        if "opendap.earthdata.nasa.gov" in r["URL"]), None)
         if opendap:
             out[pd.Timestamp(beg).normalize().date()] = opendap
     return out
