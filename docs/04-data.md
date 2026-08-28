@@ -77,6 +77,8 @@ Implementation notes:
 - Store everything as one Zarr store `data/processed/nio_daily.zarr` with dims `(time, channel, y, x)` — random access by date is O(1), works identically on Kaggle after upload as a Kaggle Dataset.
 - The `Dataset.__getitem__` for M4 returns `(X[t−6…t], Y[t], M[t])`; for M1–M3 just `(X[t], Y[t], M[t])`.
 
+**Store schema (frozen, implemented in `src/datasets.py`):** two arrays in `data/processed/nio_daily.zarr` — `X (time, channel, y, x)` and `Y (time, depth, y, x)`, both float32, with coords `time, channel, depth, lat, lon`. **NaN is the mask** — there are no separate mask arrays to keep in sync. Land and missing cells are NaN in the store; `NIODataset.__getitem__` replaces NaN in the inputs with 0 *after* normalisation (i.e. the train mean) and returns `np.isfinite(Y)` as the boolean target mask that the loss and the metrics both honour. Normalisation stats live in `data/processed/norm_stats.json`, computed on the train split only.
+
 ## 5. Bay of Bengal gotchas (know these for Q&A)
 
 - **Barrier layer:** massive river discharge (Ganga-Brahmaputra) creates a shallow salinity-stratified layer that decouples SST from subsurface heat — this is *why* SSS is a critical input here, and a great answer to "why 7 variables?".
