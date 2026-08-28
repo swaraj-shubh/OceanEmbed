@@ -1,7 +1,9 @@
-"""Depth-wise masked metrics. The primary result table (CLAUDE.md rule 4).
+"""Depth-wise masked metrics -- the primary result table (CLAUDE.md rule 4).
 
-pred/true: [D, ...] arrays; mask: same shape (or broadcastable), True = valid.
-Land/missing cells must be masked out here and in the loss.
+Streaming accumulator so a whole test year never has to fit in memory; `depthwise()`
+is the one-shot wrapper for small arrays (e.g. Argo profile matching).
+
+pred/true: [D, ...]; mask: same shape or broadcastable, True = valid.
 """
 import numpy as np
 import pandas as pd
@@ -9,29 +11,47 @@ import pandas as pd
 from config import DEPTHS
 
 
-def depthwise(pred, true, mask=None, depths=DEPTHS):
-    pred, true = np.asarray(pred, float), np.asarray(true, float)
-    assert pred.shape == true.shape, (pred.shape, true.shape)
-    assert pred.shape[0] == len(depths), "first axis must be depth"
-    valid = np.isfinite(pred) & np.isfinite(true)
-    if mask is not None:
-        valid &= np.broadcast_to(np.asarray(mask, bool), pred.shape)
+class DepthStats:
+    """Accumulates per-depth sums; .table() -> RMSE/MAE/bias/corr DataFrame."""
 
-    rows = []
-    for i, z in enumerate(depths):
-        v = valid[i]
-        n = int(v.sum())
-        if n < 2:
-            rows.append(dict(depth_m=z, n=n, rmse=np.nan, mae=np.nan, bias=np.nan, corr=np.nan))
-            continue
-        p, t = pred[i][v], true[i][v]
-        d = p - t
-        # corr is undefined when either field is constant (e.g. a single-value slab)
-        sp, st = p.std(), t.std()
-        corr = float(np.corrcoef(p, t)[0, 1]) if sp > 0 and st > 0 else np.nan
-        rows.append(dict(depth_m=z, n=n, rmse=float(np.sqrt((d ** 2).mean())),
-                         mae=float(np.abs(d).mean()), bias=float(d.mean()), corr=corr))
-    return pd.DataFrame(rows)
+    def __init__(self, depths=DEPTHS):
+        self.depths = list(depths)
+        self.s = np.zeros((len(self.depths), 7))  # n, sum_d, sum_d2, sum|d|, sum_p, sum_t, sum_pt
+        self.sq = np.zeros((len(self.depths), 2))  # sum_p2, sum_t2
+
+    def update(self, pred, true, mask=None):
+        pred, true = np.asarray(pred, float), np.asarray(true, float)
+        assert pred.shape == true.shape, (pred.shape, true.shape)
+        assert pred.shape[0] == len(self.depths), "first axis must be depth"
+        valid = np.isfinite(pred) & np.isfinite(true)
+        if mask is not None:
+            valid &= np.broadcast_to(np.asarray(mask, bool), pred.shape)
+        for i in range(len(self.depths)):
+            v = valid[i]
+            if not v.any():
+                continue
+            p, t = pred[i][v], true[i][v]
+            d = p - t
+            self.s[i] += [v.sum(), d.sum(), (d ** 2).sum(), np.abs(d).sum(),
+                          p.sum(), t.sum(), (p * t).sum()]
+            self.sq[i] += [(p ** 2).sum(), (t ** 2).sum()]
+        return self
+
+    def table(self):
+        n, sd, sd2, sad, sp, st, spt = self.s.T
+        sp2, st2 = self.sq.T
+        with np.errstate(invalid="ignore", divide="ignore"):
+            cov = spt / n - (sp / n) * (st / n)
+            vp, vt = sp2 / n - (sp / n) ** 2, st2 / n - (st / n) ** 2
+            corr = np.where((vp > 1e-12) & (vt > 1e-12), cov / np.sqrt(vp * vt), np.nan)
+            df = pd.DataFrame({"depth_m": self.depths, "n": n.astype(int),
+                               "rmse": np.sqrt(sd2 / n), "mae": sad / n,
+                               "bias": sd / n, "corr": corr})
+        return df.where(df["n"] >= 2, df.assign(rmse=np.nan, mae=np.nan, bias=np.nan, corr=np.nan))
+
+
+def depthwise(pred, true, mask=None, depths=DEPTHS):
+    return DepthStats(depths).update(pred, true, mask).table()
 
 
 def summary(df):
@@ -43,16 +63,24 @@ def summary(df):
 if __name__ == "__main__":
     rng = np.random.default_rng(0)
     true = rng.normal(size=(len(DEPTHS), 20, 20))
-    df = depthwise(true + 1.0, true)                      # constant +1 offset
+    df = depthwise(true + 1.0, true)                       # constant +1 offset
     assert np.allclose(df["rmse"], 1.0) and np.allclose(df["bias"], 1.0)
-    assert np.allclose(df["corr"], 1.0) and np.allclose(df["mae"], 1.0)
+    assert np.allclose(df["mae"], 1.0) and np.allclose(df["corr"], 1.0)
     assert np.isclose(summary(df), 1.0)
 
-    m = np.zeros((20, 20), bool); m[:5] = True            # mask keeps 100 cells/level
-    bad = true.copy(); bad[:, 5:] = 99.0                  # garbage only outside the mask
-    assert np.allclose(depthwise(bad, true, m).rmse, 0.0)
+    m = np.zeros((20, 20), bool); m[:5] = True             # 100 valid cells per level
+    bad = true.copy(); bad[:, 5:] = 99.0                   # garbage only outside the mask
+    assert np.allclose(depthwise(bad, true, m)["rmse"], 0.0)
     assert (depthwise(bad, true, m)["n"] == 100).all()
 
     nan = true.copy(); nan[0, 0, 0] = np.nan
     assert depthwise(nan, true)["n"][0] == 399
+
+    acc = DepthStats()                                     # streaming == one-shot
+    for k in range(4):
+        acc.update(true[:, k * 5:(k + 1) * 5] + 1.0, true[:, k * 5:(k + 1) * 5])
+    assert np.allclose(acc.table()["rmse"], df["rmse"]) and (acc.table()["n"] == df["n"]).all()
+
+    off = rng.normal(size=true.shape)                      # corr against an independent field
+    assert abs(float(depthwise(off, true)["corr"].mean())) < 0.2
     print("metrics self-check OK\n", df.head(3).to_string(index=False))
