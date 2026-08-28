@@ -32,7 +32,11 @@ def interp_profile(z, t, depths=TARGET, tol=TOL):
         return np.full(len(depths), np.nan)
     o = np.argsort(z)
     z, t = z[o], t[o]
-    out = np.interp(depths, z, t, left=np.nan, right=np.nan)
+    # np.interp clamps outside [z[0], z[-1]] rather than refusing; the gap test below is
+    # what enforces the acceptance rule, and it is the correct gate. Refusing at the ends
+    # instead would reject EVERY profile at 0 m -- Argo floats surface at ~2-5 dbar, never
+    # at exactly 0 -- and 0 m is one of the six depths in the headline metrics table.
+    out = np.interp(depths, z, t)
     gap = np.abs(z[np.searchsorted(z, depths).clip(0, len(z) - 1)] - depths)
     gap = np.minimum(gap, np.abs(z[(np.searchsorted(z, depths) - 1).clip(0, len(z) - 1)] - depths))
     return np.where(gap <= tol, out, np.nan)
@@ -78,6 +82,13 @@ if __name__ == "__main__":
     shallow = interp_profile(z[z <= 200], prof[z <= 200])
     assert np.isfinite(shallow[TARGET <= 200]).all()
     assert np.isnan(shallow[TARGET > 200]).all(), "extrapolated past the profile"
+
+    # a real cast starts a few dbar down, never at 0; 0 m must still be accepted there
+    deep_start = z[(z >= 2.8) & (z <= 400)]
+    surf = interp_profile(deep_start, np.interp(deep_start, z, prof))
+    assert np.isfinite(surf[TARGET == 0][0]), "0 m rejected -- Argo never samples exactly 0"
+    assert np.isnan(interp_profile(z[z >= 40], prof[z >= 40])[TARGET == 0][0]), \
+        "shallowest obs 40 m away from 0 m -- must reject"
 
     sparse = interp_profile([0.0, 400.0, 1000.0], [30.0, 10.0, 4.0])
     assert np.isnan(sparse[TARGET == 200][0]), "200 m is 200 m from the nearest obs -- reject"
