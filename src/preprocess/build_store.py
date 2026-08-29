@@ -106,8 +106,21 @@ def load_sla(days):
 
 
 def _wind(var, channel):
+    """ASCAT winds, gap-filled with a centred 3-day mean.
+
+    Scatterometers are swaths: raw daily coverage of the cells ASCAT can see is ~55% in
+    the years one MetOp was flying (2015-18, 2022-24) and ~86% when both were (2019-21).
+    A centred 3-day mean lifts every year to ~97%; +/-2 days adds only 0.3 points, so one
+    day either side is where it stops paying.
+
+    That window looks one day ahead, which is deliberate and worth stating: this is a
+    reconstruction task, not a forecast, and the SSS channel is already an 8-day running
+    mean centred on its date -- so this is strictly less lookahead than a channel the PS
+    itself specifies. Cells still empty after the fill (~3%) stay NaN.
+    """
     def loader(days):
-        return qc(_cmems("wind", var, days), channel)
+        da = _cmems("wind", var, days)
+        return qc(da.rolling(time=3, center=True, min_periods=1).mean(), channel)
     return loader
 
 
@@ -149,6 +162,9 @@ def build(start=START, end=END, out=ZARR):
     ds = ds.assign_coords(lat=("y", LAT), lon=("x", LON))
     ds.attrs["sss_note"] = "SMAP is an 8-day running mean assigned to its centre date"
     ds.attrs["regrid"] = "bilinear xarray.interp; OISST used as-is (native 0.25 deg)"
+    ds.attrs["wind_note"] = ("ASCAT L3 swaths (MetOp-A 2015-2021 + MetOp-B 2019-2024, "
+                             "ascending+descending) merged by nanmean, then a centred "
+                             "3-day mean: ~55-86% raw daily coverage -> ~97%")
     out.parent.mkdir(parents=True, exist_ok=True)
     ds.to_zarr(out, mode="w")
     return ds
