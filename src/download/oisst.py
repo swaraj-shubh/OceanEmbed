@@ -9,7 +9,10 @@ i.e. ~10 h for the record). Processes, not threads: netCDF4's DAP client holds t
 GIL, so threads measured slower than sequential.
 """
 import argparse
+import os
 import sys
+import tempfile
+import urllib.request
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
@@ -21,7 +24,20 @@ from config import END, GRID_SHAPE, INTERIM, LAT_MAX, LAT_MIN, LON_MAX, LON_MIN,
 
 URL = ("https://www.ncei.noaa.gov/thredds/dodsC/OisstBase/NetCDF/V2.1/AVHRR/"
        "{ym}/oisst-avhrr-v02r01.{ymd}.nc")
+# Same files over plain HTTPS. 30x more bytes, but THREDDS goes down for days at a time
+# (503s and read timeouts through 2023-06 while the archive kept serving 200s).
+ARCHIVE = ("https://www.ncei.noaa.gov/data/sea-surface-temperature-optimum-interpolation"
+           "/v2.1/access/avhrr/{ym}/oisst-avhrr-v02r01.{ymd}.nc")
 OUT = INTERIM / "oisst"
+
+
+def _subset(ds):
+    sub = (ds[["sst"]]
+           .sel(lat=slice(LAT_MIN, LAT_MAX), lon=slice(LON_MIN, LON_MAX))
+           .squeeze("zlev", drop=True).load())
+    assert sub.sizes["lat"] == GRID_SHAPE[0] and sub.sizes["lon"] == GRID_SHAPE[1], \
+        f"got {sub.sizes['lat']}x{sub.sizes['lon']}, want {GRID_SHAPE}"
+    return sub
 
 
 def fetch_day(day: pd.Timestamp) -> str:
@@ -29,13 +45,19 @@ def fetch_day(day: pd.Timestamp) -> str:
     if dst.exists():
         return "skip"
     dst.parent.mkdir(parents=True, exist_ok=True)
+    ym, ymd = f"{day:%Y%m}", f"{day:%Y%m%d}"
     try:
-        with xr.open_dataset(URL.format(ym=f"{day:%Y%m}", ymd=f"{day:%Y%m%d}")) as ds:
-            sub = (ds[["sst"]]
-                   .sel(lat=slice(LAT_MIN, LAT_MAX), lon=slice(LON_MIN, LON_MAX))
-                   .squeeze("zlev", drop=True).load())
-        assert sub.sizes["lat"] == GRID_SHAPE[0] and sub.sizes["lon"] == GRID_SHAPE[1], \
-            f"got {sub.sizes['lat']}x{sub.sizes['lon']}, want {GRID_SHAPE}"
+        try:
+            with xr.open_dataset(URL.format(ym=ym, ymd=ymd)) as ds:
+                sub = _subset(ds)
+        except Exception:                     # THREDDS down -> pull the whole file instead
+            raw = Path(tempfile.gettempdir()) / f"oisst_{ymd}_{os.getpid()}.nc"
+            try:
+                urllib.request.urlretrieve(ARCHIVE.format(ym=ym, ymd=ymd), raw)
+                with xr.open_dataset(raw) as ds:
+                    sub = _subset(ds)
+            finally:
+                raw.unlink(missing_ok=True)
         tmp = dst.with_suffix(".tmp.nc")
         sub.to_netcdf(tmp)
         tmp.replace(dst)                      # atomic: a killed run never leaves a half file

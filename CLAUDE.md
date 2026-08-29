@@ -44,7 +44,7 @@ Report every stage against M0. If a stage doesn't beat the previous one, investi
 | Variable | Product | Notes |
 |---|---|---|
 | SST | NOAA OISST v2.1 | daily, 0.25° — already on target grid |
-| SSS | NASA SMAP L3 SSS (RSS 8-day running mean V4) | 0.25°, from 2015-03-27; 8-day composite (only non-daily input) — document the window |
+| SSS | NASA SMAP L3 SSS (RSS 8-day running mean **V6** — V4 was retired at 2022-07-11) | 0.25°, from 2015-03-27; 8-day composite (only non-daily input) — document the window |
 | SSH/SLA | Copernicus Marine DUACS altimetry L4 | regrid to 0.25° |
 | Currents U/V | NASA OSCAR v2.0 (PO.DAAC) | daily 0.25°; use `u`,`v` (total) not `ug`,`vg`; it is a 0–30 m mean |
 | Wind U/V | Copernicus `WIND_GLO_PHY_L3_MY_012_005` (daily gridded L3 scatterometer) | 0.125° daily → regrid to 0.25°; check swath-gap fraction, fallback `WIND_GLO_PHY_L4_MY_012_006` |
@@ -62,7 +62,7 @@ Copernicus Marine requires a (free) account — use `copernicusmarine` Python cl
 
 Raw products → QC → subset Arabian Sea + Bay of Bengal → regrid 0.25° → daily alignment → unit standardization → land/missing masks → normalize **using TRAIN-split stats only** → save model-ready `(X=[7,H,W], Y=[15,H,W])` samples (NetCDF/Zarr).
 
-The model never touches raw provider files. **Frozen region bbox (docs/04): lat 0–25°N, lon 55–100°E → 100×180 at 0.25°, padded to 96×176 model grid. Period 2015–2022 (SMAP SSS constraint); split: train 2015–20 / val 2021 / test 2022.**
+The model never touches raw provider files. **Frozen region bbox (docs/04): lat 0–25°N, lon 55–100°E → 100×180 at 0.25°, centre-cropped to 96×176 model grid. Period 2015-04 → 2024-12; split: train 2015–2021 / val 2022 / test 2023–2024.** Start is hard (SMAP SSS begins 2015-03-27). The old 2022 end came from SMAP SSS *V4*, retired at 2022-07-11; **we use V6**, which runs to the present — OSCAR reaches 2026-01 and GLORYS12V1 2026-06, so nothing but download time limits the end date.
 
 ## 6. Non-Negotiable Methodology Rules
 

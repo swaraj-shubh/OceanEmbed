@@ -24,6 +24,7 @@ sys.path.append(str(Path(__file__).resolve().parent))
 from config import CHANNELS, DEPTHS, PROCESSED, SPLITS, ZARR, crop_to_model
 
 STATS_PATH = PROCESSED / "norm_stats.json"
+SPLIT_EDGE = SPLITS["val"][0]   # first day of the validation split; used by the self-check
 
 
 def compute_stats(zarr_path=ZARR, out=STATS_PATH):
@@ -83,8 +84,8 @@ def _fake_store(path, days=40, seed=0):
     """Tiny synthetic store matching the contract -- lets the pipeline run before real data."""
     from config import GRID_SHAPE, LAT, LON
     rng = np.random.default_rng(seed)
-    t = np.arange("2020-12-01", "2020-12-01", dtype="datetime64[D]")
-    t = np.arange(np.datetime64("2020-12-12"), np.datetime64("2020-12-12") + days)
+    # straddle the train/val boundary so the split logic is actually exercised
+    t = np.arange(np.datetime64(SPLIT_EDGE) - days // 2, np.datetime64(SPLIT_EDGE) + days // 2)
     X = rng.normal(size=(days, len(CHANNELS), *GRID_SHAPE)).astype("float32")
     Y = rng.normal(size=(days, len(DEPTHS), *GRID_SHAPE)).astype("float32")
     Y[:, :, :3, :3] = np.nan                    # land corner
@@ -102,7 +103,7 @@ if __name__ == "__main__":
     import tempfile
     tmp = Path(tempfile.mkdtemp())
     store = tmp / "fake.zarr"
-    _fake_store(store)                          # 2020-12-12 .. 2021-01-20 spans the train/val edge
+    _fake_store(store)                          # spans the train/val edge
     stats = compute_stats(store, tmp / "stats.json")
     assert len(stats["X"]["mean"]) == len(CHANNELS) and stats["X"]["coord"] == CHANNELS
 

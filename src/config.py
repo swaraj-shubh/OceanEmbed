@@ -19,10 +19,14 @@ CHANNELS = ["sst", "sss", "sla", "cur_u", "cur_v", "wind_u", "wind_v"]
 DEPTHS = [0, 5, 10, 20, 30, 50, 75, 100, 125, 150, 200, 300, 500, 700, 1000]
 REPORT_DEPTHS = [0, 50, 100, 200, 500, 1000]  # depth-wise metrics table
 
-START, END = "2015-04-01", "2022-12-31"  # SMAP SSS starts 2015-03-27
-SPLITS = {"train": ("2015-04-01", "2020-12-31"),
-          "val":   ("2021-01-01", "2021-12-31"),
-          "test":  ("2022-01-01", "2022-12-31")}
+# Start is a hard limit: SMAP SSS begins 2015-03-27 and nothing earlier exists.
+# End was originally 2022 because SMAP SSS *V4* stops 2022-07-11 -- but V4 is simply a
+# retired version. V6 runs to the present, OSCAR to 2026-01, GLORYS12V1 to 2026-06, so
+# 2024 costs nothing but download time and buys two more training years.
+START, END = "2015-04-01", "2024-12-31"
+SPLITS = {"train": ("2015-04-01", "2021-12-31"),
+          "val":   ("2022-01-01", "2022-12-31"),
+          "test":  ("2023-01-01", "2024-12-31")}
 
 # Physical range QC (docs/04 §4)
 # sss floor is 5, not the 25 first written down: the Ganga-Brahmaputra plume really does
