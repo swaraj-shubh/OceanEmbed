@@ -133,6 +133,9 @@ def _read_glorys(days):
     assert files, "glorys: run python src/download/cmems.py glorys"
     da = xr.concat([_lazy(f, "thetao") for f in files], "time").sortby("time")
     da = da.assign_coords(time=da.time.dt.floor("D")).drop_duplicates("time")
+    assert float(da.depth.max()) >= max(DEPTHS), (
+        f"deepest GLORYS level is {float(da.depth.max()):.1f} m < {max(DEPTHS)} m -- "
+        "the download's maximum_depth is too shallow and 1000 m would be extrapolated")
     da = to_grid(da, "latitude", "longitude").interp(depth=DEPTHS)
     return da.reindex(time=days).transpose("time", "depth", "lat", "lon")
 

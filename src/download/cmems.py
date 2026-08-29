@@ -14,8 +14,11 @@ Product choices, with the reasons, because the obvious picks are wrong:
          ascending + descending, MetOp-A (-> 2021-11) spliced with MetOp-B (2019-01 ->).
          These are swaths, so days have gaps; the loader merges the four and the gap
          fraction is reported rather than hidden.
-  glorys thetao only, 0-1000 m, native 50-level grid -- the loader interpolates to the 15
-         SIH depths, which is better than letting the server snap to nearest levels.
+  glorys thetao only, native level grid, interpolated to the 15 SIH depths by the loader
+         rather than snapped to nearest levels by the server. The depth ceiling is 1100 m,
+         not 1000: GLORYS levels near the bottom are 902.3 and 1062.4 m, so asking for
+         maximum_depth=1000 returns 902.3 as the deepest level and the 1000 m target --
+         one of the six depths in the headline metrics table -- would be extrapolated.
 """
 import argparse
 import sys
@@ -40,7 +43,7 @@ PRODUCTS = {
     # Monthly chunks, not yearly: GLORYS is ~43 GB / 19 h for the record, and a killed
     # run should lose ten minutes, not two hours. The others are small enough per year.
     "glorys": {"datasets": ["cmems_mod_glo_phy_my_0.083deg_P1D-m"],
-               "vars": ["thetao"], "depth": (0.0, 1000.0), "chunk": "MS"},
+               "vars": ["thetao"], "depth": (0.0, 1100.0), "chunk": "MS"},
 }
 
 
