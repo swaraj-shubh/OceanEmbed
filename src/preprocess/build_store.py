@@ -66,6 +66,16 @@ def _oscar(var, channel):
 CMEMS = INTERIM / "cmems"
 
 
+def _lazy(f, var):
+    """Open one CMEMS file dask-chunked and float32.
+
+    Both halves matter. xarray's `interp` upcasts to float64, so six years of 0.125 deg
+    SLA asked for a 1.6 GiB allocation and died; GLORYS at 1/12 deg over 35 levels would
+    be ~80 GB. Chunked + float32 keeps the regrid lazy and the peak bounded.
+    """
+    return xr.open_dataset(f, chunks={"time": 16})[var].astype("float32")
+
+
 def _cmems(product, var, days):
     """Read a CMEMS product from data/interim/cmems/<product>/ onto the frozen grid.
 
@@ -82,7 +92,7 @@ def _cmems(product, var, days):
         by_ds.setdefault(f.stem.rsplit("_", 2)[0], []).append(f)
     das = []
     for _, fs in sorted(by_ds.items()):
-        da = xr.concat([xr.open_dataset(f)[var] for f in sorted(fs)], "time").sortby("time")
+        da = xr.concat([_lazy(f, var) for f in sorted(fs)], "time").sortby("time")
         da = da.assign_coords(time=da.time.dt.floor("D"))
         da = da.drop_duplicates("time")   # asc/des files can overlap a day at a year edge
         das.append(to_grid(da, "latitude", "longitude").reindex(time=days))
@@ -121,7 +131,7 @@ def load_target(days):
 def _read_glorys(days):
     files = sorted((CMEMS / "glorys").glob("*.nc"))
     assert files, "glorys: run python src/download/cmems.py glorys"
-    da = xr.concat([xr.open_dataset(f).thetao for f in files], "time").sortby("time")
+    da = xr.concat([_lazy(f, "thetao") for f in files], "time").sortby("time")
     da = da.assign_coords(time=da.time.dt.floor("D")).drop_duplicates("time")
     da = to_grid(da, "latitude", "longitude").interp(depth=DEPTHS)
     return da.reindex(time=days).transpose("time", "depth", "lat", "lon")
