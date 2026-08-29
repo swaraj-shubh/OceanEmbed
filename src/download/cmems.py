@@ -23,6 +23,7 @@ Product choices, with the reasons, because the obvious picks are wrong:
 import argparse
 import sys
 import time
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import pandas as pd
@@ -40,10 +41,13 @@ PRODUCTS = {
     "sla": {"datasets": ["cmems_obs-sl_glo_phy-ssh_my_allsat-l4-duacs-0.125deg_P1D"],
             "vars": ["sla"]},
     "wind": {"datasets": _ASCAT, "vars": ["eastward_wind", "northward_wind"]},
-    # Monthly chunks, not yearly: GLORYS is ~43 GB / 19 h for the record, and a killed
-    # run should lose ten minutes, not two hours. The others are small enough per year.
+    # Weekly chunks. Not for resumability -- for memory. A month is 30 x 36 x 313 x 553,
+    # which copernicusmarine decodes to ~1.5 GB in float64 before copies, and this box has
+    # 1.4 GB free of 8 GB: the downloader was dying with "OpenBLAS error: Memory allocation
+    # still failed after 10 retries", which reads like a harness kill but is a plain OOM.
+    # A week still OOMs; 3 days (~37 MB per file) survives. The others are fine per year.
     "glorys": {"datasets": ["cmems_mod_glo_phy_my_0.083deg_P1D-m"],
-               "vars": ["thetao"], "depth": (0.0, 1100.0), "chunk": "MS"},
+               "vars": ["thetao"], "depth": (0.0, 1100.0), "chunk": "3D"},
 }
 
 
@@ -67,11 +71,24 @@ def fetch(product, dataset, start, end, out_dir=OUT):
     return "ok", dst
 
 
+def _one(job):
+    product, ds, lo, hi = job
+    try:
+        what, f = fetch(product, ds, lo, hi)
+        return (f"ok   {f.name} {f.stat().st_size / 1e6:.1f} MB" if what == "ok"
+                else f"skip {f.name}")
+    except Exception as e:
+        # A satellite that simply was not flying in that window is not an error.
+        return f"FAIL {ds.split('_l3-')[-1][:24]} {lo:%Y-%m-%d}: {type(e).__name__} {str(e)[:110]}"
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("product", choices=sorted(PRODUCTS))
     p.add_argument("--start", default=START)
     p.add_argument("--end", default=END)
+    p.add_argument("--workers", type=int, default=1,
+                   help="parallel chunk downloads; each holds a decoded chunk in RAM")
     p.add_argument("--probe", action="store_true",
                    help="fetch a single day into a scratch file and report size/time")
     a = p.parse_args()
@@ -96,16 +113,21 @@ def main():
     freq = PRODUCTS[a.product].get("chunk", "YS")
     edges = pd.date_range(start, end, freq=freq)
     edges = pd.DatetimeIndex([start]).union(edges)
+    jobs = []
     for ds in PRODUCTS[a.product]["datasets"]:
         for i, lo in enumerate(edges):
             hi = min(end, edges[i + 1] - pd.Timedelta(days=1) if i + 1 < len(edges) else end)
-            try:
-                what, f = fetch(a.product, ds, lo, hi)
-                print(f"{what:4} {f.name} "
-                      f"{f.stat().st_size / 1e6:.1f} MB" if what == "ok" else f"skip {f.name}")
-            except Exception as e:
-                # A satellite that simply was not flying in that window is not an error.
-                print(f"FAIL {ds} {lo:%Y-%m}: {type(e).__name__} {str(e)[:140]}")
+            jobs.append((a.product, ds, lo, hi))
+    if a.workers > 1:
+        # The transfer measured 0.62 MB/s on one stream, which is the link and not the
+        # server, so parallel chunks multiply throughput. Keep `workers` low: each holds a
+        # decoded chunk in RAM and this box OOMed at one monthly chunk.
+        with ProcessPoolExecutor(a.workers) as ex:
+            for r in ex.map(_one, jobs):
+                print(r)
+    else:
+        for j in jobs:
+            print(_one(j))
 
 
 if __name__ == "__main__":

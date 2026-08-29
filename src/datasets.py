@@ -33,8 +33,8 @@ def compute_stats(zarr_path=ZARR, out=STATS_PATH):
     tr = ds.sel(time=slice(*SPLITS["train"]))
     stats = {}
     for name, dim in (("X", "channel"), ("Y", "depth")):
-        mu = tr[name].mean(dim=("time", "y", "x"), skipna=True).values
-        sd = tr[name].std(dim=("time", "y", "x"), skipna=True).values
+        mu = tr[name].mean(dim=("time", "lat", "lon"), skipna=True).values
+        sd = tr[name].std(dim=("time", "lat", "lon"), skipna=True).values
         assert np.all(sd > 0), f"{name}: zero-variance level"
         stats[name] = {"mean": mu.tolist(), "std": sd.tolist(),
                        "coord": tr[dim].values.tolist()}
@@ -91,10 +91,10 @@ def _fake_store(path, days=40, seed=0):
     Y[:, :, :3, :3] = np.nan                    # land corner
     X[:, 1, :5, :] = np.nan                     # SSS swath gap
     ds = xr.Dataset(
-        {"X": (("time", "channel", "y", "x"), X), "Y": (("time", "depth", "y", "x"), Y)},
+        {"X": (("time", "channel", "lat", "lon"), X), "Y": (("time", "depth", "lat", "lon"), Y)},
         coords={"time": t, "channel": CHANNELS, "depth": DEPTHS,
-                "lat": ("y", LAT), "lon": ("x", LON)})
-    ds.to_zarr(path, mode="w")
+                "lat": LAT, "lon": LON})
+    ds.to_zarr(path, mode="w", zarr_format=2)
     return ds
 
 

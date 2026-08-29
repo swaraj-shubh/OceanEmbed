@@ -15,7 +15,8 @@ import pandas as pd
 import xarray as xr
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from config import CHANNELS, DEPTHS, END, INTERIM, LAT, LON, QC_RANGE, START, ZARR
+from config import (CHANNELS, DEPTHS, END, INTERIM, LAT, LON, QC_RANGE,
+                    REPORT_DEPTHS, START, ZARR)
 from consolidate import year_file
 from regrid import qc, to_grid
 
@@ -66,14 +67,18 @@ def _oscar(var, channel):
 CMEMS = INTERIM / "cmems"
 
 
-def _lazy(f, var):
+def _lazy(f, var, tchunk=16):
     """Open one CMEMS file dask-chunked and float32.
 
     Both halves matter. xarray's `interp` upcasts to float64, so six years of 0.125 deg
-    SLA asked for a 1.6 GiB allocation and died; GLORYS at 1/12 deg over 35 levels would
+    SLA asked for a 1.6 GiB allocation and died; GLORYS at 1/12 deg over 36 levels would
     be ~80 GB. Chunked + float32 keeps the regrid lazy and the peak bounded.
+
+    `tchunk` is small for GLORYS because packed variables are decoded to float64 by
+    scale/offset *before* the cast here can apply: 16 days x 36 levels x 313 x 553 is a
+    713 MiB allocation, which an 8 GB box refuses while a download is also running.
     """
-    return xr.open_dataset(f, chunks={"time": 16})[var].astype("float32")
+    return xr.open_dataset(f, chunks={"time": tchunk})[var].astype("float32")
 
 
 def _cmems(product, var, days):
@@ -106,8 +111,21 @@ def load_sla(days):
 
 
 def _wind(var, channel):
+    """ASCAT winds, gap-filled with a centred 3-day mean.
+
+    Scatterometers are swaths: raw daily coverage of the cells ASCAT can see is ~55% in
+    the years one MetOp was flying (2015-18, 2022-24) and ~86% when both were (2019-21).
+    A centred 3-day mean lifts every year to ~97%; +/-2 days adds only 0.3 points, so one
+    day either side is where it stops paying.
+
+    That window looks one day ahead, which is deliberate and worth stating: this is a
+    reconstruction task, not a forecast, and the SSS channel is already an 8-day running
+    mean centred on its date -- so this is strictly less lookahead than a channel the PS
+    itself specifies. Cells still empty after the fill (~3%) stay NaN.
+    """
     def loader(days):
-        return qc(_cmems("wind", var, days), channel)
+        da = _cmems("wind", var, days)
+        return qc(da.rolling(time=3, center=True, min_periods=1).mean(), channel)
     return loader
 
 
@@ -131,12 +149,19 @@ def load_target(days):
 def _read_glorys(days):
     files = sorted((CMEMS / "glorys").glob("*.nc"))
     assert files, "glorys: run python src/download/cmems.py glorys"
-    da = xr.concat([_lazy(f, "thetao") for f in files], "time").sortby("time")
+    da = xr.concat([_lazy(f, "thetao", tchunk=2) for f in files], "time").sortby("time")
     da = da.assign_coords(time=da.time.dt.floor("D")).drop_duplicates("time")
     assert float(da.depth.max()) >= max(DEPTHS), (
         f"deepest GLORYS level is {float(da.depth.max()):.1f} m < {max(DEPTHS)} m -- "
         "the download's maximum_depth is too shallow and 1000 m would be extrapolated")
-    da = to_grid(da, "latitude", "longitude").interp(depth=DEPTHS)
+    # Clamp the requested depths into the source range instead of extrapolating. GLORYS's
+    # shallowest level is 0.494 m, so interpolating to exactly 0 m fell outside it and the
+    # whole surface level came back NaN -- the same failure as the 1000 m ceiling, at the
+    # other end, and 0 m is both a headline metric depth and the map the demo shows first.
+    # Clamping means "0 m" is GLORYS's 0.494 m level, which is a sub-0.01 degC difference,
+    # and nothing anywhere is extrapolated.
+    src = np.clip(DEPTHS, float(da.depth.min()), float(da.depth.max()))
+    da = to_grid(da, "latitude", "longitude").interp(depth=src).assign_coords(depth=DEPTHS)
     return da.reindex(time=days).transpose("time", "depth", "lat", "lon")
 
 
@@ -144,13 +169,33 @@ def build(start=START, end=END, out=ZARR):
     days = pd.date_range(start, end, freq="D")
     X = xr.concat([LOADERS[c](days) for c in CHANNELS], pd.Index(CHANNELS, name="channel"))
     Y = load_target(days)
-    ds = xr.Dataset({"X": X.transpose("time", "channel", ...).rename({"lat": "y", "lon": "x"}),
-                     "Y": Y.transpose("time", "depth", ...).rename({"lat": "y", "lon": "x"})})
-    ds = ds.assign_coords(lat=("y", LAT), lon=("x", LON))
+    # Spatial dims stay named lat/lon. They were briefly y/x, which silently DESTROYED the
+    # target on Windows: NTFS is case-insensitive, so the data variable "Y" and the
+    # dimension coordinate "y" are the same directory in a Zarr store, and the store came
+    # back holding X and y with no Y at all. It would have worked on Linux, so it would
+    # only ever have failed here.
+    ds = xr.Dataset({"X": X.transpose("time", "channel", ...),
+                     "Y": Y.transpose("time", "depth", ...)})
     ds.attrs["sss_note"] = "SMAP is an 8-day running mean assigned to its centre date"
     ds.attrs["regrid"] = "bilinear xarray.interp; OISST used as-is (native 0.25 deg)"
+    ds.attrs["wind_note"] = ("ASCAT L3 swaths (MetOp-A 2015-2021 + MetOp-B 2019-2024, "
+                             "ascending+descending) merged by nanmean, then a centred "
+                             "3-day mean: ~55-86% raw daily coverage -> ~97%")
+    # Concatenating sources that were chunked differently leaves ragged time chunks, which
+    # Zarr rejects. time=1 because the DataLoader reads random single days -- a bigger time
+    # chunk would pull a fortnight off disk to serve one sample.
+    # Both depth-end bugs (0 m outside the source range, 1000 m past a too-shallow
+    # download) produced an entirely NaN level that nothing else would have complained
+    # about until the metrics table came back empty. One time slice is cheap to check.
+    probe = ds.Y.isel(time=0).sel(depth=REPORT_DEPTHS).load()
+    dead = [int(z) for z in REPORT_DEPTHS if not bool(np.isfinite(probe.sel(depth=z)).any())]
+    assert not dead, f"report depths with no data: {dead} m"
+    ds = ds.chunk({"time": 1, "channel": -1, "depth": -1, "lat": -1, "lon": -1})
     out.parent.mkdir(parents=True, exist_ok=True)
-    ds.to_zarr(out, mode="w")
+    # zarr_format=2: v3's nested chunk directories race between dask writer threads
+    # (FileExistsError on X/c/0), and v2's flat keys are the portable choice for Kaggle
+    # and older zarr installs anyway.
+    ds.to_zarr(out, mode="w", zarr_format=2)
     return ds
 
 
