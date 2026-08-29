@@ -26,7 +26,9 @@ def _read(product, var, days):
     missing = [f.name for f in files if not f.exists()]
     assert not missing, (f"{missing} absent -- run "
                          f"python src/preprocess/consolidate.py {product}")
-    return xr.concat([xr.open_dataset(f)[var] for f in files], "time").sortby("time")
+    da = xr.concat([xr.open_dataset(f)[var] for f in files], "time").sortby("time")
+    # OISST stamps its daily field at 12:00Z; floor everything so the daily index lines up
+    return da.assign_coords(time=da.time.dt.floor("D"))
 
 
 def load_sst(days):
