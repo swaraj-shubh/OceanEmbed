@@ -14,8 +14,11 @@ Product choices, with the reasons, because the obvious picks are wrong:
          ascending + descending, MetOp-A (-> 2021-11) spliced with MetOp-B (2019-01 ->).
          These are swaths, so days have gaps; the loader merges the four and the gap
          fraction is reported rather than hidden.
-  glorys thetao only, 0-1000 m, native 50-level grid -- the loader interpolates to the 15
-         SIH depths, which is better than letting the server snap to nearest levels.
+  glorys thetao only, native level grid, interpolated to the 15 SIH depths by the loader
+         rather than snapped to nearest levels by the server. The depth ceiling is 1100 m,
+         not 1000: GLORYS levels near the bottom are 902.3 and 1062.4 m, so asking for
+         maximum_depth=1000 returns 902.3 as the deepest level and the 1000 m target --
+         one of the six depths in the headline metrics table -- would be extrapolated.
 """
 import argparse
 import sys
@@ -37,8 +40,10 @@ PRODUCTS = {
     "sla": {"datasets": ["cmems_obs-sl_glo_phy-ssh_my_allsat-l4-duacs-0.125deg_P1D"],
             "vars": ["sla"]},
     "wind": {"datasets": _ASCAT, "vars": ["eastward_wind", "northward_wind"]},
+    # Monthly chunks, not yearly: GLORYS is ~43 GB / 19 h for the record, and a killed
+    # run should lose ten minutes, not two hours. The others are small enough per year.
     "glorys": {"datasets": ["cmems_mod_glo_phy_my_0.083deg_P1D-m"],
-               "vars": ["thetao"], "depth": (0.0, 1000.0)},
+               "vars": ["thetao"], "depth": (0.0, 1100.0), "chunk": "MS"},
 }
 
 
@@ -75,26 +80,32 @@ def main():
     if a.probe:
         # Sizing the download before committing to it: GLORYS at 1/12 deg over 50 levels is
         # ~20 MB/day raw, but it is packed as int16 and compressed, so measure, don't guess.
+        # Probe the range actually asked for -- a single day is dominated by ~30 s of
+        # catalogue setup and badly overestimates the total. Use a month.
+        got = len(pd.date_range(start, end))
+        full = len(pd.date_range(START, END))
         for ds in PRODUCTS[a.product]["datasets"][:1]:
             t0 = time.time()
-            _, f = fetch(a.product, ds, start, start, OUT / "probe")
+            _, f = fetch(a.product, ds, start, end, OUT / "probe")
             mb, dt = f.stat().st_size / 1e6, time.time() - t0
-            days = len(pd.date_range(a.start, a.end))
-            print(f"{ds}: {mb:.2f} MB in {dt:.1f}s -> {mb * days / 1000:.1f} GB, "
-                  f"{dt * days / 3600:.1f} h for {days} days")
+            print(f"{ds}: {mb:.1f} MB / {got} days in {dt:.1f}s -> "
+                  f"{mb * full / got / 1000:.1f} GB, {dt * full / got / 3600:.1f} h "
+                  f"for the full {full}-day record")
         return
 
+    freq = PRODUCTS[a.product].get("chunk", "YS")
+    edges = pd.date_range(start, end, freq=freq)
+    edges = pd.DatetimeIndex([start]).union(edges)
     for ds in PRODUCTS[a.product]["datasets"]:
-        for yr in range(start.year, end.year + 1):
-            lo = max(start, pd.Timestamp(f"{yr}-01-01"))
-            hi = min(end, pd.Timestamp(f"{yr}-12-31"))
+        for i, lo in enumerate(edges):
+            hi = min(end, edges[i + 1] - pd.Timedelta(days=1) if i + 1 < len(edges) else end)
             try:
                 what, f = fetch(a.product, ds, lo, hi)
                 print(f"{what:4} {f.name} "
                       f"{f.stat().st_size / 1e6:.1f} MB" if what == "ok" else f"skip {f.name}")
             except Exception as e:
-                # A satellite that simply was not flying that year is not an error.
-                print(f"FAIL {ds} {yr}: {type(e).__name__} {str(e)[:140]}")
+                # A satellite that simply was not flying in that window is not an error.
+                print(f"FAIL {ds} {lo:%Y-%m}: {type(e).__name__} {str(e)[:140]}")
 
 
 if __name__ == "__main__":
