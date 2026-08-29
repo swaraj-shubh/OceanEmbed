@@ -7,7 +7,8 @@ Needs EARTHDATA_TOKEN in .env (an Earthdata Login bearer token, never committed)
 Whole granules are 4-20 MB global; the DAP4 constraint expression cuts that to ~100 KB,
 which matters a lot on a slow link. One NetCDF per day, idempotent.
 
-SMAP SSS is an 8-day running mean: each granule is stamped with its *centre* date
+SMAP SSS uses V6, not the V4 named in docs/04: V4 was retired at 2022-07-11, which
+would leave the validation year half empty. Each granule is stamped with its *centre* date
 (docs/04 sec.5). OSCAR `u`,`v` are total current -- NOT `ug`,`vg` (geostrophic only) --
 and are a 0-30 m mean, not a skin current.
 """
@@ -36,7 +37,7 @@ PAD = 0.5  # keep neighbours for the later bilinear regrid
 PRODUCTS = {
     # `dims` is the data variables' own dimension order, because a DAP4 constraint
     # expression is positional. OSCAR really is (time, lon, lat) -- not a typo.
-    "sss": {"short_name": "SMAP_RSS_L3_SSS_SMI_8DAY-RUNNINGMEAN_V4",
+    "sss": {"short_name": "SMAP_RSS_L3_SSS_SMI_8DAY-RUNNINGMEAN_V6",
             "vars": ["sss_smap"], "dims": ("lat", "lon")},
     "oscar": {"short_name": "OSCAR_L4_OC_FINAL_V2.0",
               "vars": ["u", "v"], "dims": ("time", "lon", "lat")},

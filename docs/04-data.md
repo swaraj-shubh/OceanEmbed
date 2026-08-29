@@ -10,7 +10,7 @@ nav_order: 5
 | # | Variable | Product | Native res. | Access | Account |
 |---|---|---|---|---|---|
 | 1 | SST | NOAA OISST v2.1 | 0.25°, daily | HTTPS/THREDDS from NCEI, plain NetCDF | none |
-| 2 | SSS | NASA SMAP RSS L3 SSS v4, 8-day running mean | 0.25°, **8-day running mean** (not daily), from **2015-03-27** | PO.DAAC (`podaac-data-subscriber` or HTTPS) | NASA Earthdata (free) |
+| 2 | SSS | NASA SMAP RSS L3 SSS **v6**, 8-day running mean (v4 retired at 2022-07-11) | 0.25°, **8-day running mean** (not daily), from **2015-03-27** | PO.DAAC (`podaac-data-subscriber` or HTTPS) | NASA Earthdata (free) |
 | 3 | SSH/SLA (ADT) | Copernicus DUACS L4 `SEALEVEL_GLO_PHY_L4_MY_008_047` | 0.125°, daily | `copernicusmarine` client | CMEMS (free) |
 | 4–5 | Currents U/V | NASA OSCAR v2.0 final — use variables **`u`,`v`** (total current), *not* `ug`,`vg` (geostrophic-only) | 0.25°, daily, 1993 → 2026 | PO.DAAC | Earthdata |
 | 6–7 | Winds U/V | Copernicus **`WIND_GLO_PHY_L3_MY_012_005`** — *Global Ocean Daily Gridded Reprocessed L3 Sea Surface Winds from Scatterometer* | **0.125°, daily**, covers 1991-08 → 2026-04 | `copernicusmarine` | CMEMS |
@@ -50,8 +50,8 @@ Size control: our region at 1/12° × 35 levels (≤1100 m) × daily is large �
 ## 2. Region and period (freeze these)
 
 - **Bounding box:** 0–25°N, 55–100°E (Arabian Sea + Bay of Bengal + eq. Indian Ocean). At 0.25°: 100×180 → pad to **96×176 model grid**.
-- **Period:** 2015–2022. **SMAP SSS begins 2015-03-27** — the binding constraint; start the record at **2015-04-01** for a clean month boundary. ~2,830 daily samples.
-- **Split (time-based, non-negotiable):** train 2015–2020 · validation 2021 · test 2022. Argo profiles from 2021–2022 in the region = independent evaluation set.
+- **Period:** 2015-04-01 → 2024-12-31, ~3,560 daily samples. **SMAP SSS begins 2015-03-27** — the binding constraint on the *start*; 2015-04-01 gives a clean month boundary. The end was originally 2022 because SMAP SSS **V4** was retired at 2022-07-11 (which would have left the validation year half empty); **we use V6**, current to the present. OSCAR reaches 2026-01 and GLORYS12V1 daily 1993-01-01 → 2026-06-23, so nothing but download time limits the end.
+- **Split (time-based, non-negotiable):** train 2015–2021 · validation 2022 · test 2023–2024. Argo profiles from 2022–2024 in the region = independent evaluation set.
 
 ## 3. The 15 SIH depth levels
 
