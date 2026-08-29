@@ -3,8 +3,8 @@
     python src/preprocess/build_store.py [--start ...] [--end ...]
 
 One loader per channel, each returning a daily (time, lat, lon) DataArray already on the
-frozen 0.25 deg grid, NaN where missing. NaN is the mask -- see docs/04 sec.4. Only the
-loaders below are implemented; the rest need CMEMS / Earthdata credentials.
+frozen 0.25 deg grid, NaN where missing. NaN is the mask -- see docs/04 sec.4.
+Download the sources first (src/download/*.py); this step never touches provider files.
 """
 import argparse
 import sys
@@ -63,31 +63,68 @@ def _oscar(var, channel):
     return loader
 
 
-def _todo(product):
+CMEMS = INTERIM / "cmems"
+
+
+def _cmems(product, var, days):
+    """Read a CMEMS product from data/interim/cmems/<product>/ onto the frozen grid.
+
+    Several datasets under one product (the four ASCAT satellite/pass combinations) are
+    merged with a nanmean: they are swaths, so on any given day each covers part of the
+    box. Where none of them saw a cell it stays NaN -- swath gaps are carried by the
+    missing mask, never filled in, because pretending a scatterometer saw the whole basin
+    would be inventing wind.
+    """
+    files = sorted((CMEMS / product).glob("*.nc"))
+    assert files, f"{product}: run python src/download/cmems.py {product}"
+    by_ds = {}
+    for f in files:                       # <dataset_id>_<start>_<end>.nc
+        by_ds.setdefault(f.stem.rsplit("_", 2)[0], []).append(f)
+    das = []
+    for _, fs in sorted(by_ds.items()):
+        da = xr.concat([xr.open_dataset(f)[var] for f in sorted(fs)], "time").sortby("time")
+        da = da.assign_coords(time=da.time.dt.floor("D"))
+        da = da.drop_duplicates("time")   # asc/des files can overlap a day at a year edge
+        das.append(to_grid(da, "latitude", "longitude").reindex(time=days))
+    out = das[0] if len(das) == 1 else xr.concat(das, "src").mean("src", skipna=True)
+    return out.transpose("time", "lat", "lon").astype("float32")
+
+
+def load_sla(days):
+    """DUACS L4 sea level anomaly, 0.125 deg -> 0.25 deg."""
+    return qc(_cmems("sla", "sla", days), "sla")
+
+
+def _wind(var, channel):
     def loader(days):
-        raise NotImplementedError(f"{product}: download it first (needs an account)")
+        return qc(_cmems("wind", var, days), channel)
     return loader
 
 
 LOADERS = {
     "sst": load_sst,
     "sss": load_sss,
-    "sla": _todo("CMEMS SEALEVEL_GLO_PHY_L4_MY_008_047"),
+    "sla": load_sla,
     "cur_u": _oscar("u", "cur_u"),        # total current, not geostrophic; 0-30 m mean
     "cur_v": _oscar("v", "cur_v"),
-    "wind_u": _todo("CMEMS WIND_GLO_PHY_L3_MY_012_005 eastward"),
-    "wind_v": _todo("CMEMS WIND_GLO_PHY_L3_MY_012_005 northward"),
+    "wind_u": _wind("eastward_wind", "wind_u"),
+    "wind_v": _wind("northward_wind", "wind_v"),
 }
 
 
 def load_target(days):
     """GLORYS12V1 thetao, regridded to 0.25 deg and interpolated onto the 15 SIH depths."""
-    src = INTERIM / "glorys"
-    if not src.exists():
-        raise NotImplementedError("GLORYS12V1: run the CMEMS download first")
-    da = xr.open_mfdataset(sorted(src.glob("*.nc"))).thetao
-    da = to_grid(da, "latitude", "longitude").interp(depth=DEPTHS).sel(time=days)
+    da = _read_glorys(days)
     return qc(da.astype("float32"), "thetao")
+
+
+def _read_glorys(days):
+    files = sorted((CMEMS / "glorys").glob("*.nc"))
+    assert files, "glorys: run python src/download/cmems.py glorys"
+    da = xr.concat([xr.open_dataset(f).thetao for f in files], "time").sortby("time")
+    da = da.assign_coords(time=da.time.dt.floor("D")).drop_duplicates("time")
+    da = to_grid(da, "latitude", "longitude").interp(depth=DEPTHS)
+    return da.reindex(time=days).transpose("time", "depth", "lat", "lon")
 
 
 def build(start=START, end=END, out=ZARR):
@@ -112,9 +149,10 @@ if __name__ == "__main__":
     a = p.parse_args()
     if a.check:
         days = pd.date_range(a.start, a.end, freq="D")
-        da = LOADERS[a.check](days).load()
-        assert da.shape == (len(days), len(LAT), len(LON)), da.shape
-        lo, hi = QC_RANGE[a.check]
+        da = (load_target if a.check == "target" else LOADERS[a.check])(days).load()
+        want = (len(days), len(LAT), len(LON))
+        assert da.shape == want if a.check != "target" else da.shape[0] == len(days), da.shape
+        lo, hi = QC_RANGE["thetao" if a.check == "target" else a.check]
         assert bool(((da >= lo) & (da <= hi)).any()), f"no valid {a.check}"
         always_nan = np.isnan(da).all("time")
         print(f"{a.check} ok: {da.shape}, "
