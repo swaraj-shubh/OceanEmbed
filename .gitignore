@@ -22,3 +22,5 @@ audit.log
 audit.err
 loader.log
 loader.err
+s3*.log
+s3*.err
