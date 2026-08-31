@@ -71,6 +71,7 @@ def main(cfg_path):
         start = st["epoch"] + 1
         print(f"resumed {run} from epoch {start}")
 
+    best = float(st["best"]) if ckpt_path.exists() and "best" in st else float("inf")
     log = RESULTS / f"{run}.csv"
     if not log.exists():
         log.write_text("epoch,train_loss,val_rmse,secs\n")
@@ -84,12 +85,21 @@ def main(cfg_path):
         df = run_val(net, va, dev)
         vr = summary(df)
         print(f"ep {ep:3d}  train {np.mean(losses):.4f}  val RMSE {vr:.4f} degC "
-              f"({time.time() - t0:.0f}s)")
+              f"({time.time() - t0:.0f}s){'  *best' if vr < best else ''}")
         with log.open("a") as f:
             f.write(f"{ep},{np.mean(losses):.5f},{vr:.5f},{time.time() - t0:.0f}\n")
-        torch.save({"model": net.state_dict(), "opt": opt.state_dict(), "epoch": ep,
-                    "cfg": cfg, "stats": str(stats or "")}, ckpt_path)
+        state = {"model": net.state_dict(), "opt": opt.state_dict(), "epoch": ep,
+                 "cfg": cfg, "stats": str(stats or ""), "best": best}
+        torch.save(state, ckpt_path)
         df.to_csv(RESULTS / f"{run}_val_depthwise.csv", index=False)
+        # Keep the best-val epoch separately. The last epoch is not the best one: both M2
+        # and M3 flattened around epoch 20 while train loss kept falling, so scoring the
+        # final weights conflates "does attention help" with "did it overfit".
+        if vr < best:
+            best = vr
+            state["best"] = best
+            torch.save(state, CKPT / f"{run}_best.pt")
+            df.to_csv(RESULTS / f"{run}_best_val_depthwise.csv", index=False)
     return net
 
 
