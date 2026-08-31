@@ -64,6 +64,9 @@ def main():
     print(f"cube {cube.shape}  {str(cube.time.values[0])[:10]} -> {str(cube.time.values[-1])[:10]}")
 
     prof = pd.read_parquet(a.argo)
+    # ERDDAP hands back tz-aware UTC; the split bounds and the cube's time axis are naive,
+    # and pandas refuses to compare the two rather than silently guessing an offset.
+    prof["time"] = pd.to_datetime(prof["time"]).dt.tz_localize(None)
     lo, hi = SPLITS[a.split]
     prof = prof[(prof.time >= lo) & (prof.time <= pd.Timestamp(hi) + pd.Timedelta(days=1))]
     print(f"{prof.profile.nunique()} Argo profiles in {a.split} ({lo}..{hi})")
