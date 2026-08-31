@@ -20,7 +20,7 @@ from config import DEPTHS, INTERIM, LAT, LON, MODEL_SHAPE, GRID_SHAPE, REPORT_DE
 from datasets import NIODataset
 from evaluate import report
 from metrics import summary
-from models.unet import UNet
+from train import MODELS
 
 RESULTS = ROOT / "results"
 
@@ -28,8 +28,8 @@ RESULTS = ROOT / "results"
 def predict_cube(ckpt, split, zarr=ZARR, batch=32, dev=None):
     dev = dev or ("cuda" if torch.cuda.is_available() else "cpu")
     st = torch.load(ckpt, map_location=dev, weights_only=False)
-    cfg = dict(st["cfg"]["model"]); cfg.pop("kind")
-    net = UNet(**cfg).to(dev).eval()
+    cfg = dict(st["cfg"]["model"])
+    net = MODELS[cfg.pop("kind")](**cfg).to(dev).eval()   # M2 and M3 share this path
     net.load_state_dict(st["model"])
 
     ds = NIODataset(split, zarr)
