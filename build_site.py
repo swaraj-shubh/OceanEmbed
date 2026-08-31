@@ -29,6 +29,7 @@ PAGES = [
     ("04-data.md", "04-data.html", "04 · Data Pipeline"),
     ("05-training-evaluation.md", "05-training-evaluation.html", "05 · Training & Eval"),
     ("06-demo-and-roadmap.md", "06-demo-and-roadmap.html", "06 · Demo & Roadmap"),
+    ("07-results-and-handover.md", "07-results-and-handover.html", "07 · Results & Handover"),
 ]
 
 FRONT_MATTER = re.compile(r"\A---\n.*?\n---\n", re.S)
@@ -240,7 +241,9 @@ if __name__ == "__main__":
     main()
     # self-check: every page exists, is non-trivial, and mermaid survived conversion
     built = list(OUT.glob("*.html"))
-    assert len(built) == 8, built
+    # PAGES + the standalone claude-md page; derived, not a literal that breaks on
+    # every new doc (it already did once, on 07)
+    assert len(built) == len(PAGES) + 1, built
     assert all(p.stat().st_size > 4000 for p in built), "a page rendered suspiciously small"
     arch = (OUT / "03-architecture.html").read_text(encoding="utf-8")
     assert '<pre class="mermaid">' in arch and "language-mermaid" not in arch

@@ -15,5 +15,6 @@ Reconstruction of subsurface ocean temperature (15 depths, 0–1000 m) from 7 su
 | [04 — Data](04-data.md) | Exact products, access/download commands, region/period/splits, preprocessing pipeline, BoB gotchas |
 | [05 — Training & Evaluation](05-training-evaluation.md) | Loss, recipe, GLORYS + independent-Argo protocol, metrics, ablations, compute plan |
 | [06 — Demo & Roadmap](06-demo-and-roadmap.md) | Streamlit demo spec, weekly milestones, risk register, Q&A ammunition |
+| [**07 — Results & Handover**](07-results-and-handover.md) | **What was actually built and measured**: final depth-wise accuracy vs independent Argo, the three findings, the bugs that would have corrupted results, infrastructure, limitations, next steps |
 
 **The pitch in one sentence:** an attention-fused, temporally-aware CNN embedding of 7 satellite surface fields, trained on GLORYS12 and validated depth-wise against independent Argo observations — the first such multivariate system focused on the North Indian Ocean.

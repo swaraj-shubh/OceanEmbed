@@ -111,6 +111,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <li><a href="04-data.html">04 · Data Pipeline</a></li>
 <li><a href="05-training-evaluation.html">05 · Training & Eval</a></li>
 <li><a href="06-demo-and-roadmap.html">06 · Demo & Roadmap</a></li>
+<li><a href="07-results-and-handover.html">07 · Results & Handover</a></li>
 <li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
   <div class="aside-foot">
     <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
@@ -210,7 +211,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </tr>
 <tr>
 <td>SSS</td>
-<td>NASA SMAP L3 SSS (RSS 8-day running mean V4)</td>
+<td>NASA SMAP L3 SSS (RSS 8-day running mean <strong>V6</strong> — V4 was retired at 2022-07-11)</td>
 <td>0.25°, from 2015-03-27; 8-day composite (only non-daily input) — document the window</td>
 </tr>
 <tr>
@@ -255,7 +256,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <p>0.1° global, weekly, 2000–2024; 9.5M EN4 profiles interpolated to 50 GLORYS depth levels; 128×128 patches; eval year = 2018; comes with PyTorch DataLoaders. Its baselines: 2D U-Net beat LSTM/1D-CNN, climatology is a strong baseline. Use it to get a model training on day 1 without building any pipeline.</p>
 <h2 id="5-data-pipeline-contract">5. Data Pipeline Contract</h2>
 <p>Raw products → QC → subset Arabian Sea + Bay of Bengal → regrid 0.25° → daily alignment → unit standardization → land/missing masks → normalize <strong>using TRAIN-split stats only</strong> → save model-ready <code>(X=[7,H,W], Y=[15,H,W])</code> samples (NetCDF/Zarr).</p>
-<p>The model never touches raw provider files. <strong>Frozen region bbox (docs/04): lat 0–25°N, lon 55–100°E → 100×180 at 0.25°, padded to 96×176 model grid. Period 2015–2022 (SMAP SSS constraint); split: train 2015–20 / val 2021 / test 2022.</strong></p>
+<p>The model never touches raw provider files. <strong>Frozen region bbox (docs/04): lat 0–25°N, lon 55–100°E → 100×180 at 0.25°, centre-cropped to 96×176 model grid. Period 2015-04 → 2024-12; split: train 2015–2021 / val 2022 / test 2023–2024.</strong> Start is hard (SMAP SSS begins 2015-03-27). The old 2022 end came from SMAP SSS <em>V4</em>, retired at 2022-07-11; <strong>we use V6</strong>, which runs to the present — OSCAR reaches 2026-01 and GLORYS12V1 2026-06, so nothing but download time limits the end date.</p>
 <h2 id="6-non-negotiable-methodology-rules">6. Non-Negotiable Methodology Rules</h2>
 <ol>
 <li><strong>Time-based split.</strong> Train on earlier years, validate on a later year, test on later still (e.g. train ≤2020, val 2021, test 2022+). Never random pixel/patch mixing; no overlapping patches across split boundaries.</li>
