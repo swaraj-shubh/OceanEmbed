@@ -12,3 +12,13 @@ __pycache__/
 .env*
 glorys.log
 glorys.err
+build.log
+build.err
+stats.log
+stats.err
+m0.log
+m0.err
+audit.log
+audit.err
+loader.log
+loader.err

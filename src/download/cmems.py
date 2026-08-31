@@ -21,6 +21,7 @@ Product choices, with the reasons, because the obvious picks are wrong:
          one of the six depths in the headline metrics table -- would be extrapolated.
 """
 import argparse
+import re
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
@@ -113,11 +114,23 @@ def main():
     freq = PRODUCTS[a.product].get("chunk", "YS")
     edges = pd.date_range(start, end, freq=freq)
     edges = pd.DatetimeIndex([start]).union(edges)
+    # Skip by DATE COVERAGE, not by filename. The chunk size changed mid-download (monthly
+    # -> 3-day after the OOM), so the new filenames never matched the old ones and 42 chunks
+    # were spent re-fetching days already on disk. Coverage is also not contiguous, so a
+    # manual --start cannot express it.
+    have = set()
+    for f in (OUT / a.product).glob("*.nc"):
+        m = re.search(r"(\d{8})_(\d{8})", f.name)
+        if m:
+            have |= set(pd.date_range(*m.groups()))
+
     jobs = []
     for ds in PRODUCTS[a.product]["datasets"]:
         for i, lo in enumerate(edges):
             hi = min(end, edges[i + 1] - pd.Timedelta(days=1) if i + 1 < len(edges) else end)
-            jobs.append((a.product, ds, lo, hi))
+            if not set(pd.date_range(lo, hi)) <= have:
+                jobs.append((a.product, ds, lo, hi))
+    print(f"{len(have)} days already on disk, {len(jobs)} chunks to fetch")
     if a.workers > 1:
         # The transfer measured 0.62 MB/s on one stream, which is the link and not the
         # server, so parallel chunks multiply throughput. Keep `workers` low: each holds a
