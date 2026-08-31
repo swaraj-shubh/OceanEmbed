@@ -1,0 +1,14 @@
+run: m3_oceanembed
+model:
+  kind: oceanembed
+  in_ch: 7
+  out_ch: 15
+  base: 32
+  depth: 3
+  heads: 4
+window: 1
+batch_size: 32
+num_workers: 4
+lr: 0.001
+epochs: 30
+seed: 0
