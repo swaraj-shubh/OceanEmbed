@@ -6,7 +6,8 @@ model:
   base: 32
   depth: 3
 window: 1
-batch_size: 8
+batch_size: 32
+num_workers: 4
 lr: 0.001
 epochs: 30
 seed: 0
