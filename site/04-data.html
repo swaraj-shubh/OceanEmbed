@@ -111,6 +111,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <li><a href="04-data.html" class="active">04 · Data Pipeline</a></li>
 <li><a href="05-training-evaluation.html">05 · Training & Eval</a></li>
 <li><a href="06-demo-and-roadmap.html">06 · Demo & Roadmap</a></li>
+<li><a href="07-results-and-handover.html">07 · Results & Handover</a></li>
 <li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
   <div class="aside-foot">
     <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
@@ -142,7 +143,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <tr>
 <td>2</td>
 <td>SSS</td>
-<td>NASA SMAP RSS L3 SSS v4, 8-day running mean</td>
+<td>NASA SMAP RSS L3 SSS <strong>v6</strong>, 8-day running mean (v4 retired at 2022-07-11)</td>
 <td>0.25°, <strong>8-day running mean</strong> (not daily), from <strong>2015-03-27</strong></td>
 <td>PO.DAAC (<code>podaac-data-subscriber</code> or HTTPS)</td>
 <td>NASA Earthdata (free)</td>
@@ -231,8 +232,8 @@ copernicusmarine.subset(
 <h2 id="2-region-and-period-freeze-these">2. Region and period (freeze these)</h2>
 <ul>
 <li><strong>Bounding box:</strong> 0–25°N, 55–100°E (Arabian Sea + Bay of Bengal + eq. Indian Ocean). At 0.25°: 100×180 → pad to <strong>96×176 model grid</strong>.</li>
-<li><strong>Period:</strong> 2015–2022. <strong>SMAP SSS begins 2015-03-27</strong> — the binding constraint; start the record at <strong>2015-04-01</strong> for a clean month boundary. ~2,830 daily samples.</li>
-<li><strong>Split (time-based, non-negotiable):</strong> train 2015–2020 · validation 2021 · test 2022. Argo profiles from 2021–2022 in the region = independent evaluation set.</li>
+<li><strong>Period:</strong> 2015-04-01 → 2024-12-31, ~3,560 daily samples. <strong>SMAP SSS begins 2015-03-27</strong> — the binding constraint on the <em>start</em>; 2015-04-01 gives a clean month boundary. The end was originally 2022 because SMAP SSS <strong>V4</strong> was retired at 2022-07-11 (which would have left the validation year half empty); <strong>we use V6</strong>, current to the present. OSCAR reaches 2026-01 and GLORYS12V1 daily 1993-01-01 → 2026-06-23, so nothing but download time limits the end.</li>
+<li><strong>Split (time-based, non-negotiable):</strong> train 2015–2021 · validation 2022 · test 2023–2024. Argo profiles from 2022–2024 in the region = independent evaluation set.</li>
 </ul>
 <h2 id="3-the-15-sih-depth-levels">3. The 15 SIH depth levels</h2>
 <p><code>0, 5, 10, 20, 30, 50, 75, 100, 125, 150, 200, 300, 500, 700, 1000 m</code> — linear interpolation of GLORYS's 50 native levels onto these (xarray <code>interp</code> on the depth coordinate). Same interpolation applied to Argo profiles at evaluation time (only within a profile's observed depth range; no extrapolation — mirror the OceanDepths acceptance rule: reject a level if the nearest observed depth is farther than <code>max(0.1·z, 10 m)</code>).</p>
@@ -253,6 +254,7 @@ copernicusmarine.subset(
 <li>Store everything as one Zarr store <code>data/processed/nio_daily.zarr</code> with dims <code>(time, channel, y, x)</code> — random access by date is O(1), works identically on Kaggle after upload as a Kaggle Dataset.</li>
 <li>The <code>Dataset.__getitem__</code> for M4 returns <code>(X[t−6…t], Y[t], M[t])</code>; for M1–M3 just <code>(X[t], Y[t], M[t])</code>.</li>
 </ul>
+<p><strong>Store schema (frozen, implemented in <code>src/datasets.py</code>):</strong> two arrays in <code>data/processed/nio_daily.zarr</code> — <code>X (time, channel, y, x)</code> and <code>Y (time, depth, y, x)</code>, both float32, with coords <code>time, channel, depth, lat, lon</code>. <strong>NaN is the mask</strong> — there are no separate mask arrays to keep in sync. Land and missing cells are NaN in the store; <code>NIODataset.__getitem__</code> replaces NaN in the inputs with 0 <em>after</em> normalisation (i.e. the train mean) and returns <code>np.isfinite(Y)</code> as the boolean target mask that the loss and the metrics both honour. Normalisation stats live in <code>data/processed/norm_stats.json</code>, computed on the train split only.</p>
 <h2 id="5-bay-of-bengal-gotchas-know-these-for-qa">5. Bay of Bengal gotchas (know these for Q&amp;A)</h2>
 <ul>
 <li><strong>Barrier layer:</strong> massive river discharge (Ganga-Brahmaputra) creates a shallow salinity-stratified layer that decouples SST from subsurface heat — this is <em>why</em> SSS is a critical input here, and a great answer to "why 7 variables?".</li>
@@ -260,7 +262,12 @@ copernicusmarine.subset(
 <li><strong>Monsoon seasonality</strong> dominates variance — this is why climatology (M0) will look strong, and why we report anomaly correlation, not just RMSE.</li>
 <li><strong>Argo density</strong> in the region is decent (INCOIS is a major Argo player) but sparser near coasts and in the northern Bay.</li>
 <li><strong>OSCAR currents are a 0–30 m average</strong>, not a true skin-layer current. Harmless for us (the mixed layer is what carries subsurface signal) but state it accurately — do not call it "surface current" in the report without the qualifier.</li>
-<li><strong>SMAP is an 8-day running mean, not a daily field.</strong> It is the only non-daily input. Assign each composite to its centre date and forward-fill; record the window in the Zarr metadata so the temporal smoothing is auditable. Expect it to limit how sharp a day-to-day signal the model can learn from salinity.</li>
+<li>
+<p><strong>SMAP is an 8-day running mean, not a daily field.</strong> It is the only non-daily input. Assign each composite to its centre date and forward-fill; record the window in the Zarr metadata so the temporal smoothing is auditable. Expect it to limit how sharp a day-to-day signal the model can learn from salinity.</p>
+</li>
+<li>
+<p><strong>Argo profile counts in our box.</strong> The OceanDepths <code>indices/profiles.parquet</code> index (EN4-derived) suggested ~2,089 profiles in 2021 and 4,022 in 2022. The direct Ifremer ERDDAP GDAC query used by <code>src/download/argo.py</code> actually returns <strong>7,865 profiles / 3.08M good-QC levels</strong> for 2021-2022 in 0-25N/55-100E, because it includes real-time floats the EN4 index does not. After the acceptance rule, ~87% of profiles yield a usable 0 m value and ~72% reach all 15 depths, so the independent evaluation set is a few thousand full profiles -- enough for depth-wise metrics, not enough to slice finely by season <em>and</em> sub-region at once.</p>
+</li>
 </ul>
 <h2 id="6-oceandepths-bootstrap-path-week-1-before-our-pipeline-exists">6. OceanDepths bootstrap path (week 1, before our pipeline exists)</h2>
 <pre><code>pip install huggingface_hub
