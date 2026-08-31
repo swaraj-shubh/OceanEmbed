@@ -1,0 +1,17 @@
+# Only site/ is deployed (vercel.json outputDirectory). Everything else is upload weight --
+# data/ alone is 48 GB and crashed the CLI with a V8 out-of-memory before this existed.
+data
+checkpoints
+results
+docs
+src
+deploy
+notebooks
+__pycache__
+*.pyc
+*.log
+*.err
+*.nc
+*.pem
+.env*
+.git
