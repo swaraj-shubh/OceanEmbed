@@ -84,11 +84,27 @@ class OceanEmbed(UNet):
         super().__init__(*a, **{**kw, "attn": True})
 
 
-def masked_mse(pred, true, mask):
-    """Land and missing target cells never contribute (CLAUDE.md rule 5)."""
+def masked_mse(pred, true, mask, grad_weight=0.0):
+    """Land and missing target cells never contribute (CLAUDE.md rule 5).
+
+    `grad_weight` adds a penalty on the error in the VERTICAL profile shape -- the
+    level-to-level differences rather than the levels themselves. Plain MSE is happy with a
+    profile that is smooth and slightly wrong in the thermocline, which is exactly the
+    failure we measured: a stable +0.85 degC bias at 100 m, i.e. the model smearing the
+    temperature drop instead of placing it sharply. Differences are taken per level, not
+    per metre: dividing by dz would make the 5 m spacings near the surface dominate a term
+    meant to be about the thermocline.
+    """
     n = mask.sum()
     assert n > 0, "batch has no valid target cells"
-    return ((pred - true) ** 2 * mask).sum() / n
+    loss = ((pred - true) ** 2 * mask).sum() / n
+    if grad_weight:
+        gm = mask[:, 1:] & mask[:, :-1]          # both levels of the pair must be valid
+        if gm.any():
+            gp = pred[:, 1:] - pred[:, :-1]
+            gt = true[:, 1:] - true[:, :-1]
+            loss = loss + grad_weight * ((gp - gt) ** 2 * gm).sum() / gm.sum()
+    return loss
 
 
 if __name__ == "__main__":
@@ -101,6 +117,11 @@ if __name__ == "__main__":
 
     m = torch.ones_like(y, dtype=torch.bool); m[:, :, :3, :3] = False
     assert torch.isclose(masked_mse(y, y + 1, m), torch.tensor(1.0))
+    # a constant offset is pure bias: it has zero gradient error, so the extra term is 0
+    assert torch.isclose(masked_mse(y, y + 1, m, grad_weight=1.0), torch.tensor(1.0)),         "gradient term must ignore a constant offset"
+    # a profile with the right values but the wrong shape must cost more
+    warped = y.detach().clone(); warped[:, 7] += 2.0; warped[:, 8] -= 2.0
+    assert masked_mse(warped, y.detach(), m, grad_weight=1.0) >            masked_mse(warped, y.detach(), m, grad_weight=0.0), "gradient term is inert"
     junk = y.detach().clone(); junk[:, :, :3, :3] = 1e6      # garbage only where masked
     assert masked_mse(junk, y.detach(), m) < 1e-6
 
