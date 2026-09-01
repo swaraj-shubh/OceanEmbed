@@ -1,0 +1,14 @@
+run: m2_anomaly
+model:
+  kind: unet
+  in_ch: 7
+  out_ch: 15
+  base: 32
+  depth: 3
+anomaly: true          # model predicts the departure from train-split monthly climatology
+window: 1
+batch_size: 32
+num_workers: 4
+lr: 0.001
+epochs: 30
+seed: 0
