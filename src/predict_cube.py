@@ -45,10 +45,22 @@ def predict_cube(ckpt, split, zarr=ZARR, batch=32, dev=None):
     # Argo profile would be matched to a cell two rows away from where it actually is.
     dy = (GRID_SHAPE[0] - MODEL_SHAPE[0]) // 2
     dx = (GRID_SHAPE[1] - MODEL_SHAPE[1]) // 2
-    return xr.DataArray(out, dims=("time", "depth", "lat", "lon"),
+    cube = xr.DataArray(out, dims=("time", "depth", "lat", "lon"),
                         coords={"time": ds.time, "depth": DEPTHS,
                                 "lat": LAT[dy:dy + MODEL_SHAPE[0]],
                                 "lon": LON[dx:dx + MODEL_SHAPE[1]]})
+
+    # Blank the cells the model was never supervised on. A network still emits *some*
+    # number on land, and Argo matching takes the nearest grid cell, so 42 of 6093 coastal
+    # profiles (0.7%) were being scored against unconstrained output. That was survivable
+    # while the garbage happened to look ocean-like, and catastrophic for the anomaly model
+    # -- its base is zeroed on land, so it emitted ~0 degC where the truth is ~10, and 0.7%
+    # of profiles moved 500 m RMSE from 0.30 to 0.94. Metrics already drop non-finite
+    # predictions, so NaN here is all that is needed.
+    land = np.isnan(ds.ds.Y).all("time").compute().values
+    land = land[:, dy:dy + MODEL_SHAPE[0], dx:dx + MODEL_SHAPE[1]]
+    return cube.where(~xr.DataArray(land, dims=("depth", "lat", "lon"),
+                                    coords={"depth": DEPTHS, "lat": cube.lat, "lon": cube.lon}))
 
 
 def main():
