@@ -1,0 +1,13 @@
+run: m4_convlstm
+model:
+  kind: temporal
+  in_ch: 7
+  out_ch: 15
+  base: 32
+  depth: 3
+window: 7              # 7 daily frames -> ConvLSTM at the bottleneck -> U-Net decoder
+batch_size: 16         # 7x the encoder passes of M2; halved to keep the T4 comfortable
+num_workers: 4
+lr: 0.001
+epochs: 20
+seed: 0

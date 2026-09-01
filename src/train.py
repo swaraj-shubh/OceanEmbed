@@ -19,11 +19,11 @@ sys.path.append(str(Path(__file__).resolve().parent))
 from config import ROOT, ZARR
 from datasets import NIODataset
 from metrics import DepthStats, summary
-from models.unet import OceanEmbed, UNet, masked_mse
+from models.unet import OceanEmbed, OceanEmbedTemporal, UNet, masked_mse
 
 CKPT = ROOT / "checkpoints"
 RESULTS = ROOT / "results"
-MODELS = {"unet": UNet, "oceanembed": OceanEmbed}
+MODELS = {"unet": UNet, "oceanembed": OceanEmbed, "temporal": OceanEmbedTemporal}
 
 
 def build(cfg):
@@ -87,7 +87,8 @@ def main(cfg_path, seed=None):
         t0, losses = time.time(), []
         for x, y, m, b in tr:
             opt.zero_grad()
-            loss = masked_mse(net(x.to(dev)) + b.to(dev), y.to(dev), m.to(dev))
+            loss = masked_mse(net(x.to(dev)) + b.to(dev), y.to(dev), m.to(dev),
+                              grad_weight=cfg.get("grad_weight", 0.0))
             loss.backward(); opt.step()
             losses.append(float(loss.detach()))
         df = run_val(net, va, dev)
