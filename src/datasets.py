@@ -49,6 +49,16 @@ def compute_stats(zarr_path=ZARR, out=STATS_PATH):
     return stats
 
 
+def build_climatology(zarr_path=ZARR, crop=True):
+    """Fit and cache the train-split monthly climatology. Run as its own process, because
+    the dask reduction it performs leaves a thread pool behind that deadlocks DataLoader
+    workers forked afterwards."""
+    from baselines import Climatology
+    c = Climatology.fit(zarr_path, crop=crop).months
+    np.save(clim_path(zarr_path), c)
+    return c
+
+
 class NIODataset:
     """(X, Y, mask) samples for one time split.
 
@@ -57,15 +67,18 @@ class NIODataset:
     """
 
     def climatology(self, zarr_path):
-        """Train-split monthly mean, cached. Fitting it scans the whole train split, so it
-        is computed once and reused -- and it is train-only, like the norm stats."""
+        """Load the cached train-split monthly mean. Deliberately load-only.
+
+        Fitting it here instead deadlocked training: the fit runs a dask reduction over
+        the whole train split, which leaves a live thread pool in the parent, and the
+        DataLoader then forks workers on top of that broken lock state -- four workers
+        asleep, load average 0.00, no epoch ever starting. Build the cache in its own
+        process (`python src/datasets.py --clim`) and this constructor only ever np.loads.
+        """
         cache = clim_path(zarr_path)
-        if cache.exists():
-            return np.load(cache)
-        from baselines import Climatology
-        c = Climatology.fit(zarr_path, crop=self.crop).months
-        np.save(cache, c)
-        return c
+        assert cache.exists(), (
+            f"{cache.name} missing -- build it first with: python src/datasets.py --clim")
+        return np.load(cache)
 
     def __init__(self, split, zarr_path=ZARR, window=1, stats=STATS_PATH, crop=True,
                  anomaly=False):
@@ -125,7 +138,13 @@ def _fake_store(path, days=40, seed=0):
 
 if __name__ == "__main__":
     import shutil
+    import sys as _sys
     import tempfile
+
+    if "--clim" in _sys.argv:                   # build the cache, then exit
+        c = build_climatology()
+        print(f"climatology cached {c.shape} -> {clim_path(ZARR).name}")
+        raise SystemExit
     tmp = Path(tempfile.mkdtemp())
     store = tmp / "fake.zarr"
     _fake_store(store)                          # spans the train/val edge
@@ -145,6 +164,7 @@ if __name__ == "__main__":
     # absolute mode: the climatology base must be exactly zero, so pred + base == pred
     assert b.shape == y.shape and not b.any(), "base must be zeros unless anomaly=True"
 
+    build_climatology(store)                    # loader is load-only; build the cache first
     an = NIODataset("train", store, stats=tmp / "stats.json", anomaly=True)
     xa, ya, ma, ba = an[0]
     assert np.allclose(ya, y) and np.allclose(xa, x), "anomaly mode must not alter x or y"
