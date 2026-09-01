@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08 — Challenges Faced — OceanEmbed</title>
+<meta name="description" content="Satellite Embedding-Based Deep Learning Framework for Reconstruction of Subsurface Ocean Temperature — SIH 2026 PS 26066">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#08131e; --bg-soft:#0d1b2a; --panel:#101f30; --line:#1c3448;
+  --fg:#dbe7f2; --fg-dim:#8ba3ba; --accent:#4cc4e0; --accent-2:#6ee7b7;
+  --code-bg:#0b1926;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+  font-size:16px;line-height:1.7;display:flex;
+  background-image:radial-gradient(1200px 600px at 80% -10%,rgba(76,196,224,.10),transparent 60%),
+                   radial-gradient(900px 500px at -10% 110%,rgba(110,231,183,.07),transparent 60%);
+  background-attachment:fixed;
+}
+/* sidebar */
+aside{
+  position:sticky;top:0;height:100vh;flex:0 0 288px;overflow-y:auto;
+  background:rgba(13,27,42,.85);backdrop-filter:blur(8px);
+  border-right:1px solid var(--line);padding:22px 16px;
+}
+.brand{display:flex;gap:11px;align-items:center;text-decoration:none;color:var(--fg);
+  padding:6px 10px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.brand .wave{font-size:26px;filter:drop-shadow(0 0 10px rgba(76,196,224,.5))}
+.brand strong{display:block;font-size:18px;letter-spacing:.2px}
+.brand small{display:block;color:var(--fg-dim);font-size:11.5px;letter-spacing:.3px;margin-top:2px}
+nav ul{list-style:none;margin:0;padding:0}
+nav li{margin:1px 0}
+nav a{display:block;padding:8px 12px;border-radius:7px;color:var(--fg-dim);
+  text-decoration:none;font-size:14px;transition:.15s;border-left:2px solid transparent}
+nav a:hover{background:rgba(76,196,224,.09);color:var(--fg)}
+nav a.active{background:rgba(76,196,224,.14);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+nav li.sep{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.aside-foot{margin-top:24px;padding:0 12px;font-size:13px}
+.aside-foot a{color:var(--fg-dim);text-decoration:none}
+.aside-foot a:hover{color:var(--accent)}
+/* main */
+main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;padding:0 32px}
+article{width:100%;max-width:900px;padding:48px 0 24px}
+footer{width:100%;max-width:900px;border-top:1px solid var(--line);margin-top:40px;
+  padding:20px 0 56px;color:var(--fg-dim);font-size:13px}
+/* typography */
+h1,h2,h3,h4{line-height:1.3;font-weight:650;letter-spacing:-.01em}
+h1{font-size:2.05rem;margin:0 0 .6em;padding-bottom:.4em;border-bottom:1px solid var(--line)}
+h2{font-size:1.42rem;margin:2.2em 0 .7em;color:var(--accent)}
+h3{font-size:1.13rem;margin:1.8em 0 .5em}
+h4{font-size:1rem;margin:1.4em 0 .4em;color:var(--fg-dim)}
+p{margin:.9em 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(76,196,224,.3)}
+a:hover{border-bottom-color:var(--accent)}
+strong{color:#fff;font-weight:650}
+em{color:var(--accent-2)}
+hr{border:0;border-top:1px solid var(--line);margin:2.4em 0}
+ul,ol{padding-left:1.35em}
+li{margin:.35em 0}
+blockquote{border-left:3px solid var(--accent);margin:1.2em 0;padding:.1em 1em;
+  color:var(--fg-dim);background:rgba(76,196,224,.05);border-radius:0 6px 6px 0}
+/* code */
+code{font-family:var(--mono);font-size:.87em;background:var(--code-bg);
+  padding:.16em .42em;border-radius:4px;border:1px solid var(--line);color:var(--accent-2)}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;
+  padding:16px 18px;overflow-x:auto;margin:1.3em 0;font-size:13.5px;line-height:1.55}
+pre code{background:none;border:0;padding:0;color:#cfe3f0;font-size:inherit}
+pre.mermaid{background:var(--bg-soft);text-align:center;padding:24px;border:1px solid var(--line)}
+/* tables */
+.tablewrap{overflow-x:auto;margin:1.4em 0;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:rgba(76,196,224,.10);color:var(--accent);font-weight:600;
+  white-space:nowrap;position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+td code{white-space:nowrap}
+/* checkbox lists in the deliverables section */
+li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
+/* responsive */
+#navtoggle{display:none;position:fixed;top:14px;left:14px;z-index:30;
+  background:var(--panel);color:var(--fg);border:1px solid var(--line);
+  border-radius:8px;font-size:19px;padding:6px 12px;cursor:pointer}
+@media(max-width:900px){
+  #navtoggle{display:block}
+  aside{position:fixed;z-index:20;transform:translateX(-100%);transition:.22s;box-shadow:0 0 40px #000}
+  body.nav-open aside{transform:none}
+  main{padding:0 18px}
+  article{padding:64px 0 24px}
+  h1{font-size:1.65rem}
+}
+</style>
+</head>
+<body>
+<button id="navtoggle" aria-label="Toggle navigation">☰</button>
+<aside>
+  <a class="brand" href="index.html">
+    <span class="wave">🌊</span>
+    <span><strong>OceanEmbed</strong><small>SIH 2026 · PS 26066 · INCOIS</small></span>
+  </a>
+  <nav><ul><li><a href="index.html">Overview</a></li>
+<li><a href="01-problem-statement.html">01 · Problem Statement</a></li>
+<li><a href="02-research-review.html">02 · Research Review</a></li>
+<li><a href="03-architecture.html">03 · Architecture</a></li>
+<li><a href="04-data.html">04 · Data Pipeline</a></li>
+<li><a href="05-training-evaluation.html">05 · Training & Eval</a></li>
+<li><a href="06-demo-and-roadmap.html">06 · Demo & Roadmap</a></li>
+<li><a href="07-results-and-handover.html">07 · Results & Handover</a></li>
+<li><a href="08-challenges.html" class="active">08 · Challenges Faced</a></li>
+<li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
+  <div class="aside-foot">
+    <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
+  </div>
+</aside>
+<main>
+  <article><h1 id="08-challenges-faced">08 — Challenges Faced</h1>
+<p>Every problem that cost real time, with the symptom, the actual cause, and the fix. Kept
+because most of these did not announce themselves — several produced plausible-looking
+output rather than an error, and the ones that did throw usually blamed the wrong thing.</p>
+<p>Grouped by where they bit, roughly in the order they were hit.</p>
+<hr />
+<h2 id="1-environment-and-tooling">1. Environment and tooling</h2>
+<p><strong><code>argopy</code> would not install.</strong> Python 3.14 on Windows; <code>aiohttp</code> has no cp314 wheel and
+building it needs MSVC. Rather than downgrade Python for one library, the Argo fetch was
+rewritten as direct Ifremer ERDDAP <code>tabledap</code> CSV queries. Fewer dependencies, and the
+query is explicit about what it asks for.</p>
+<p><strong>xESMF needs conda/Linux.</strong> Every source here is ≥0.125° native, so <code>xarray.interp</code>
+bilinear is adequate and portable. The method used is recorded in the Zarr attributes
+rather than left implicit.</p>
+<p><strong>GPG signing timed out repeatedly</strong>, blocking commits with
+<code>gpg: signing failed: Timeout</code> — pinentry launches a GUI passphrase dialog that expires.
+Retrying usually worked; it cost several minutes each time and blocked one commit for an
+hour.</p>
+<p><strong>Bash mangled backticks in commit messages</strong> (a message containing <code>`latitude`</code>
+executed it as a command). Switched to <code>git commit -F -</code> with quoted heredocs.</p>
+<p><strong><code>python -m copernicusmarine</code> fails</strong> — "is a package and cannot be directly executed".
+The console script at the full path works.</p>
+<hr />
+<h2 id="2-data-access-and-download">2. Data access and download</h2>
+<p><strong>OISST would have taken ~10 hours.</strong> Measured 0.13 MB/s pulling whole-globe daily files.
+Switched to NCEI's OPeNDAP endpoint so the region is subset <em>server-side</em> — ~50 KB/day
+instead of 1.6 MB.</p>
+<p><strong>Threads made it slower, not faster.</strong> netCDF4's DAP client holds the GIL, so a thread
+pool measured worse than sequential. <code>ProcessPoolExecutor</code> fixed it.</p>
+<p><strong>NCEI THREDDS went down for days.</strong> 503s and read timeouts through 2023-06 while the
+plain-HTTPS archive kept serving 200s. Added an archive fallback — 30× more bytes, but it
+completes.</p>
+<p><strong>ERDDAP: <code>CERTIFICATE_VERIFY_FAILED</code>.</strong> Windows Python has no usable CA bundle by
+default; pointed the SSL context at <code>certifi</code>.</p>
+<p><strong>HTTP 400, "Invalid character found in the request target."</strong> Tomcat rejects raw <code>&lt;</code>,
+<code>&gt;</code>, <code>[</code>, <code>]</code> in query strings. Percent-encoded them in both the ERDDAP queries and the
+DAP4 constraint expressions.</p>
+<p><strong>SMAP granules were stamped with the wrong date.</strong> The 8-day running mean is labelled
+with its window <em>start</em> in CMR. Using that would have shifted the whole salinity channel
+by four days. Now takes the <code>RangeDateTime</code> midpoint — the centre date.</p>
+<p><strong>OSCAR returned HTTP 500 on a sliced <code>/lat</code>.</strong> Hyrax fails when the variable's dimension
+is named <code>latitude</code>. Coordinates are read once up front and carried locally; the grids are
+static anyway.</p>
+<p><strong>OSCAR came back shape (3, 180, 100).</strong> A DAP4 constraint expression is <em>positional</em>, and
+OSCAR's variables are ordered <code>(time, lon, lat)</code> — not a typo, genuinely lon-before-lat.
+Added an explicit <code>dims</code> entry per product instead of assuming.</p>
+<p><strong>Only 481 SMAP granules were found instead of ~3,500.</strong> The OPeNDAP link is typed
+"USE SERVICE API" on some granules and "GET DATA" on others. Matching on link <em>type</em>
+silently dropped most of the record; matching on hostname finds all of them.</p>
+<p><strong>The Argo fetch was killed twice, losing hours</strong> — it accumulated everything in memory
+and only wrote at the end. Added a per-month parquet cache so a kill costs one month.</p>
+<p><strong>The SSS product had been retired.</strong> SMAP RSS V4 stops at 2022-07-11, which would have
+left the validation year half empty and nobody would have noticed until the metrics looked
+odd. Switched to V6, which runs to the present.</p>
+<p><strong>Both wind fallbacks were unusable.</strong> The PS names L3 scatterometer with L4 as fallback.
+The 0.25° L4 record <em>ends in 2009</em>; the 0.125° L4 is hourly, ~50 GB over this box for a
+field we only want a daily mean of. Went with L3 ASCAT swaths: MetOp-A (2015–2021) spliced
+with MetOp-B (2019–2024), ascending and descending, merged by nanmean.</p>
+<p><strong>ASCAT swath gaps.</strong> Raw daily coverage of cells ASCAT can see is ~55% in single-satellite
+years and ~86% when both MetOps flew. A centred 3-day mean lifts every year to ~97%;
+±2 days added only 0.3 points, so that is where it stops. Gaps among usable ocean cells:
+39% → 2.9%.</p>
+<p><strong>GLORYS "kept getting killed" — it was running out of memory.</strong> Repeated background-job
+deaths looked like the scheduler. <code>glorys.err</code> actually said
+<code>OpenBLAS error: Memory allocation still failed after 10 retries</code>, and later a
+<code>MemoryError</code> on a <strong>2.73 MiB</strong> allocation: system commit charge was 15.16 GB against a
+16.15 GB limit. A monthly chunk decodes to ~1.5 GB in float64. Weekly still OOMed; 3-day
+chunks (~37 MB) run clean. Several restart cycles were wasted blaming the harness.</p>
+<p><strong>The GLORYS depth ceiling was too shallow.</strong> <code>maximum_depth=1000</code> returns levels topping
+out at <strong>902.3 m</strong> — the next level is 1062.4 m. Interpolating the 1000 m target onto that
+is extrapolation, and 1000 m is a headline metric depth. Caught after one month of
+downloading rather than nineteen hours.</p>
+<p><strong>42 chunks re-downloaded days already on disk.</strong> When the chunk size changed mid-download
+(monthly → 3-day after the OOM), the new filenames stopped matching the old ones, so the
+<code>dst.exists()</code> skip missed every time. The success counter climbed while real coverage
+stood still at 648 days. Skipping is now by <em>date coverage</em> parsed from filenames, not by
+filename equality.</p>
+<hr />
+<h2 id="3-preprocessing-and-the-store">3. Preprocessing and the store</h2>
+<p><strong>Reading a channel took 19 minutes.</strong> <code>xr.open_dataset</code> costs ~0.4 s per file and there
+were ~2,800 per-day files per product. Added a consolidation step to per-year NetCDFs; the
+per-day files stay as the resumable download cache.</p>
+<p><strong>OISST timestamps are 12:00Z</strong>, so <code>.sel(time=days)</code> raised <code>KeyError</code> on every day. The
+time coordinate is floored to the day on read.</p>
+<p><strong><code>ffill(limit=)</code> requires <code>bottleneck</code></strong>, which was not installed. Used
+<code>reindex(method="ffill", tolerance=...)</code> instead — and the tolerance is the honest control
+anyway, since it refuses to carry a value further than the product's own compositing
+window.</p>
+<p><strong><code>xarray.interp</code> upcasts to float64.</strong> Six years of 0.125° SLA asked for a 1.6 GiB
+allocation and died. GLORYS at 1/12° over 36 levels would have been ~80 GB. Reads are now
+dask-chunked and cast to float32.</p>
+<p><strong>GLORYS decodes to float64 <em>before</em> the cast can help.</strong> Packed variables are unpacked by
+scale/offset first, so 16 days × 36 levels × 313 × 553 was a 713 MiB allocation that an
+8 GB box refused. GLORYS reads use a time chunk of 2.</p>
+<p><strong>Zarr v3 raced between dask writer threads</strong> creating nested chunk directories
+(<code>FileExistsError</code> on <code>X/c/0</code>). The store is written as Zarr v2 — flat chunk keys, and
+better compatibility with Kaggle and older zarr installs.</p>
+<p><strong>Ragged time chunks.</strong> Concatenating sources that were chunked differently produced
+uneven chunk sizes, which Zarr rejects. Rechunked to <code>time=1</code> before writing — which is
+also the right layout, since the DataLoader reads random single days.</p>
+<p><strong>The target silently vanished.</strong> This was the worst one. Spatial dims were named
+<code>y</code>/<code>x</code>, so the data variable <code>Y</code> and the dimension coordinate <code>y</code> are <em>the same directory</em>
+in a Zarr store on a case-insensitive filesystem. The written store contained <code>X</code> and <code>y</code>
+and <strong>no target at all</strong> — no error, no warning. It would have worked on Linux and failed
+only on this machine. Dims are <code>lat</code>/<code>lon</code> now.</p>
+<p><strong>The surface level was 100% NaN.</strong> GLORYS's shallowest level is 0.494 m, so interpolating
+to exactly 0 m fell outside the source range. Same class of bug as the 1000 m ceiling, at
+the opposite end — and it was reintroduced <em>after</em> already having been burned by it once.
+Depths are clamped into the source range rather than extrapolated, and <strong>both ends are now
+guarded by an assert</strong>, because an all-NaN level is invisible until the metrics table comes
+back empty.</p>
+<p><strong>The SSS QC floor would have deleted a real signal.</strong> The floor was first written as
+25 PSU. The Ganga–Brahmaputra plume genuinely pushes northern Bay of Bengal salinity into
+the teens — 15.56 PSU observed on 2018-05-28. That freshwater cap is exactly the
+barrier-layer signal SSS is an input for; a 25 floor would have masked it away as bad data.
+Floor is 5.0.</p>
+<hr />
+<h2 id="4-evaluation">4. Evaluation</h2>
+<p><strong><code>df.corr</code> resolved to the DataFrame <em>method</em>, not the column.</strong> Silent wrong behaviour
+rather than an error. Used <code>df["corr"]</code>.</p>
+<p><strong>The U-Net overfit self-check failed on a white-noise target</strong> (1.157 → 0.560). A
+convolutional net cannot memorise white noise, and real temperature fields are smooth, so
+the test was wrong, not the model. Switched to a bilinear-upsampled smooth target: 0.600 →
+0.0096.</p>
+<p><strong>Argo metrics came back all-NaN.</strong> A <code>n &gt;= 2</code> row guard in the stats table dropped rows
+that had valid RMSE/MAE/bias but undefined correlation.</p>
+<p><strong>Every Argo profile was rejected at 0 m.</strong> The acceptance rule refused to interpolate
+outside the observed depth range — but Argo floats surface at 2–5 dbar and never at
+exactly 0, and 0 m is one of the six headline depths. The gap test is the correct gate;
+refusing at the ends is not. Acceptance went 0% → 87%.</p>
+<p><strong>Timezone mismatch.</strong> ERDDAP returns tz-aware UTC; the split bounds and the cube's time
+axis are naive. Pandas raises rather than guessing an offset.</p>
+<p><strong>The prediction cube had to carry the <em>cropped</em> coordinates.</strong> <code>crop_to_model</code> trims two
+cells off each edge; labelling the cube with the uncropped grid would have matched every
+Argo profile to a cell two rows from where it actually is — a subtle, entirely silent
+error in the headline validation.</p>
+<hr />
+<h2 id="5-modelling-and-method">5. Modelling and method</h2>
+<p><strong>Attention did nothing.</strong> M3 adds multi-head self-attention over the bottleneck
+(+331k parameters). Against raw Argo it scores <strong>0.908</strong> — identical to M2's <strong>0.908</strong>, to
+three decimals. Early stopping did not change it, so it is not overfitting. Reported as a
+null result.</p>
+<p><strong>A result was reported that turned out to be noise.</strong> M3 initially looked like an 11%
+improvement in GLORYS validation RMSE (0.739 → 0.660) and was reported as real. Rerunning
+the <em>same config with the same seed</em> produced 0.729 — a ~10% spread from nondeterministic
+cuDNN kernel selection and dataloader worker ordering alone, which is <strong>larger than the
+effect being claimed</strong>. Any architecture claim on this setup needs multiple seeds and a
+reported spread.</p>
+<p><strong>The surface result inverted depending on what it was scored against.</strong> Against GLORYS,
+M2 looked <strong>38% worse</strong> than climatology at 0 m — a serious-looking regression that was
+flagged as a real weakness. Against raw Argo, the same model is <strong>32% better</strong>. The model
+was disagreeing with the reanalysis and the observations sided with the model. This is the
+strongest evidence in the project for validating against independent data, and it was very
+nearly written up as a defect instead.</p>
+<hr />
+<h2 id="6-infrastructure">6. Infrastructure</h2>
+<p><strong>The stored AWS credentials were dead</strong> — <code>InvalidClientTokenId</code> on every call.</p>
+<p><strong>GPU Spot quota was zero.</strong> "All G and VT Spot Instance Requests" = 0, so the recommended
+~$0.16/hr Spot g4dn could not launch at all. On-demand G quota was 4 vCPUs, exactly one
+g4dn.xlarge, so the plan moved to on-demand at ~$0.53/hr. At 12 minutes per training run
+the difference is a few dollars across the project.</p>
+<p><strong><code>python</code> does not exist on the Deep Learning AMI.</strong> PyTorch lives in a virtualenv at
+<code>/opt/pytorch</code>; the system <code>python3</code> has no torch. Also worth knowing:
+<code>pip install torch</code> on that AMI <em>replaces the CUDA build with a CPU one</em> — a very quiet way
+to rent a GPU and train on the processor.</p>
+<p><strong>The instance directory was not a git clone</strong>, so <code>git pull</code> failed and the code running
+there was not version-tracked. Files were copied in with <code>scp</code> as a workaround; it should
+be a proper clone.</p>
+<p><strong>The Vercel CLI crashed Node with a V8 out-of-memory.</strong> It uploads the whole project
+directory, and <code>data/</code> is 48 GB. A <code>.vercelignore</code> cuts the payload to 172 KB.</p>
+<p><strong>Pushing to GitHub did not deploy the site.</strong> The Vercel project is CLI-linked, not
+connected to the repository, so <code>vercel --prod</code> is required (or connect the repo under
+Project → Settings → Git).</p>
+<hr />
+<h2 id="what-the-pattern-says">What the pattern says</h2>
+<p>Of the problems above, the expensive ones were not the crashes. A crash tells you where it
+happened. The costly failures were the <strong>silent</strong> ones: a target that disappeared without
+an error, a depth level quietly full of NaN, every Argo profile rejected at the surface, a
+download counter climbing while coverage stood still, and a 10% noise band reported as an
+11% improvement.</p>
+<p>That is why the pipeline now asserts things that "obviously" hold — that no report depth is
+empty, that normalisation statistics differ from the whole-record mean, that attention
+actually moves information between positions, that chunk edges tile the record exactly. Each
+of those guards exists because the corresponding assumption was, at some point, false.</p></article>
+  <footer>Ministry of Earth Sciences · INCOIS · Space Technology — Smart India Hackathon 2026</footer>
+</main>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    background: '#0d1b2a', primaryColor: '#14304a', primaryTextColor: '#dce8f2',
+    primaryBorderColor: '#2f6f9f', lineColor: '#4a9fd4', secondaryColor: '#123',
+    tertiaryColor: '#0f2436', fontSize: '14px'
+  }
+});
+</script>
+<script>
+document.getElementById('navtoggle').onclick = () => document.body.classList.toggle('nav-open');
+</script>
+</body>
+</html>

@@ -43,9 +43,14 @@ def run_val(net, loader, dev):
     return acc.table()
 
 
-def main(cfg_path):
+def main(cfg_path, seed=None):
     cfg = yaml.safe_load(Path(cfg_path).read_text())
     run = cfg.get("run") or Path(cfg_path).stem
+    if seed is not None:
+        # One config, several seeds. The run name carries the seed so checkpoints and
+        # result CSVs never collide -- a fixed-seed rerun of this setup moved val RMSE by
+        # ~10%, so single-run comparisons mean nothing and every claim needs a spread.
+        cfg["seed"], run = seed, f"{run}_s{seed}"
     zarr = cfg.get("zarr", ZARR)
     stats = cfg.get("stats")
     torch.manual_seed(cfg.get("seed", 0))
@@ -106,4 +111,6 @@ def main(cfg_path):
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("config")
-    main(p.parse_args().config)
+    p.add_argument("--seed", type=int, default=None)
+    a = p.parse_args()
+    main(a.config, a.seed)

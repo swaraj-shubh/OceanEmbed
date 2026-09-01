@@ -44,9 +44,14 @@ class DepthStats:
             cov = spt / n - (sp / n) * (st / n)
             vp, vt = sp2 / n - (sp / n) ** 2, st2 / n - (st / n) ** 2
             corr = np.where((vp > 1e-12) & (vt > 1e-12), cov / np.sqrt(vp * vt), np.nan)
+            # R2 against the mean of the observations: 1 - SSE/SST, both already in the
+            # accumulators, so no extra state. It is NOT corr^2 -- R2 punishes bias and can
+            # go negative, which is the honest read at depths where we lose to climatology.
+            sst = st2 - st ** 2 / n
+            r2 = np.where(sst > 1e-12, 1.0 - sd2 / sst, np.nan)
             df = pd.DataFrame({"depth_m": self.depths, "n": n.astype(int),
                                "rmse": np.sqrt(sd2 / n), "mae": sad / n,
-                               "bias": sd / n, "corr": corr})
+                               "bias": sd / n, "corr": corr, "r2": r2})
         # n == 0 -> 0/0 -> NaN; n == 1 -> zero variance -> corr NaN but RMSE/MAE/bias valid
         return df
 
