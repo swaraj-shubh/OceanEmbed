@@ -32,7 +32,10 @@ def predict_cube(ckpt, split, zarr=ZARR, batch=32, dev=None):
     net = MODELS[cfg.pop("kind")](**cfg).to(dev).eval()   # M2 and M3 share this path
     net.load_state_dict(st["model"])
 
-    ds = NIODataset(split, zarr, anomaly=st["cfg"].get("anomaly", False))
+    # window must come from the checkpoint, not default to 1: M4 wants [B, T, C, H, W] and
+    # a 1-day sample silently arrives as [B, C, H, W], which is a shape error at best.
+    ds = NIODataset(split, zarr, window=st["cfg"].get("window", 1),
+                    anomaly=st["cfg"].get("anomaly", False))
     out = np.empty((len(ds), len(DEPTHS), *MODEL_SHAPE), np.float32)
     with torch.no_grad():
         for i in range(0, len(ds), batch):
