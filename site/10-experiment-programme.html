@@ -1,0 +1,1699 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 — The 10-Step Experiment Programme — OceanEmbed</title>
+<meta name="description" content="Satellite Embedding-Based Deep Learning Framework for Reconstruction of Subsurface Ocean Temperature — SIH 2026 PS 26066">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#08131e; --bg-soft:#0d1b2a; --panel:#101f30; --line:#1c3448;
+  --fg:#dbe7f2; --fg-dim:#8ba3ba; --accent:#4cc4e0; --accent-2:#6ee7b7;
+  --code-bg:#0b1926;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+  font-size:16px;line-height:1.7;display:flex;
+  background-image:radial-gradient(1200px 600px at 80% -10%,rgba(76,196,224,.10),transparent 60%),
+                   radial-gradient(900px 500px at -10% 110%,rgba(110,231,183,.07),transparent 60%);
+  background-attachment:fixed;
+}
+/* sidebar */
+aside{
+  position:sticky;top:0;height:100vh;flex:0 0 288px;overflow-y:auto;
+  background:rgba(13,27,42,.85);backdrop-filter:blur(8px);
+  border-right:1px solid var(--line);padding:22px 16px;
+}
+.brand{display:flex;gap:11px;align-items:center;text-decoration:none;color:var(--fg);
+  padding:6px 10px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.brand .wave{font-size:26px;filter:drop-shadow(0 0 10px rgba(76,196,224,.5))}
+.brand strong{display:block;font-size:18px;letter-spacing:.2px}
+.brand small{display:block;color:var(--fg-dim);font-size:11.5px;letter-spacing:.3px;margin-top:2px}
+nav ul{list-style:none;margin:0;padding:0}
+nav li{margin:1px 0}
+nav a{display:block;padding:8px 12px;border-radius:7px;color:var(--fg-dim);
+  text-decoration:none;font-size:14px;transition:.15s;border-left:2px solid transparent}
+nav a:hover{background:rgba(76,196,224,.09);color:var(--fg)}
+nav a.active{background:rgba(76,196,224,.14);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+nav li.sep{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.aside-foot{margin-top:24px;padding:0 12px;font-size:13px}
+.aside-foot a{color:var(--fg-dim);text-decoration:none}
+.aside-foot a:hover{color:var(--accent)}
+/* main */
+main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;padding:0 32px}
+article{width:100%;max-width:900px;padding:48px 0 24px}
+footer{width:100%;max-width:900px;border-top:1px solid var(--line);margin-top:40px;
+  padding:20px 0 56px;color:var(--fg-dim);font-size:13px}
+/* typography */
+h1,h2,h3,h4{line-height:1.3;font-weight:650;letter-spacing:-.01em}
+h1{font-size:2.05rem;margin:0 0 .6em;padding-bottom:.4em;border-bottom:1px solid var(--line)}
+h2{font-size:1.42rem;margin:2.2em 0 .7em;color:var(--accent)}
+h3{font-size:1.13rem;margin:1.8em 0 .5em}
+h4{font-size:1rem;margin:1.4em 0 .4em;color:var(--fg-dim)}
+p{margin:.9em 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(76,196,224,.3)}
+a:hover{border-bottom-color:var(--accent)}
+strong{color:#fff;font-weight:650}
+em{color:var(--accent-2)}
+hr{border:0;border-top:1px solid var(--line);margin:2.4em 0}
+ul,ol{padding-left:1.35em}
+li{margin:.35em 0}
+blockquote{border-left:3px solid var(--accent);margin:1.2em 0;padding:.1em 1em;
+  color:var(--fg-dim);background:rgba(76,196,224,.05);border-radius:0 6px 6px 0}
+/* code */
+code{font-family:var(--mono);font-size:.87em;background:var(--code-bg);
+  padding:.16em .42em;border-radius:4px;border:1px solid var(--line);color:var(--accent-2)}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;
+  padding:16px 18px;overflow-x:auto;margin:1.3em 0;font-size:13.5px;line-height:1.55}
+pre code{background:none;border:0;padding:0;color:#cfe3f0;font-size:inherit}
+pre.mermaid{background:var(--bg-soft);text-align:center;padding:24px;border:1px solid var(--line)}
+/* tables */
+.tablewrap{overflow-x:auto;margin:1.4em 0;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:rgba(76,196,224,.10);color:var(--accent);font-weight:600;
+  white-space:nowrap;position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+td code{white-space:nowrap}
+/* checkbox lists in the deliverables section */
+li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
+/* responsive */
+#navtoggle{display:none;position:fixed;top:14px;left:14px;z-index:30;
+  background:var(--panel);color:var(--fg);border:1px solid var(--line);
+  border-radius:8px;font-size:19px;padding:6px 12px;cursor:pointer}
+@media(max-width:900px){
+  #navtoggle{display:block}
+  aside{position:fixed;z-index:20;transform:translateX(-100%);transition:.22s;box-shadow:0 0 40px #000}
+  body.nav-open aside{transform:none}
+  main{padding:0 18px}
+  article{padding:64px 0 24px}
+  h1{font-size:1.65rem}
+}
+</style>
+</head>
+<body>
+<button id="navtoggle" aria-label="Toggle navigation">☰</button>
+<aside>
+  <a class="brand" href="index.html">
+    <span class="wave">🌊</span>
+    <span><strong>OceanEmbed</strong><small>SIH 2026 · PS 26066 · INCOIS</small></span>
+  </a>
+  <nav><ul><li><a href="index.html">Overview</a></li>
+<li><a href="01-problem-statement.html">01 · Problem Statement</a></li>
+<li><a href="02-research-review.html">02 · Research Review</a></li>
+<li><a href="03-architecture.html">03 · Architecture</a></li>
+<li><a href="04-data.html">04 · Data Pipeline</a></li>
+<li><a href="05-training-evaluation.html">05 · Training & Eval</a></li>
+<li><a href="06-demo-and-roadmap.html">06 · Demo & Roadmap</a></li>
+<li><a href="07-results-and-handover.html">07 · Results & Handover</a></li>
+<li><a href="08-challenges.html">08 · Challenges Faced</a></li>
+<li><a href="09-day2-handover.html">09 · Day 2 · Latest Results</a></li>
+<li><a href="10-experiment-programme.html" class="active">10 · Experiment Programme</a></li>
+<li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
+  <div class="aside-foot">
+    <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
+  </div>
+</aside>
+<main>
+  <article><h1 id="10-the-10-step-experiment-programme">10 — The 10-Step Experiment Programme</h1>
+<blockquote>
+<p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: use <code>superpowers:subagent-driven-development</code> (recommended) or <code>superpowers:executing-plans</code> to implement this task-by-task. Steps use checkbox (<code>- [ ]</code>) syntax.</p>
+</blockquote>
+<p><strong>Goal:</strong> Take M4 from 0.890 °C to the best defensible score against independent Argo by testing six interventions under one selection discipline, and produce a single ablation table — including the failures — plus one frozen, once-evaluated final number.</p>
+<p><strong>Architecture:</strong> Every intervention is a config flag on the existing M4 ConvLSTM. Three are data-side (Argo bias correction, climatology-as-input, auxiliary channels), two are loss-side (depth-weighted, vertical-gradient), one is formulation-side (anomaly residual). Nothing adds capacity — doc 09 §4 measured that capacity is not the binding constraint. Selection happens on <strong>val (2022) Argo</strong>; <strong>test (2023–24) Argo is touched exactly once</strong>, in Task 10.</p>
+<p><strong>Tech Stack:</strong> PyTorch, xarray/Zarr, NumPy, pandas. Kaggle T4 for training (~8 GPU-hours total), local CPU for all evaluation and post-processing.</p>
+<p><strong>Spec:</strong> the 10-item list below, plus <a href="09-day2-handover.html">doc 09 §8</a> ("What is left").</p>
+<hr />
+<h2 id="the-spec-verbatim">The spec, verbatim</h2>
+<ol>
+<li><strong>Freeze &amp; reproduce M4 baseline</strong> — verify current metrics and training pipeline.</li>
+<li><strong>Audit data leakage</strong> — especially GLORYS ↔ Argo matching, train/val/test split, normalization.</li>
+<li><strong>Test Argo post-hoc bias correction</strong> — depth-only, then depth+month; validation Argo only.</li>
+<li><strong>Test anomaly prediction</strong> — predict <code>temperature - climatology</code>, then add climatology back.</li>
+<li><strong>Test climatology as input</strong> — add the 15 monthly climatology channels.</li>
+<li><strong>Test auxiliary features</strong> — bathymetry + day-of-year sin/cos + lat/lon.</li>
+<li><strong>Test losses</strong> — depth-weighted loss and vertical-gradient loss.</li>
+<li><strong>Run 3 seeds + ensemble</strong> — check whether improvements are stable.</li>
+<li><strong>Create one ablation table</strong> — M4 → each modification → metrics, including failures.</li>
+<li><strong>Freeze the best model and evaluate ONCE on untouched test Argo</strong> — report overall + depth-wise RMSE/MAE/bias/correlation.</li>
+</ol>
+<p>Out of scope for this programme (deferred): the Streamlit demo, track B1 INCOIS gridded Argo, any increase in model capacity, ViT/GNN/foundation models.</p>
+<hr />
+<h2 id="global-constraints">Global Constraints</h2>
+<p>Every task's requirements implicitly include these. They come from <code>CLAUDE.md</code> and are not negotiable.</p>
+<ul>
+<li><strong>Argo is never a model input or a training target.</strong> The network never sees Argo in any task. Task 3 fits a 15-number offset on val-split Argo — that is post-processing, is reported as its own table row, and never touches the network.</li>
+<li><strong>Selection is on val (2022) Argo. Test (2023–24) Argo is opened once, in Task 10.</strong> This is a change from Day 2, where every intervention was scored on test. Say so in the write-up.</li>
+<li><strong>Normalization stats come from the train split only</strong> (<code>data/processed/norm_stats.json</code>, already frozen). Do not recompute them with new channels present unless the task says to.</li>
+<li><strong>Time-based splits, frozen:</strong> train <code>2015-04-01 … 2021-12-31</code>, val <code>2022</code>, test <code>2023-01-01 … 2024-12-31</code>. Never random mixing.</li>
+<li><strong>Land and unsupervised cells are masked out of the loss and out of every metric.</strong> Prediction cubes carry NaN there.</li>
+<li><strong>Every experiment has a YAML config and a run name; every result lands in <code>results/</code> as CSV.</strong> No untracked runs.</li>
+<li><strong>Checkpoints must reach S3 before the instance dies</strong> — see Task 0. Day 2's checkpoints did not, and no longer exist.</li>
+<li><strong>Any architecture or intervention claim needs ≥3 seeds and a reported spread.</strong> Measured seed σ on the Argo score is ≈0.010 °C; on GLORYS val RMSE it is ≈0.03 (8%), which is why the Argo score is the benchmark.</li>
+<li>Python 3.10+, <code>pathlib</code>, no hardcoded Windows paths in <code>src/</code>. Tests are <code>if __name__ == "__main__"</code> assert blocks in the module, not pytest (CLAUDE.md §13).</li>
+</ul>
+<h3 id="baseline-numbers-this-programme-starts-from">Baseline numbers this programme starts from</h3>
+<p>Measured, three seeds, vs test-split Argo (doc 09):</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Argo blended RMSE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GLORYS12V1 target itself</td>
+<td><strong>0.728</strong> (the ceiling)</td>
+</tr>
+<tr>
+<td>M4 ConvLSTM</td>
+<td><strong>0.890 ± 0.008</strong></td>
+</tr>
+<tr>
+<td>M2 U-Net</td>
+<td>0.901 ± 0.013</td>
+</tr>
+<tr>
+<td>M0 climatology</td>
+<td>1.160</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="two-facts-established-before-this-plan-was-written">Two facts established before this plan was written</h3>
+<p><strong>A. There is no M4 checkpoint anywhere.</strong> <code>s3://oceanembed-sih26-data/oceanembed/checkpoints/</code> holds only <code>m2_unet{,_best}.pt</code> and <code>m3_oceanembed{,_best}.pt</code>, dated 2026-08-31. Every Day 2 checkpoint (all seeds of M2/M3/M4/anomaly/grad) was lost with the instance. The result CSVs survived in git; the weights did not. <strong>Task 1 is a retrain, not a reload</strong>, and Task 0 exists so it does not happen again.</p>
+<p><strong>B. The Argo bias correction works and transfers.</strong> Measured on this machine using GLORYS itself as the probe (no checkpoint needed), 2023–24 test Argo, 6,389 profiles:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Correction</th>
+<th>Blended RMSE</th>
+<th>vs raw</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GLORYS raw</td>
+<td>0.734</td>
+<td>—</td>
+</tr>
+<tr>
+<td>depth offset fitted on 2021 (train)</td>
+<td>0.671</td>
+<td>+8.5%</td>
+</tr>
+<tr>
+<td><strong>depth offset fitted on 2022 (val)</strong></td>
+<td><strong>0.665</strong></td>
+<td><strong>+9.3%</strong></td>
+</tr>
+<tr>
+<td>depth × month offset fitted on 2021</td>
+<td>0.675</td>
+<td>+7.9% (worse — overfits)</td>
+</tr>
+<tr>
+<td>oracle offset fitted on test itself</td>
+<td>0.663</td>
+<td>+9.7% (ceiling)</td>
+</tr>
+</tbody>
+</table></div>
+<p>A 15-number lookup table recovers <strong>96% of the achievable gain</strong>. The bias also <em>drifts</em>: +0.475 °C at 100 m in 2021 versus +0.716 in 2023–24, which is why the 2022 fit beats the 2021 fit. Applying the same correction to M4 (whose perfect-debias bound is 0.890 → 0.810) should land near <strong>0.82</strong>. For scale, every architectural change tried on Day 2 moved the score by 0.011 in total.</p>
+<hr />
+<h2 id="file-structure">File Structure</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Status</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>deploy/setup.sh</code></td>
+<td>modify</td>
+<td>Start the S3 checkpoint sync automatically so it cannot be forgotten</td>
+</tr>
+<tr>
+<td><code>src/argo_eval.py</code></td>
+<td>modify</td>
+<td>Add <code>match_profiles()</code> — the matched (pred, obs, float-id) arrays that Tasks 2, 3 and 9 all need; <code>evaluate_argo()</code> becomes a thin wrapper. Add <code>paired_bootstrap()</code></td>
+</tr>
+<tr>
+<td><code>src/audit_leakage.py</code></td>
+<td>create</td>
+<td>Task 2's runnable audit: eight assertions over splits, stats, climatology, windows and Argo matching</td>
+</tr>
+<tr>
+<td><code>src/bias_correct.py</code></td>
+<td>create</td>
+<td>Fit a depth (or depth×month) offset from a val cube + val Argo; apply it to any cube. Refuses to fit on test</td>
+</tr>
+<tr>
+<td><code>src/config.py</code></td>
+<td>modify</td>
+<td><code>AUX_CHANNELS</code>, <code>CLIM_CHANNELS</code>, <code>n_channels(extra)</code>, <code>bathy_path()</code></td>
+</tr>
+<tr>
+<td><code>src/datasets.py</code></td>
+<td>modify</td>
+<td><code>extra=</code> parameter adding climatology (15 ch) and auxiliary (5 ch) input channels; <code>build_bathymetry()</code> cache</td>
+</tr>
+<tr>
+<td><code>src/models/unet.py</code></td>
+<td>modify</td>
+<td><code>depth_weight</code> argument on <code>masked_mse</code></td>
+</tr>
+<tr>
+<td><code>src/train.py</code></td>
+<td>modify</td>
+<td>Thread <code>extra</code> through; derive <code>in_ch</code>; build depth weights from norm stats</td>
+</tr>
+<tr>
+<td><code>src/predict_cube.py</code></td>
+<td>modify</td>
+<td><code>--offset</code> to apply a bias correction; <code>--ensemble</code> to average several cubes; extract <code>score_cube()</code></td>
+</tr>
+<tr>
+<td><code>src/ablation.py</code></td>
+<td>create</td>
+<td>Read every <code>results/*_argo.csv</code> into one markdown table, failures included</td>
+</tr>
+<tr>
+<td><code>configs/m4_*.yaml</code></td>
+<td>create</td>
+<td>One per intervention</td>
+</tr>
+<tr>
+<td><code>docs/10-experiment-programme.md</code></td>
+<td>this file</td>
+<td>Filled in with results as tasks complete</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="task-0-stop-losing-checkpoints">Task 0: Stop losing checkpoints</h2>
+<p>Day 2 produced 18 checkpoints and kept none. <code>deploy/sync_checkpoints.sh</code> is correct but has to be started by hand in a second shell, and on Day 2 it was not. This programme will produce ~20 more. Fix the mechanism before generating anything worth keeping.</p>
+<p><strong>Files:</strong>
+- Modify: <code>deploy/setup.sh</code> (append, after the <code>aws s3 sync</code> of the store)</p>
+<p><strong>Interfaces:</strong>
+- Produces: a running background sync loop on every bootstrapped GPU box; <code>checkpoints/</code> mirrored to S3 within 5 minutes of any <code>torch.save</code>.</p>
+<ul>
+<li>[ ] <strong>Step 1: Append the auto-start to <code>deploy/setup.sh</code></strong></li>
+</ul>
+<pre><code class="language-bash"># The sync loop is not optional. Day 2 lost 18 checkpoints because it was a separate
+# manual command in a second shell that nobody ran. Starting it here means the only way
+# to train without a sync is to not use this script.
+pkill -f sync_checkpoints.sh || true
+BUCKET=&quot;$BUCKET&quot; PREFIX=&quot;$PREFIX&quot; nohup bash deploy/sync_checkpoints.sh &gt; sync.log 2&gt;&amp;1 &amp;
+echo &quot;checkpoint sync -&gt; s3://$BUCKET/$PREFIX/checkpoints (pid $!)&quot;
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 2: Verify the loop starts</strong></li>
+</ul>
+<p>Run on the GPU box: <code>bash deploy/setup.sh</code>, then after ~30 s: <code>pgrep -f sync_checkpoints.sh &amp;&amp; cat sync.log</code>
+Expected: one PID printed, <code>sync.log</code> empty (the script runs <code>--quiet</code>).</p>
+<ul>
+<li>[ ] <strong>Step 3: Verify a file actually lands in S3</strong></li>
+</ul>
+<pre><code class="language-bash">mkdir -p checkpoints &amp;&amp; echo probe &gt; checkpoints/_probe.txt
+sleep 310
+aws s3 ls &quot;s3://$BUCKET/$PREFIX/checkpoints/_probe.txt&quot;
+rm checkpoints/_probe.txt
+</code></pre>
+<p>Expected: the probe file is listed. If it is not, the sync is broken — stop and fix it. Every later task depends on this.</p>
+<ul>
+<li>[ ] <strong>Step 4: Commit</strong></li>
+</ul>
+<pre><code class="language-bash">git add deploy/setup.sh
+git commit -m &quot;Start the checkpoint sync from setup.sh: Day 2 lost every checkpoint&quot;
+</code></pre>
+<hr />
+<h2 id="task-1-freeze-and-reproduce-the-m4-baseline">Task 1: Freeze and reproduce the M4 baseline</h2>
+<p>Spec item 1. The point is not a new number — it is proving that the pipeline on a fresh box reproduces the committed one, and establishing the <strong>val-split</strong> baseline that Tasks 3–8 are selected against. Day 2 selected on test; this programme does not.</p>
+<p><strong>Files:</strong>
+- Modify: none (uses <code>configs/m4_convlstm.yaml</code> exactly as committed)
+- Produces: <code>checkpoints/m4_convlstm_s{1,2,3}_best.pt</code>, <code>results/m4_convlstm_s{1,2,3}_best_val_argo.csv</code></p>
+<p><strong>Interfaces:</strong>
+- Consumes: Task 0's working sync.
+- Produces: <strong><code>VAL_BASELINE</code></strong> — the 3-seed mean and σ of M4's blended RMSE against <strong>2022</strong> Argo. Every later task compares against this, not against 0.890.</p>
+<ul>
+<li>[ ] <strong>Step 1: Bootstrap the GPU box and build the climatology cache</strong></li>
+</ul>
+<pre><code class="language-bash">BUCKET=oceanembed-sih26-data bash deploy/setup.sh
+python src/datasets.py --clim        # must be its own process (doc 09 §7 fork deadlock)
+</code></pre>
+<p>Expected: <code>cuda: True &lt;GPU name&gt;</code> and <code>climatology cached (12, 15, 96, 176) -&gt; nio_daily.clim.npy</code>.</p>
+<ul>
+<li>[ ] <strong>Step 2: Run the three seeds</strong></li>
+</ul>
+<pre><code class="language-bash">for s in 1 2 3; do python src/train.py configs/m4_convlstm.yaml --seed $s; done
+</code></pre>
+<p>Expected: ~66 s/epoch × 20 epochs × 3 seeds ≈ 66 min. Each run prints <code>*best</code> on improving epochs and writes <code>checkpoints/m4_convlstm_s{N}_best.pt</code>.</p>
+<ul>
+<li>[ ] <strong>Step 3: Score all three on TEST and confirm reproduction</strong></li>
+</ul>
+<pre><code class="language-bash">for s in 1 2 3; do python src/predict_cube.py --ckpt checkpoints/m4_convlstm_s${s}_best.pt --split test; done
+</code></pre>
+<p>Expected: 3-seed mean within ±0.02 of the committed 0.890 ± 0.008. This is the only sanctioned test read before Task 10 — it is a reproduction check against numbers already published in doc 09, not a selection decision. <strong>If the mean lands outside 0.870–0.910, stop</strong>: something in the environment differs, and every later comparison would be built on sand.</p>
+<ul>
+<li>[ ] <strong>Step 4: Score all three on VAL — this is the working baseline</strong></li>
+</ul>
+<pre><code class="language-bash">for s in 1 2 3; do python src/predict_cube.py --ckpt checkpoints/m4_convlstm_s${s}_best.pt --split val; done
+</code></pre>
+<p>Expected: three <code>results/m4_convlstm_s{N}_best_val_argo.csv</code>, ~3,440 profiles matched each. Record the mean and σ as <code>M4 baseline (val)</code> in the results table at the bottom of this document.</p>
+<ul>
+<li>[ ] <strong>Step 5: Confirm the checkpoints reached S3</strong></li>
+</ul>
+<p>Run: <code>aws s3 ls s3://oceanembed-sih26-data/oceanembed/checkpoints/ | grep m4_convlstm</code>
+Expected: six files. If missing, Task 0 failed — fix before continuing.</p>
+<ul>
+<li>[ ] <strong>Step 6: Commit</strong></li>
+</ul>
+<pre><code class="language-bash">git add results/m4_convlstm_s*_val_argo.csv
+git commit -m &quot;M4 baseline reproduced; val-split Argo baseline recorded for selection&quot;
+</code></pre>
+<hr />
+<h2 id="task-2-audit-data-leakage">Task 2: Audit data leakage</h2>
+<p>Spec item 2. Turn every methodology rule into a runnable assertion, so the answer to "how do you know there's no leakage?" is a command rather than a claim. This task also does the <code>match_profiles</code> refactor, because Argo matching is one of the things being audited and three later tasks need the same matched arrays.</p>
+<p><strong>Files:</strong>
+- Modify: <code>src/argo_eval.py</code> (extract <code>match_profiles</code>; <code>evaluate_argo</code> becomes a wrapper)
+- Create: <code>src/audit_leakage.py</code></p>
+<p><strong>Interfaces:</strong>
+- Produces: <code>match_profiles(cube, profiles, max_days=1) -&gt; (pred[15,N], obs[15,N], floats[N], times[N])</code>. <code>floats</code> is the Argo platform number parsed from the <code>profile</code> id; <code>times</code> is each matched cast's timestamp. Consumed by <code>bias_correct.fit_offset</code> (Task 3) and <code>paired_bootstrap</code> (Task 9).</p>
+<ul>
+<li>[ ] <strong>Step 1: Extract <code>match_profiles</code> in <code>src/argo_eval.py</code></strong></li>
+</ul>
+<pre><code class="language-python">def match_profiles(cube, profiles, max_days=1):
+    &quot;&quot;&quot;cube: xr.DataArray (time, depth, lat, lon). profiles: DataFrame (see module doc).
+
+    Returns (pred[15, N], obs[15, N], floats[N], times[N]) for the N matched casts.
+    `floats` is the Argo platform number, so callers can block-resample by float: 6,448
+    test profiles come from only 147 floats, and two casts from one float ten days apart
+    in the same water mass are not independent samples. `times` is returned so callers
+    that bin by month (bias_correct) never have to re-derive the match order.
+    &quot;&quot;&quot;
+    lat, lon = cube.lat.values, cube.lon.values
+    times = cube.time.values.astype(&quot;datetime64[D]&quot;)
+    P, O, F, T = [], [], [], []
+    for pid, g in profiles.groupby(&quot;profile&quot;):
+        la, lo = float(g.lat.iloc[0]), float(g.lon.iloc[0])
+        if not (lat.min() &lt;= la &lt;= lat.max() and lon.min() &lt;= lo &lt;= lon.max()):
+            continue
+        day = np.datetime64(pd.Timestamp(g.time.iloc[0]).date())
+        k = int(np.abs(times - day).argmin())
+        if abs((times[k] - day).astype(int)) &gt; max_days:
+            continue
+        obs = interp_profile(g.pres.values, g.temp.values)
+        if not np.isfinite(obs).any():
+            continue
+        i, j = int(np.abs(lat - la).argmin()), int(np.abs(lon - lo).argmin())
+        pred = cube.isel(time=k, y=i, x=j).values if &quot;y&quot; in cube.dims else \
+            cube.isel(time=k, lat=i, lon=j).values
+        P.append(pred); O.append(obs)
+        F.append(str(pid).split(&quot;_&quot;)[0]); T.append(pd.Timestamp(g.time.iloc[0]))
+    if not P:
+        z = np.zeros((len(TARGET), 0))
+        return z, z, np.array([]), pd.DatetimeIndex([])
+    return np.array(P).T, np.array(O).T, np.array(F), pd.DatetimeIndex(T)
+
+
+def evaluate_argo(cube, profiles, max_days=1):
+    &quot;&quot;&quot;Returns (depth-wise table, n_profiles_matched).&quot;&quot;&quot;
+    from metrics import depthwise
+    pred, obs, _, _ = match_profiles(cube, profiles, max_days)
+    return depthwise(pred, obs), pred.shape[1]
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 2: Run the existing self-check to prove the refactor changed nothing</strong></li>
+</ul>
+<p>Run: <code>python src/argo_eval.py</code>
+Expected: <code>argo_eval self-check OK -- matched 1 profile, RMSE ...</code>. Every existing assertion must still pass — they are the regression test for this refactor. Do not weaken any of them.</p>
+<ul>
+<li>[ ] <strong>Step 3: Write <code>src/audit_leakage.py</code></strong></li>
+</ul>
+<pre><code class="language-python">&quot;&quot;&quot;Every methodology rule from CLAUDE.md sec.6, as a runnable assertion.
+
+    python src/audit_leakage.py
+
+The answer to &quot;how do you know there is no leakage?&quot; should be a command, not a claim.
+Raises on the first violation.
+&quot;&quot;&quot;
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import xarray as xr
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from config import CHANNELS, INTERIM, SPLITS, ZARR, crop_to_model
+from datasets import NIODataset, STATS_PATH, clim_path
+
+
+def ok(msg):
+    print(f&quot;  PASS  {msg}&quot;)
+
+
+print(&quot;1. splits are ordered and non-overlapping&quot;)
+bounds = [(pd.Timestamp(a), pd.Timestamp(b))
+          for a, b in (SPLITS[&quot;train&quot;], SPLITS[&quot;val&quot;], SPLITS[&quot;test&quot;])]
+for (a0, a1), (b0, b1) in zip(bounds, bounds[1:]):
+    assert a1 &lt; b0, f&quot;{a1} &gt;= {b0}: splits overlap&quot;
+ok(&quot;train &lt; val &lt; test, no overlap&quot;)
+
+print(&quot;2. no sample window crosses a split boundary&quot;)
+for w in (1, 7):
+    prev = None
+    for s in (&quot;train&quot;, &quot;val&quot;, &quot;test&quot;):
+        d = NIODataset(s, window=w)
+        assert len(d) == d.ds.sizes[&quot;time&quot;] - w + 1
+        if prev is not None:
+            assert prev.max() &lt; d.time.min(), f&quot;{s}: window {w} leaks backwards&quot;
+        prev = d.time
+ok(&quot;window=1 and window=7 both stay inside their split&quot;)
+
+print(&quot;3. normalisation stats come from the train split only&quot;)
+s = json.loads(STATS_PATH.read_text())
+ds = xr.open_zarr(ZARR)
+tr_mu = ds.X.sel(time=slice(*SPLITS[&quot;train&quot;])).mean(
+    dim=(&quot;time&quot;, &quot;lat&quot;, &quot;lon&quot;), skipna=True).values
+all_mu = ds.X.mean(dim=(&quot;time&quot;, &quot;lat&quot;, &quot;lon&quot;), skipna=True).values
+assert np.allclose(tr_mu, s[&quot;X&quot;][&quot;mean&quot;], atol=1e-3), &quot;stats are not a train-only fit&quot;
+assert not np.allclose(all_mu, s[&quot;X&quot;][&quot;mean&quot;], atol=1e-4), &quot;stats look fitted on all years&quot;
+ok(&quot;X mean reproduces the train-only fit and differs from the all-years fit&quot;)
+
+print(&quot;4. the climatology cache is a train-split fit&quot;)
+clim = np.load(clim_path(ZARR))
+y = ds.Y.sel(time=slice(*SPLITS[&quot;train&quot;])).groupby(&quot;time.month&quot;).mean(&quot;time&quot;, skipna=True)
+assert np.allclose(np.nan_to_num(clim), np.nan_to_num(crop_to_model(y.values)), atol=1e-3)
+ok(&quot;cached climatology reproduces a train-only monthly mean&quot;)
+
+print(&quot;5. Argo never appears in the store&quot;)
+assert set(ds.data_vars) == {&quot;X&quot;, &quot;Y&quot;}, sorted(ds.data_vars)
+assert list(ds.channel.values) == CHANNELS
+ok(&quot;store holds only X (7 satellite channels) and Y (GLORYS); no Argo variable exists&quot;)
+
+print(&quot;6. Argo used for scoring falls inside its split&quot;)
+prof = pd.read_parquet(INTERIM / &quot;argo_nio.parquet&quot;)
+prof[&quot;time&quot;] = pd.to_datetime(prof[&quot;time&quot;]).dt.tz_localize(None)
+prof[&quot;float&quot;] = prof.profile.astype(str).str.split(&quot;_&quot;).str[0]
+for split in (&quot;val&quot;, &quot;test&quot;):
+    lo, hi = SPLITS[split]
+    sub = prof[(prof.time &gt;= lo) &amp; (prof.time &lt;= pd.Timestamp(hi) + pd.Timedelta(days=1))]
+    assert sub.time.min() &gt;= pd.Timestamp(lo)
+    assert sub.time.max() &lt;= pd.Timestamp(hi) + pd.Timedelta(days=1)
+    print(f&quot;        {split}: {sub.profile.nunique()} profiles from {sub['float'].nunique()} floats&quot;)
+ok(&quot;val and test Argo windows do not spill across their bounds&quot;)
+
+print(&quot;7. GLORYS &lt;-&gt; Argo circularity, stated precisely&quot;)
+print(&quot;        GLORYS12V1 assimilates Argo, so Argo is not statistically independent of&quot;)
+print(&quot;        the target in general. The defensible claim is narrower, and is true: the&quot;)
+print(&quot;        model trains on GLORYS 2015-2021 only, so no 2022-2024 Argo cast -- nor&quot;)
+print(&quot;        the GLORYS state it informed -- was ever seen in training. Say it that way,&quot;)
+print(&quot;        not 'Argo is independent of GLORYS'.&quot;)
+ok(&quot;circularity is bounded by the time split, not by product independence&quot;)
+
+print(&quot;8. effective sample size is floats, not profiles&quot;)
+te = prof[prof.time &gt;= SPLITS[&quot;test&quot;][0]]
+n_p, n_f = te.profile.nunique(), te[&quot;float&quot;].nunique()
+assert n_f &lt; n_p / 10, &quot;unexpectedly many floats -- recheck the profile-id parsing&quot;
+print(f&quot;        {n_p} test profiles come from {n_f} floats; error bars must block by float&quot;)
+ok(&quot;recorded; Task 9 uses a float-blocked bootstrap&quot;)
+
+print(&quot;\nleakage audit: all checks passed&quot;)
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 4: Run the audit</strong></li>
+</ul>
+<p>Run: <code>python src/audit_leakage.py</code>
+Expected: eight <code>PASS</code> lines, then <code>leakage audit: all checks passed</code>. Checks 6 and 8 should print <code>val: 3440 profiles from 86 floats</code> and <code>test: 6448 profiles from 147 floats</code>.</p>
+<p><strong>If check 3 or 4 fails, stop the whole programme</strong> — every published number is affected and must be recomputed, not just this task.</p>
+<ul>
+<li>[ ] <strong>Step 5: Commit</strong></li>
+</ul>
+<pre><code class="language-bash">git add src/argo_eval.py src/audit_leakage.py
+git commit -m &quot;Runnable leakage audit; extract match_profiles for reuse&quot;
+</code></pre>
+<hr />
+<h2 id="task-3-argo-post-hoc-bias-correction">Task 3: Argo post-hoc bias correction</h2>
+<p>Spec item 3. Already validated on GLORYS as a probe (+9.3% from a val-fitted depth offset, 96% of the oracle). Now fit it on M4's own residuals: M4's 100 m bias is +0.850 against GLORYS's +0.716, so ~0.13 °C is the model's own and only the model's residuals capture both parts.</p>
+<p><strong>Files:</strong>
+- Create: <code>src/bias_correct.py</code>
+- Modify: <code>src/predict_cube.py</code> (add <code>--offset</code>, extract <code>score_cube()</code>)</p>
+<p><strong>Interfaces:</strong>
+- Consumes: <code>match_profiles()</code> from Task 2.
+- Produces: <code>fit_offset(cube, profiles, by_month=False) -&gt; np.ndarray</code> of shape <code>[15]</code> or <code>[15, 12]</code>; <code>apply_offset(cube, off) -&gt; xr.DataArray</code>; JSON artifacts <code>results/&lt;run&gt;_offset.json</code> and <code>results/&lt;run&gt;_offset_month.json</code>.</p>
+<ul>
+<li>[ ] <strong>Step 1: Write <code>src/bias_correct.py</code> with its self-check</strong></li>
+</ul>
+<pre><code class="language-python">&quot;&quot;&quot;Post-hoc Argo bias correction -- a 15-number lookup table, fitted on VAL Argo.
+
+    python src/bias_correct.py --cube results/m4_convlstm_s1_best_val_cube.nc --split val
+    python src/predict_cube.py --ckpt ... --split test --offset results/m4_..._offset.json
+
+The network never sees Argo. This stage does, so it is reported as its own row in the
+ablation table and never folded into the model's number. Fitting on the test split is
+refused outright: that is the one way this stage could become a lie.
+
+Measured with GLORYS as the probe (2023-24 test Argo, 6389 casts): raw 0.734, corrected
+0.665 with a val-fitted depth offset, against an oracle ceiling of 0.663. The bias drifts
+(+0.475 degC at 100 m in 2021 vs +0.716 in 2023-24), so fit on the split nearest the
+target period -- val, not train.
+&quot;&quot;&quot;
+import argparse
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import xarray as xr
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from argo_eval import match_profiles
+from config import DEPTHS, INTERIM, SPLITS
+
+
+def fit_offset(cube, profiles, by_month=False, max_days=1, min_n=20):
+    &quot;&quot;&quot;Mean (prediction - observation) per depth over the matched casts.
+
+    by_month=True fits [15, 12] instead. Measured WORSE than depth-only on 4,345 casts
+    (0.675 vs 0.671): 180 bins over ~3,400 profiles overfits. Kept because the spec asks
+    for the comparison, and because more Argo years would change the answer. Months come
+    from match_profiles' own `times`, so the bins can never fall out of step with the
+    matched casts.
+    &quot;&quot;&quot;
+    pred, obs, _, times = match_profiles(cube, profiles, max_days)
+    assert pred.shape[1] &gt;= min_n, f&quot;only {pred.shape[1]} casts matched; refusing to fit&quot;
+    d = pred - obs
+    flat = np.nanmean(d, axis=1)
+    if not by_month:
+        return flat
+    off = np.tile(flat[:, None], (1, 12))
+    for m in range(1, 13):
+        sel = times.month == m
+        if sel.sum() &gt;= min_n:
+            off[:, m - 1] = np.nanmean(d[:, sel], axis=1)
+    return off
+
+
+def apply_offset(cube, off):
+    &quot;&quot;&quot;cube minus the offset. `off` is [15] or [15, 12] (depth x calendar month).&quot;&quot;&quot;
+    off = np.asarray(off, float)
+    if off.ndim == 1:
+        sub = xr.DataArray(off, dims=(&quot;depth&quot;,), coords={&quot;depth&quot;: cube.depth})
+    else:
+        sub = xr.DataArray(off[:, cube.time.dt.month.values - 1], dims=(&quot;depth&quot;, &quot;time&quot;),
+                           coords={&quot;depth&quot;: cube.depth, &quot;time&quot;: cube.time})
+    return cube - sub
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument(&quot;--cube&quot;, required=True)
+    p.add_argument(&quot;--split&quot;, default=&quot;val&quot;)
+    p.add_argument(&quot;--argo&quot;, default=str(INTERIM / &quot;argo_nio.parquet&quot;))
+    p.add_argument(&quot;--by-month&quot;, action=&quot;store_true&quot;)
+    p.add_argument(&quot;--max-days&quot;, type=int, default=1)
+    a = p.parse_args()
+    assert a.split != &quot;test&quot;, (
+        &quot;refusing to fit an offset on the test split -- fit on val (CLAUDE.md rule 3)&quot;)
+
+    cube = xr.open_dataarray(a.cube)
+    prof = pd.read_parquet(a.argo)
+    prof[&quot;time&quot;] = pd.to_datetime(prof[&quot;time&quot;]).dt.tz_localize(None)
+    lo, hi = SPLITS[a.split]
+    prof = prof[(prof.time &gt;= lo) &amp; (prof.time &lt;= pd.Timestamp(hi) + pd.Timedelta(days=1))]
+
+    off = fit_offset(cube, prof, by_month=a.by_month, max_days=a.max_days)
+    stem = Path(a.cube).stem.replace(f&quot;_{a.split}_cube&quot;, &quot;&quot;)
+    out = Path(a.cube).with_name(
+        stem + (&quot;_offset_month.json&quot; if a.by_month else &quot;_offset.json&quot;))
+    out.write_text(json.dumps({&quot;split_fitted_on&quot;: a.split, &quot;by_month&quot;: a.by_month,
+                               &quot;depths&quot;: DEPTHS, &quot;offset&quot;: off.tolist()}, indent=2))
+    print(f&quot;fitted on {a.split} -&gt; {out.name}&quot;)
+    for z, v in zip(DEPTHS, off if off.ndim == 1 else off.mean(1)):
+        print(f&quot;  {z:5d} m  {v:+.3f}&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    if len(sys.argv) &gt; 1:
+        main()
+        raise SystemExit
+
+    # A cube carrying a known constant per-depth bias must have exactly that bias
+    # recovered, and applying the fit must drive the residual to zero.
+    from metrics import depthwise
+    rng = np.random.default_rng(0)
+    lat, lon = np.arange(0.125, 5, 0.25), np.arange(55.125, 60, 0.25)
+    t = pd.date_range(&quot;2022-01-01&quot;, periods=60)
+    truth = np.linspace(29.0, 4.0, len(DEPTHS))
+    bias = np.linspace(0.0, 0.9, len(DEPTHS))
+    cube = xr.DataArray(
+        np.broadcast_to((truth + bias)[None, :, None, None],
+                        (len(t), len(DEPTHS), len(lat), len(lon))).copy(),
+        coords={&quot;time&quot;: t, &quot;depth&quot;: DEPTHS, &quot;lat&quot;: lat, &quot;lon&quot;: lon},
+        dims=(&quot;time&quot;, &quot;depth&quot;, &quot;lat&quot;, &quot;lon&quot;))
+    z = np.arange(0.0, 1010.0, 10.0)
+    prof = pd.concat([
+        pd.DataFrame({&quot;profile&quot;: f&quot;29{k:05d}_1&quot;, &quot;time&quot;: t[k],
+                      &quot;lat&quot;: float(rng.choice(lat)), &quot;lon&quot;: float(rng.choice(lon)),
+                      &quot;pres&quot;: z, &quot;temp&quot;: np.interp(z, DEPTHS, truth)})
+        for k in range(40)], ignore_index=True)
+
+    off = fit_offset(cube, prof)
+    assert np.allclose(off, bias, atol=1e-6), f&quot;offset not recovered: {off - bias}&quot;
+    pred, obs, floats, times = match_profiles(apply_offset(cube, off), prof)
+    assert np.allclose(depthwise(pred, obs)[&quot;rmse&quot;], 0.0, atol=1e-6), \
+        &quot;correction did not null the bias&quot;
+    assert len(np.unique(floats)) == 40, &quot;float ids not parsed from the profile id&quot;
+    assert len(times) == 40, &quot;one timestamp per matched cast, in match order&quot;
+
+    offm = fit_offset(cube, prof, by_month=True)
+    assert offm.shape == (len(DEPTHS), 12)
+    assert np.allclose(apply_offset(cube, offm).isel(time=0).values[:, 0, 0], truth, atol=1e-6)
+
+    try:
+        fit_offset(cube, prof.head(50), min_n=20)
+        raise AssertionError(&quot;should have refused: far too few casts matched&quot;)
+    except AssertionError as e:
+        assert &quot;refusing to fit&quot; in str(e), e
+    print(&quot;bias_correct self-check OK -- offset recovered to 1e-6, month form applies&quot;)
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 2: Run the self-check</strong></li>
+</ul>
+<p>Run: <code>python src/bias_correct.py</code>
+Expected: <code>bias_correct self-check OK -- offset recovered to 1e-6, month form applies</code>.</p>
+<ul>
+<li>[ ] <strong>Step 3: Add <code>--offset</code> and <code>score_cube()</code> to <code>src/predict_cube.py</code></strong></li>
+</ul>
+<p>Extract the scoring block from <code>main()</code> into a reusable function (Task 8's ensemble needs it too):</p>
+<pre><code class="language-python">def score_cube(cube, split, argo=str(INTERIM / &quot;argo_nio.parquet&quot;), max_days=1):
+    &quot;&quot;&quot;Depth-wise table for a cube against the raw Argo of one split.&quot;&quot;&quot;
+    prof = pd.read_parquet(argo)
+    # ERDDAP hands back tz-aware UTC; the split bounds are naive and pandas refuses to
+    # compare the two rather than silently guessing an offset.
+    prof[&quot;time&quot;] = pd.to_datetime(prof[&quot;time&quot;]).dt.tz_localize(None)
+    lo, hi = SPLITS[split]
+    prof = prof[(prof.time &gt;= lo) &amp; (prof.time &lt;= pd.Timestamp(hi) + pd.Timedelta(days=1))]
+    return evaluate_argo(cube, prof, max_days=max_days)
+</code></pre>
+<p>Add the flag (<code>p.add_argument("--offset", default=None)</code>) and, in <code>main()</code> right after the cube is built:</p>
+<pre><code class="language-python">    if a.offset:
+        from bias_correct import apply_offset
+        meta = json.loads(Path(a.offset).read_text())
+        assert meta[&quot;split_fitted_on&quot;] != &quot;test&quot;, &quot;offset fitted on test -- circular&quot;
+        cube = apply_offset(cube, np.asarray(meta[&quot;offset&quot;]))
+        run = f&quot;{run}_bc&quot; + (&quot;m&quot; if meta[&quot;by_month&quot;] else &quot;&quot;)
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 4: Fit on val and sanity-check the sign</strong></li>
+</ul>
+<pre><code class="language-bash">python src/predict_cube.py --ckpt checkpoints/m4_convlstm_s1_best.pt --split val
+python src/bias_correct.py --cube results/m4_convlstm_s1_best_val_cube.nc --split val
+python src/bias_correct.py --cube results/m4_convlstm_s1_best_val_cube.nc --split val --by-month
+</code></pre>
+<p>Expected: offsets <strong>positive</strong>, peaking near +0.7 to +0.9 at 100 m, near zero at 0 m and 500 m, slightly negative at 700–1000 m. A negative 100 m offset means the sign convention is inverted — <code>fit_offset</code> returns <em>prediction minus observation</em> and <code>apply_offset</code> <strong>subtracts</strong> it.</p>
+<ul>
+<li>[ ] <strong>Step 5: Choose depth-only vs depth×month on VAL</strong></li>
+</ul>
+<pre><code class="language-bash">python src/predict_cube.py --ckpt checkpoints/m4_convlstm_s1_best.pt --split val \
+    --offset results/m4_convlstm_s1_best_offset.json
+python src/predict_cube.py --ckpt checkpoints/m4_convlstm_s1_best.pt --split val \
+    --offset results/m4_convlstm_s1_best_offset_month.json
+</code></pre>
+<p>Note: fitting and scoring on the same split flatters both, so this comparison is only usable to pick the <em>form</em>, and the honest number comes from Step 6. Prediction from the GLORYS probe: depth-only wins. Record both val numbers, then carry the winner forward.</p>
+<ul>
+<li>[ ] <strong>Step 6: One pre-registered confirmation read on test (seed 1 only)</strong></li>
+</ul>
+<p>Write the prediction down <em>before</em> running, in this document: <strong>0.82 ± 0.01 blended</strong>, derived from M4's perfect-debias bound of 0.810 and the 96%-of-oracle recovery measured on the GLORYS probe.</p>
+<pre><code class="language-bash">python src/predict_cube.py --ckpt checkpoints/m4_convlstm_s1_best.pt --split test \
+    --offset results/m4_convlstm_s1_best_offset.json
+</code></pre>
+<p>One seed, one pre-registered number, no choice made afterwards — that is what keeps this defensible. The full 3-seed test evaluation happens once, in Task 10. If the result lands far from 0.82, do <strong>not</strong> start tuning the correction against test; record the miss and diagnose on val.</p>
+<p>The offset is fitted once, on seed 1's val cube, and later applied to every seed — refitting per seed would let three fits chase three sets of noise.</p>
+<ul>
+<li>[ ] <strong>Step 7: Commit</strong></li>
+</ul>
+<pre><code class="language-bash">git add src/bias_correct.py src/predict_cube.py results/*_offset*.json results/*_bc*_argo.csv
+git commit -m &quot;Post-hoc Argo bias correction: depth offset fitted on val, ~9% expected&quot;
+</code></pre>
+<hr />
+<h2 id="interlude-the-screening-protocol-for-tasks-47">Interlude: the screening protocol for Tasks 4–7</h2>
+<p>Tasks 4–7 are five candidate interventions. Running all of them at three seeds costs ~5.5 GPU-hours; screening at one seed first costs ~1.8 and rejects the obvious losers. Day 2's measured seed spread on the Argo score is <strong>σ ≈ 0.010 °C</strong>.</p>
+<p><strong>Decision rule, fixed now so it cannot be bent later:</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Single-seed val score vs <code>VAL_BASELINE</code></th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>better, or worse by ≤ 0.010 (1σ)</td>
+<td><strong>promote</strong> to 3 seeds in Task 8</td>
+</tr>
+<tr>
+<td>worse by 0.010 – 0.020</td>
+<td>promote only if a depth-wise table shows a clear win somewhere useful (e.g. below 300 m)</td>
+</tr>
+<tr>
+<td>worse by &gt; 0.020 (2σ)</td>
+<td><strong>reject</strong>; record the number in the ablation table as a failure and move on</td>
+</tr>
+</tbody>
+</table></div>
+<p>A one-seed screen cannot resolve a 0.01 effect — it is not meant to. It is meant to reject things that are clearly worse, the way the gradient loss (+0.017) and the anomaly formulation (+0.074) were on Day 2.</p>
+<p>Every screening run is <code>--seed 1</code>, scored on <strong>val</strong> only. No test reads in Tasks 4–8.</p>
+<hr />
+<h2 id="task-4-anomaly-prediction-on-m4">Task 4: Anomaly prediction on M4</h2>
+<p>Spec item 4. Already implemented (<code>anomaly: true</code> — the model predicts a departure from the train-split monthly climatology, and <code>base</code> is added back inside the model path so loss and metrics stay in absolute °C). Day 2 measured it on M2: <strong>0.975 ± 0.020, clearly worse overall — but the first thing to beat climatology at 500 m and 1000 m.</strong> This task asks the same question of M4, where the deep is already stronger.</p>
+<p><strong>Files:</strong>
+- Create: <code>configs/m4_anomaly.yaml</code></p>
+<p><strong>Interfaces:</strong>
+- Consumes: <code>VAL_BASELINE</code> from Task 1; the climatology cache from <code>python src/datasets.py --clim</code>.
+- Produces: <code>results/m4_anomaly_s1_best_val_argo.csv</code>.</p>
+<ul>
+<li>[ ] <strong>Step 1: Write <code>configs/m4_anomaly.yaml</code></strong></li>
+</ul>
+<pre><code class="language-yaml">run: m4_anomaly
+model:
+  kind: temporal
+  out_ch: 15
+  base: 32
+  depth: 3
+anomaly: true          # predict the departure from train-split monthly climatology
+window: 7
+batch_size: 16
+num_workers: 4
+lr: 0.001
+epochs: 20
+seed: 0
+</code></pre>
+<p><code>in_ch</code> is deliberately absent — Task 5 makes <code>train.py</code> derive it. Until then, add <code>in_ch: 7</code>.</p>
+<ul>
+<li>[ ] <strong>Step 2: Train and score on val</strong></li>
+</ul>
+<pre><code class="language-bash">python src/train.py configs/m4_anomaly.yaml --seed 1
+python src/predict_cube.py --ckpt checkpoints/m4_anomaly_s1_best.pt --split val
+</code></pre>
+<p>Expected: ~22 min. <strong>Prediction: worse than baseline overall (Day 2's M2 anomaly was +0.074), better at 500–1000 m.</strong> If it is not worse overall, that is a genuine surprise worth a paragraph in the write-up.</p>
+<ul>
+<li>[ ] <strong>Step 3: Apply the decision rule and record</strong></li>
+</ul>
+<p>Compare the blended val RMSE to <code>VAL_BASELINE</code>, and compare the 500/700/1000 m rows to the baseline's. Record both in the results table at the bottom of this document, including the promote/reject decision and its reason.</p>
+<ul>
+<li>[ ] <strong>Step 4: Commit</strong></li>
+</ul>
+<pre><code class="language-bash">git add configs/m4_anomaly.yaml results/m4_anomaly_s1_best_val_argo.csv
+git commit -m &quot;M4 anomaly formulation, screened on val&quot;
+</code></pre>
+<hr />
+<h2 id="task-5-climatology-as-input-channels">Task 5: Climatology as input channels</h2>
+<p>Spec item 5. Doc 09 §5.1 concluded the right formulation is <strong>depth-dependent</strong> — absolute up top, climatology-anchored in the deep — and proposed a hand-picked crossover. Feeding climatology as 15 input channels instead lets the network learn that crossover per depth, per location, and per season. <a href="https://os.copernicus.org/articles/22/2161/2026/">TS-Cast (Ocean Science, 2026)</a> feeds monthly climatological profiles to a U-Net for exactly this reason.</p>
+<p>This is the task that adds the <code>extra</code> channel machinery; Task 6 reuses it.</p>
+<p><strong>Files:</strong>
+- Modify: <code>src/config.py</code>, <code>src/datasets.py</code>, <code>src/train.py</code>, <code>src/predict_cube.py</code>
+- Create: <code>configs/m4_clim.yaml</code></p>
+<p><strong>Interfaces:</strong>
+- Produces: <code>config.n_channels(extra) -&gt; int</code>; <code>NIODataset(..., extra=("clim",))</code> returning <code>x</code> with 22 channels in the frozen order <code>[7 surface] + [15 climatology]</code>.</p>
+<ul>
+<li>[ ] <strong>Step 1: Add the channel bookkeeping to <code>src/config.py</code></strong></li>
+</ul>
+<pre><code class="language-python">CLIM_CHANNELS = [f&quot;clim_{d}m&quot; for d in DEPTHS]                    # 15
+AUX_CHANNELS = [&quot;doy_sin&quot;, &quot;doy_cos&quot;, &quot;lat&quot;, &quot;lon&quot;, &quot;bathy&quot;]      # 5
+
+def n_channels(extra=()):
+    &quot;&quot;&quot;Input channel count for a channel set. The ORDER is frozen: surface, then
+    climatology, then auxiliary. A checkpoint stores its `extra` list, so anything that
+    rebuilds a dataset for inference must pass the same one -- doc 09 sec.7 records what
+    happens when predict_cube guesses (M4 got [B,C,H,W] where it wanted [B,T,C,H,W]).&quot;&quot;&quot;
+    n = len(CHANNELS)
+    if &quot;clim&quot; in extra:
+        n += len(CLIM_CHANNELS)
+    if &quot;aux&quot; in extra:
+        n += len(AUX_CHANNELS)
+    return n
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 2: Add the <code>extra</code> parameter to <code>NIODataset</code></strong></li>
+</ul>
+<p>In <code>src/datasets.py</code>, extend <code>__init__</code>:</p>
+<pre><code class="language-python">    def __init__(self, split, zarr_path=ZARR, window=1, stats=STATS_PATH, crop=True,
+                 anomaly=False, extra=()):
+        ...
+        self.extra = tuple(extra)
+        # climatology is needed as a residual base (anomaly) or as input channels, or both
+        self.clim = (self.climatology(zarr_path)
+                     if (anomaly or &quot;clim&quot; in self.extra) else None)
+        self.anomaly = anomaly
+        self.ymu = np.asarray(s[&quot;Y&quot;][&quot;mean&quot;], np.float32)[:, None, None]
+        self.ysd = np.asarray(s[&quot;Y&quot;][&quot;std&quot;], np.float32)[:, None, None]
+</code></pre>
+<p>and extend <code>__getitem__</code>, after the existing normalisation of <code>x</code>:</p>
+<pre><code class="language-python">        parts = [x]                                  # x is [window, 7, H, W]
+        if &quot;clim&quot; in self.extra:
+            # The climatology for each FRAME's own month -- a 7-day window can straddle a
+            # month boundary. Normalised with the Y stats because it is in degC on the
+            # target's scale, not the inputs'.
+            c = self.clim[self.months[i:t + 1] - 1]
+            parts.append((np.nan_to_num(c, nan=0.0) - self.ymu) / self.ysd)
+        x = np.concatenate(parts, axis=1).astype(np.float32)
+</code></pre>
+<p>Note <code>self.clim</code> is <code>[12, 15, H, W]</code> and already cropped by <code>build_climatology(crop=True)</code>, so it needs no further crop. <code>self.months</code> is already the per-index month array for this split.</p>
+<ul>
+<li>[ ] <strong>Step 3: Extend the <code>datasets.py</code> self-check</strong></li>
+</ul>
+<p>Add to the <code>__main__</code> block, after the existing <code>window=7</code> assertions:</p>
+<pre><code class="language-python">    ce = NIODataset(&quot;train&quot;, store, stats=tmp / &quot;stats.json&quot;, extra=(&quot;clim&quot;,))
+    xc, yc, mc, bc = ce[0]
+    from config import n_channels
+    assert xc.shape == (n_channels((&quot;clim&quot;,)), 96, 176) == (22, 96, 176), xc.shape
+    assert np.allclose(xc[:7], x), &quot;surface channels must be unchanged and come first&quot;
+    assert np.isfinite(xc).all(), &quot;NaN leaked in via the climatology channels&quot;
+    assert not np.allclose(xc[7:], 0.0), &quot;climatology channels are all zero&quot;
+    assert not bc.any(), &quot;extra=('clim',) must NOT switch on the anomaly residual base&quot;
+
+    cw = NIODataset(&quot;train&quot;, store, stats=tmp / &quot;stats.json&quot;, window=7, extra=(&quot;clim&quot;,))
+    assert cw[0][0].shape == (7, 22, 96, 176), cw[0][0].shape
+</code></pre>
+<p>Run: <code>python src/datasets.py</code>
+Expected: <code>datasets self-check OK</code>. The <code>bc.any()</code> assertion is the important one — climatology-as-input and the anomaly residual are two different mechanisms and must stay independently switchable, or Task 4 and Task 5 stop being separable experiments.</p>
+<ul>
+<li>[ ] <strong>Step 4: Thread <code>extra</code> through <code>train.py</code> and <code>predict_cube.py</code></strong></li>
+</ul>
+<p>In <code>src/train.py</code>, inside <code>main()</code> before <code>build(cfg)</code>:</p>
+<pre><code class="language-python">    extra = tuple(cfg.get(&quot;extra&quot;, ()))
+    # Derived, never hand-typed: a YAML that says in_ch: 7 alongside extra: [clim] is a
+    # silent shape bug at best. The checkpoint carries cfg, so inference reads it back.
+    cfg[&quot;model&quot;][&quot;in_ch&quot;] = n_channels(extra)
+</code></pre>
+<p>and add <code>"extra": extra</code> to the <code>kw</code> dict passed to both <code>NIODataset</code> calls. Import <code>n_channels</code> from <code>config</code>.</p>
+<p>In <code>src/predict_cube.py</code>, in <code>predict_cube()</code>:</p>
+<pre><code class="language-python">    ds = NIODataset(split, zarr, window=st[&quot;cfg&quot;].get(&quot;window&quot;, 1),
+                    anomaly=st[&quot;cfg&quot;].get(&quot;anomaly&quot;, False),
+                    extra=tuple(st[&quot;cfg&quot;].get(&quot;extra&quot;, ())))
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 5: Verify the existing configs are unaffected</strong></li>
+</ul>
+<p>Run: <code>python src/train.py configs/m2_unet.yaml --seed 9</code> and stop it after epoch 0 (Ctrl-C).
+Expected: it starts and the first epoch's loss is in the same range as <code>results/m2_unet.csv</code> epoch 0 (≈485). <code>n_channels(())</code> is 7, so nothing about the committed configs changes. Then <code>rm checkpoints/m2_unet_s9* results/m2_unet_s9*</code>.</p>
+<ul>
+<li>[ ] <strong>Step 6: Write <code>configs/m4_clim.yaml</code> and screen it</strong></li>
+</ul>
+<pre><code class="language-yaml">run: m4_clim
+model:
+  kind: temporal
+  out_ch: 15
+  base: 32
+  depth: 3
+extra: [clim]          # 7 surface + 15 monthly climatology channels = 22
+window: 7
+batch_size: 16
+num_workers: 4
+lr: 0.001
+epochs: 20
+seed: 0
+</code></pre>
+<pre><code class="language-bash">python src/train.py configs/m4_clim.yaml --seed 1
+python src/predict_cube.py --ckpt checkpoints/m4_clim_s1_best.pt --split val
+</code></pre>
+<p>Expected: ~25 min (22 input channels instead of 7 costs a little in the first conv only). <strong>This is the intervention most likely to beat baseline</strong> — it hands the model the seasonal cycle and the deep-ocean anchor without forcing the residual form that failed on Day 2.</p>
+<ul>
+<li>[ ] <strong>Step 7: Apply the decision rule, record, commit</strong></li>
+</ul>
+<pre><code class="language-bash">git add src/config.py src/datasets.py src/train.py src/predict_cube.py \
+        configs/m4_clim.yaml results/m4_clim_s1_best_val_argo.csv
+git commit -m &quot;Climatology as 15 input channels; derive in_ch from the channel set&quot;
+</code></pre>
+<hr />
+<h2 id="task-6-auxiliary-features-bathymetry-day-of-year-latlon">Task 6: Auxiliary features — bathymetry, day-of-year, lat/lon</h2>
+<p>Spec item 6. The model currently cannot tell January from July except through the fields themselves, in a basin whose entire dynamics are monsoonal; and it cannot tell the 200 m shelf off Gujarat from 4 km of open Arabian Sea. Longitude, latitude, day-of-year and bathymetry are the standard auxiliary set in this literature.</p>
+<p><strong>Bathymetry comes free from the store.</strong> <code>Y</code> is NaN below the sea floor, so the count of valid depth levels per cell <em>is</em> a 16-value bathymetry on exactly the right grid: measured over the train split, 4,781 land cells, 11,199 full-1000 m cells, and ~2,020 shelf cells spread across 2–14 levels. No GEBCO download, no regrid, no account.</p>
+<p><strong>Files:</strong>
+- Modify: <code>src/config.py</code> (<code>bathy_path</code>), <code>src/datasets.py</code> (<code>build_bathymetry</code>, aux channels)
+- Create: <code>configs/m4_aux.yaml</code></p>
+<p><strong>Interfaces:</strong>
+- Consumes: <code>n_channels</code> and the <code>extra</code> plumbing from Task 5.
+- Produces: <code>build_bathymetry(zarr_path)</code> writing <code>nio_daily.bathy.npy</code> <code>[96,176]</code> float32 in [0,1]; <code>NIODataset(..., extra=("aux",))</code> returning 12 channels, or 27 with <code>("clim","aux")</code>.</p>
+<ul>
+<li>[ ] <strong>Step 1: Add <code>bathy_path</code> to <code>src/config.py</code></strong></li>
+</ul>
+<pre><code class="language-python">def bathy_path(zarr_path):
+    &quot;&quot;&quot;Cache beside the store it was fitted from -- same rule as the climatology cache.&quot;&quot;&quot;
+    return Path(zarr_path).with_suffix(&quot;.bathy.npy&quot;)
+</code></pre>
+<p>(<code>from pathlib import Path</code> is already imported there.)</p>
+<ul>
+<li>[ ] <strong>Step 2: Add <code>build_bathymetry</code> to <code>src/datasets.py</code></strong></li>
+</ul>
+<pre><code class="language-python">def build_bathymetry(zarr_path=ZARR, crop=True):
+    &quot;&quot;&quot;Fraction of the 15 depth levels GLORYS resolves at each cell, from the TRAIN split.
+
+    0 on land, 1 where the full 1000 m column exists. This is free bathymetry: Y is
+    already NaN below the sea floor, on exactly the model grid, with no download. Fitted
+    on train only so no one can argue the shelf mask carries test-period information --
+    it is static, but the cost of proving that is one slice.
+
+    ponytail: 15 quantised levels, not metres. If the shelf channel earns its place,
+    GEBCO/ETOPO regridded to 0.25 deg is the continuous upgrade.
+
+    Run in its own process, like the climatology: the dask reduction leaves a thread pool
+    behind that deadlocks DataLoader workers forked afterwards (doc 09 sec.7).
+    &quot;&quot;&quot;
+    y = xr.open_zarr(zarr_path).Y.sel(time=slice(*SPLITS[&quot;train&quot;]))
+    valid = np.isfinite(y.isel(time=slice(0, 30))).all(&quot;time&quot;).values     # [15, H, W]
+    b = (valid.sum(0) / y.sizes[&quot;depth&quot;]).astype(np.float32)
+    b = crop_to_model(b) if crop else b
+    np.save(bathy_path(zarr_path), b)
+    return b
+</code></pre>
+<p>Import <code>bathy_path</code> and <code>DEPTHS</code>/<code>LAT</code>/<code>LON</code> from <code>config</code> at the top of the module.</p>
+<p>Extend the <code>--clim</code> entrypoint to build both caches (one flag, no new command to forget):</p>
+<pre><code class="language-python">    if &quot;--clim&quot; in _sys.argv:                   # build both caches, then exit
+        c = build_climatology()
+        b = build_bathymetry()
+        print(f&quot;climatology cached {c.shape} -&gt; {clim_path(ZARR).name}&quot;)
+        print(f&quot;bathymetry cached {b.shape}, {(b == 0).mean():.1%} land -&gt; {bathy_path(ZARR).name}&quot;)
+        raise SystemExit
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 3: Add the aux channels to <code>NIODataset</code></strong></li>
+</ul>
+<p>In <code>__init__</code>:</p>
+<pre><code class="language-python">        if &quot;aux&quot; in self.extra:
+            self.bathy = np.load(bathy_path(zarr_path))[None]              # [1, H, W]
+            self.doy = pd.DatetimeIndex(self.ds.time.values).dayofyear.to_numpy()
+            # Absolute position is real signal here, not a nuisance: this is a regional
+            # model on a frozen grid, and the Arabian Sea and the Bay of Bengal behave
+            # differently. Scaled to [-1, 1] to sit on the same scale as the normalised
+            # surface channels.
+            la = np.broadcast_to(LAT[:, None], GRID_SHAPE).astype(np.float32)
+            lo = np.broadcast_to(LON[None, :], GRID_SHAPE).astype(np.float32)
+            rescale = lambda v: (2 * (v - v.min()) / (v.max() - v.min()) - 1).astype(np.float32)
+            self.latlon = np.stack([rescale(crop_to_model(la)), rescale(crop_to_model(lo))])
+</code></pre>
+<p>In <code>__getitem__</code>, after the climatology block:</p>
+<pre><code class="language-python">        if &quot;aux&quot; in self.extra:
+            # sin/cos so 31 Dec and 1 Jan are adjacent; per frame, because a 7-day window
+            # spans seven different days.
+            d = self.doy[i:t + 1].astype(np.float32)
+            ang = 2 * np.pi * d / 365.25
+            hw = self.bathy.shape[-2:]
+            season = np.stack([np.sin(ang), np.cos(ang)], 1)[:, :, None, None]
+            season = np.broadcast_to(season, (len(d), 2, *hw))
+            static = np.broadcast_to(np.concatenate([self.latlon, self.bathy])[None],
+                                     (len(d), 3, *hw))
+            parts.append(np.concatenate([season, static], 1).astype(np.float32))
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 4: Extend the self-check</strong></li>
+</ul>
+<p>Add to <code>__main__</code>, after the Task 5 assertions:</p>
+<pre><code class="language-python">    build_bathymetry(store)
+    ae = NIODataset(&quot;train&quot;, store, stats=tmp / &quot;stats.json&quot;, extra=(&quot;aux&quot;,))
+    xa2 = ae[0][0]
+    assert xa2.shape == (n_channels((&quot;aux&quot;,)), 96, 176) == (12, 96, 176), xa2.shape
+    assert np.allclose(xa2[:7], x), &quot;surface channels must come first and be unchanged&quot;
+    assert np.isfinite(xa2).all()
+    # doy sin/cos must be constant in space and must MOVE between two different days
+    assert xa2[7].std() &lt; 1e-6 and xa2[8].std() &lt; 1e-6, &quot;day-of-year is not spatially flat&quot;
+    assert abs(float(xa2[7, 0, 0]) - float(ae[10][0][7, 0, 0])) &gt; 1e-3, \
+        &quot;day-of-year identical ten days apart -- the channel is inert&quot;
+    assert xa2[9].min() &gt;= -1.001 and xa2[9].max() &lt;= 1.001, &quot;lat channel out of [-1,1]&quot;
+    assert xa2[10].min() &gt;= -1.001 and xa2[10].max() &lt;= 1.001, &quot;lon channel out of [-1,1]&quot;
+    assert xa2[9, 0, 0] &lt; xa2[9, -1, 0], &quot;lat channel is upside down&quot;
+    assert xa2[11].min() == 0.0 and xa2[11].max() == 1.0, &quot;bathymetry is not in [0,1]&quot;
+
+    both = NIODataset(&quot;train&quot;, store, stats=tmp / &quot;stats.json&quot;, window=7,
+                      extra=(&quot;clim&quot;, &quot;aux&quot;))
+    assert both[0][0].shape == (7, 27, 96, 176), both[0][0].shape
+</code></pre>
+<p>Run: <code>python src/datasets.py</code>
+Expected: <code>datasets self-check OK</code>. The "identical ten days apart" assertion is the one that catches a day-of-year channel accidentally computed from the split's first date instead of each sample's.</p>
+<ul>
+<li>[ ] <strong>Step 5: Write <code>configs/m4_aux.yaml</code> and screen it</strong></li>
+</ul>
+<pre><code class="language-yaml">run: m4_aux
+model:
+  kind: temporal
+  out_ch: 15
+  base: 32
+  depth: 3
+extra: [aux]           # 7 surface + doy sin/cos + lat + lon + bathymetry = 12
+window: 7
+batch_size: 16
+num_workers: 4
+lr: 0.001
+epochs: 20
+seed: 0
+</code></pre>
+<pre><code class="language-bash">python src/datasets.py --clim          # rebuild both caches, including bathymetry
+python src/train.py configs/m4_aux.yaml --seed 1
+python src/predict_cube.py --ckpt checkpoints/m4_aux_s1_best.pt --split val
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 6: If Tasks 5 and 6 both pass the rule, screen the combination</strong></li>
+</ul>
+<pre><code class="language-yaml"># configs/m4_clim_aux.yaml -- as m4_clim.yaml but:
+run: m4_clim_aux
+extra: [clim, aux]     # 27 channels
+</code></pre>
+<pre><code class="language-bash">python src/train.py configs/m4_clim_aux.yaml --seed 1
+python src/predict_cube.py --ckpt checkpoints/m4_clim_aux_s1_best.pt --split val
+</code></pre>
+<p>The two are not obviously additive — climatology already carries most of the seasonal cycle that day-of-year encodes — so the combination is a real question, not a formality.</p>
+<ul>
+<li>[ ] <strong>Step 7: Record and commit</strong></li>
+</ul>
+<pre><code class="language-bash">git add src/config.py src/datasets.py configs/m4_aux.yaml configs/m4_clim_aux.yaml \
+        results/m4_aux_s1_best_val_argo.csv results/m4_clim_aux_s1_best_val_argo.csv
+git commit -m &quot;Auxiliary channels: bathymetry from the store's own mask, day-of-year, lat/lon&quot;
+</code></pre>
+<hr />
+<h2 id="task-7-losses-depth-weighted-and-vertical-gradient">Task 7: Losses — depth-weighted and vertical-gradient</h2>
+<p>Spec item 7. The vertical-gradient loss is already implemented and was measured <strong>negative on M2 (0.918 ± 0.004 vs 0.901)</strong>; it is re-run on M4 because the spec asks and it costs 22 minutes. The depth-weighted loss is new.</p>
+<p><strong>State the prediction before running, because it follows from the metric definition.</strong> The blended score is an n-weighted RMS across depths with roughly equal n per depth, so it is very nearly the mean per-depth MSE in °C² — which is exactly what plain masked MSE already minimises. <strong>Plain MSE is already the loss matched to the reported metric.</strong> Inverse-variance depth weighting (from the frozen train stats: 0.38 at 100 m rising to 2.53 at 1000 m, a 6.6× swing) deliberately trades thermocline accuracy for deep accuracy. Expect the blended number to get <em>worse</em> and 500–1000 m to get <em>better</em>. That is a shape change, not a free win — and it is worth measuring precisely because 500/700/1000 m are the three depths where climatology still beats M4.</p>
+<p><strong>Files:</strong>
+- Modify: <code>src/models/unet.py</code> (<code>depth_weight</code> on <code>masked_mse</code>), <code>src/train.py</code>
+- Create: <code>configs/m4_dw.yaml</code>, <code>configs/m4_grad.yaml</code></p>
+<p><strong>Interfaces:</strong>
+- Produces: <code>masked_mse(pred, true, mask, grad_weight=0.0, depth_weight=None)</code> where <code>depth_weight</code> is a <code>[15]</code> tensor on the same device.</p>
+<ul>
+<li>[ ] <strong>Step 1: Add <code>depth_weight</code> to <code>masked_mse</code></strong></li>
+</ul>
+<pre><code class="language-python">def masked_mse(pred, true, mask, grad_weight=0.0, depth_weight=None):
+    &quot;&quot;&quot;...existing docstring...
+
+    `depth_weight` is a [15] tensor re-weighting the per-level contribution. Plain MSE in
+    degC already matches the reported blended metric almost exactly, so this is a
+    deliberate trade: inverse-variance weights (1/sd^2 from the frozen train stats) push
+    effort from the thermocline into the deep, where climatology still beats us.
+    &quot;&quot;&quot;
+    n = mask.sum()
+    assert n &gt; 0, &quot;batch has no valid target cells&quot;
+    if depth_weight is None:
+        loss = ((pred - true) ** 2 * mask).sum() / n
+    else:
+        w = depth_weight.view(1, -1, 1, 1).to(pred.device)
+        wm = mask * w
+        loss = ((pred - true) ** 2 * wm).sum() / wm.sum()
+    if grad_weight:
+        ...unchanged...
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 2: Extend the <code>unet.py</code> self-check</strong></li>
+</ul>
+<p>Add after the existing <code>masked_mse</code> assertions:</p>
+<pre><code class="language-python">    w_flat = torch.ones(15)
+    assert torch.isclose(masked_mse(y, y + 1, m, depth_weight=w_flat),
+                         masked_mse(y, y + 1, m)), &quot;uniform weights must be a no-op&quot;
+    w_deep = torch.zeros(15); w_deep[-1] = 1.0
+    err = y.detach().clone(); err[:, :-1] += 5.0        # error only at levels 0..13
+    assert masked_mse(err, y.detach(), m, depth_weight=w_deep) &lt; 1e-6, \
+        &quot;zero-weighted levels still contributed&quot;
+    assert masked_mse(err, y.detach(), m) &gt; 1.0, &quot;control: unweighted must see the error&quot;
+</code></pre>
+<p>Run: <code>python src/models/unet.py</code>
+Expected: all self-checks pass, including the existing overfit-one-sample checks.</p>
+<ul>
+<li>[ ] <strong>Step 3: Build the weights in <code>train.py</code></strong></li>
+</ul>
+<pre><code class="language-python">    dw = cfg.get(&quot;depth_weight&quot;)
+    if dw == &quot;inv_var&quot;:
+        # 1/sd^2 from the frozen TRAIN stats, normalised to mean 1 so the loss stays on
+        # the same scale as every other run and the printed numbers remain comparable.
+        sd = np.asarray(json.loads(Path(stats or STATS_PATH).read_text())[&quot;Y&quot;][&quot;std&quot;])
+        w = 1.0 / sd ** 2
+        depth_weight = torch.tensor(w / w.mean(), dtype=torch.float32, device=dev)
+    elif dw == &quot;inv_std&quot;:
+        sd = np.asarray(json.loads(Path(stats or STATS_PATH).read_text())[&quot;Y&quot;][&quot;std&quot;])
+        w = 1.0 / sd
+        depth_weight = torch.tensor(w / w.mean(), dtype=torch.float32, device=dev)
+    else:
+        assert dw is None, f&quot;unknown depth_weight: {dw}&quot;
+        depth_weight = None
+</code></pre>
+<p>and pass <code>depth_weight=depth_weight</code> in the <code>masked_mse</code> call. Import <code>json</code> and <code>STATS_PATH</code>.</p>
+<ul>
+<li>[ ] <strong>Step 4: Write both configs</strong></li>
+</ul>
+<pre><code class="language-yaml"># configs/m4_dw.yaml -- as configs/m4_convlstm.yaml but:
+run: m4_dw
+depth_weight: inv_var
+</code></pre>
+<pre><code class="language-yaml"># configs/m4_grad.yaml -- as configs/m4_convlstm.yaml but:
+run: m4_grad
+grad_weight: 1.0
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 5: Screen both</strong></li>
+</ul>
+<pre><code class="language-bash">python src/train.py configs/m4_dw.yaml   --seed 1
+python src/train.py configs/m4_grad.yaml --seed 1
+for r in m4_dw m4_grad; do python src/predict_cube.py --ckpt checkpoints/${r}_s1_best.pt --split val; done
+</code></pre>
+<p>Expected: ~45 min total. <strong>Predictions: <code>m4_grad</code> worse (Day 2's M2 grad was +0.017); <code>m4_dw</code> worse on the blended number but better at 500/700/1000 m.</strong> If <code>m4_dw</code> improves the deep without costing more than 1σ overall, promote it — that is the one combination that would make every depth beat climatology.</p>
+<ul>
+<li>[ ] <strong>Step 6: Record and commit</strong></li>
+</ul>
+<pre><code class="language-bash">git add src/models/unet.py src/train.py configs/m4_dw.yaml configs/m4_grad.yaml \
+        results/m4_dw_s1_best_val_argo.csv results/m4_grad_s1_best_val_argo.csv
+git commit -m &quot;Depth-weighted loss; re-screen the gradient loss on M4&quot;
+</code></pre>
+<hr />
+<h2 id="task-8-three-seeds-for-the-survivors-then-ensemble">Task 8: Three seeds for the survivors, then ensemble</h2>
+<p>Spec item 8. Everything promoted by the decision rule gets two more seeds, so its claim carries a spread. Then average the seed cubes — a same-config seed ensemble typically buys 2–4% for nothing, and it needs no training at all.</p>
+<p><strong>Files:</strong>
+- Modify: <code>src/predict_cube.py</code> (add <code>--ensemble</code>)</p>
+<p><strong>Interfaces:</strong>
+- Consumes: <code>score_cube()</code> from Task 3.
+- Produces: <code>results/&lt;name&gt;_ens_&lt;split&gt;_cube.nc</code> and its Argo CSV.</p>
+<ul>
+<li>[ ] <strong>Step 1: Run seeds 2 and 3 for every promoted config</strong></li>
+</ul>
+<pre><code class="language-bash">for cfg in &lt;promoted configs&gt;; do
+  for s in 2 3; do python src/train.py configs/${cfg}.yaml --seed $s; done
+done
+for cfg in &lt;promoted configs&gt;; do
+  for s in 1 2 3; do python src/predict_cube.py --ckpt checkpoints/${cfg}_s${s}_best.pt --split val; done
+done
+</code></pre>
+<p>Budget: ~45 min per promoted config. If more than three configs are promoted, run them in order of their single-seed val score and stop when the GPU budget runs out — record which ones were not completed rather than reporting a partial spread as a full one.</p>
+<ul>
+<li>[ ] <strong>Step 2: Add <code>--ensemble</code> to <code>predict_cube.py</code></strong></li>
+</ul>
+<pre><code class="language-python">    p.add_argument(&quot;--ensemble&quot;, nargs=&quot;+&quot;, default=None,
+                   help=&quot;average these cubes instead of running a checkpoint&quot;)
+</code></pre>
+<p>and at the top of <code>main()</code>:</p>
+<pre><code class="language-python">    if a.ensemble:
+        cubes = [xr.open_dataarray(c) for c in a.ensemble]
+        t0 = cubes[0]
+        for c in cubes[1:]:
+            assert c.shape == t0.shape, f&quot;cube shapes differ: {c.shape} vs {t0.shape}&quot;
+            assert (c.time.values == t0.time.values).all(), &quot;cubes cover different days&quot;
+        # NaN on land in every member, so a plain mean keeps land NaN -- which is what the
+        # metrics need. Do NOT use nanmean here: it would invent values on land.
+        cube = sum(cubes) / len(cubes)
+        run = a.run or &quot;ensemble&quot;
+    else:
+        cube = predict_cube(a.ckpt, a.split)
+        run = Path(a.ckpt).stem
+</code></pre>
+<p>with <code>p.add_argument("--run", default=None)</code> for the output name.</p>
+<ul>
+<li>[ ] <strong>Step 3: Score the seed ensemble of the best config on val</strong></li>
+</ul>
+<pre><code class="language-bash">python src/predict_cube.py --ensemble results/&lt;best&gt;_s{1,2,3}_best_val_cube.nc \
+    --split val --run &lt;best&gt;_ens
+</code></pre>
+<p>Expected: better than the mean of the individual seeds, by ~2–4%. If it is not, check that the three cubes are genuinely different — identical cubes mean the <code>--seed</code> override is not reaching <code>torch.manual_seed</code>.</p>
+<ul>
+<li>[ ] <strong>Step 4: Score a cross-config ensemble on val</strong></li>
+</ul>
+<pre><code class="language-bash">python src/predict_cube.py --ensemble results/m4_convlstm_s1_best_val_cube.nc \
+    results/&lt;second best&gt;_s1_best_val_cube.nc results/&lt;third&gt;_s1_best_val_cube.nc \
+    --split val --run m4_mix_ens
+</code></pre>
+<p>Averaging <em>different</em> configurations usually beats averaging seeds of one, because the members' errors are less correlated. Whichever of Step 3 and Step 4 wins on val is the ensemble that goes into Task 10.</p>
+<ul>
+<li>[ ] <strong>Step 5: Record and commit</strong></li>
+</ul>
+<pre><code class="language-bash">git add src/predict_cube.py results/*_val_argo.csv
+git commit -m &quot;Three seeds for promoted configs; seed and cross-config ensembles&quot;
+</code></pre>
+<hr />
+<h2 id="task-9-one-ablation-table-failures-included">Task 9: One ablation table, failures included</h2>
+<p>Spec item 9. One command that reads every result CSV and emits the table that goes in the deck — including every intervention that failed, because the failures are the evidence that the ceiling finding in doc 09 §4 is real.</p>
+<p>This task also adds the <strong>float-blocked bootstrap</strong>, which is what finally answers "is M4 genuinely better than M2?". The 6,448 test profiles come from <strong>147 floats</strong>; two casts from one float ten days apart in the same water mass are not independent, so the honest error bar resamples floats, not profiles.</p>
+<p><strong>Files:</strong>
+- Modify: <code>src/argo_eval.py</code> (add <code>paired_bootstrap</code>)
+- Create: <code>src/ablation.py</code></p>
+<p><strong>Interfaces:</strong>
+- Consumes: <code>match_profiles()</code> from Task 2, <code>summary()</code> from <code>metrics</code>.
+- Produces: <code>paired_bootstrap(cube_a, cube_b, profiles, n=1000, seed=0) -&gt; (delta, lo, hi)</code> — the blended-RMSE difference <code>a - b</code> and its 95% float-blocked interval; <code>results/ablation.md</code>.</p>
+<ul>
+<li>[ ] <strong>Step 1: Add <code>paired_bootstrap</code> to <code>src/argo_eval.py</code></strong></li>
+</ul>
+<pre><code class="language-python">def paired_bootstrap(cube_a, cube_b, profiles, n=1000, seed=0, max_days=1):
+    &quot;&quot;&quot;95% CI on (blended RMSE of a) - (blended RMSE of b), resampling FLOATS.
+
+    Paired: both models are scored on the same resampled casts, so the shared difficulty
+    of a hard water mass cancels. Blocked by float because profiles are not independent --
+    147 floats produced the 6,448 test casts, so a profile-level bootstrap would report an
+    interval roughly sqrt(6448/147) ~ 6.6x too narrow and turn noise into a result.
+    &quot;&quot;&quot;
+    from metrics import depthwise, summary
+    pa, oa, fa, _ = match_profiles(cube_a, profiles, max_days)
+    pb, ob, fb, _ = match_profiles(cube_b, profiles, max_days)
+    assert fa.shape == fb.shape and (fa == fb).all(), \
+        &quot;cubes matched different casts -- compare cubes on the same grid and days&quot;
+    assert np.allclose(np.nan_to_num(oa), np.nan_to_num(ob)), &quot;observations differ&quot;
+
+    floats = np.unique(fa)
+    idx = {f: np.flatnonzero(fa == f) for f in floats}
+    rng = np.random.default_rng(seed)
+    d = np.empty(n)
+    for k in range(n):
+        take = np.concatenate([idx[f] for f in rng.choice(floats, floats.size, replace=True)])
+        d[k] = (summary(depthwise(pa[:, take], oa[:, take]))
+                - summary(depthwise(pb[:, take], ob[:, take])))
+    point = summary(depthwise(pa, oa)) - summary(depthwise(pb, ob))
+    return point, float(np.percentile(d, 2.5)), float(np.percentile(d, 97.5))
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 2: Add a self-check for it</strong></li>
+</ul>
+<p>Append to the <code>__main__</code> block in <code>argo_eval.py</code>:</p>
+<pre><code class="language-python">    # A cube that is uniformly 0.5 degC worse must show a strictly positive interval;
+    # the same cube against itself must bracket zero.
+    lat2, lon2 = np.arange(0.125, 5, 0.25), np.arange(55.125, 60, 0.25)
+    t2 = pd.date_range(&quot;2023-01-01&quot;, periods=40)
+    truth2 = np.linspace(29.0, 4.0, len(DEPTHS))
+    base = xr.DataArray(
+        np.broadcast_to(truth2[None, :, None, None],
+                        (len(t2), len(DEPTHS), len(lat2), len(lon2))).copy(),
+        coords={&quot;time&quot;: t2, &quot;depth&quot;: DEPTHS, &quot;lat&quot;: lat2, &quot;lon&quot;: lon2},
+        dims=(&quot;time&quot;, &quot;depth&quot;, &quot;lat&quot;, &quot;lon&quot;))
+    zz = np.arange(0.0, 1010.0, 10.0)
+    pr = pd.concat([pd.DataFrame({&quot;profile&quot;: f&quot;59{k:05d}_1&quot;, &quot;time&quot;: t2[k],
+                                  &quot;lat&quot;: float(lat2[k % len(lat2)]),
+                                  &quot;lon&quot;: float(lon2[k % len(lon2)]),
+                                  &quot;pres&quot;: zz, &quot;temp&quot;: np.interp(zz, DEPTHS, truth2)})
+                    for k in range(40)], ignore_index=True)
+    pt, lo_, hi_ = paired_bootstrap(base + 0.5, base, pr, n=200)
+    assert lo_ &gt; 0 and abs(pt - 0.5) &lt; 1e-6, (pt, lo_, hi_)
+    pt0, lo0, hi0 = paired_bootstrap(base, base, pr, n=200)
+    assert abs(pt0) &lt; 1e-9 and lo0 &lt;= 0 &lt;= hi0
+    print(f&quot;paired_bootstrap self-check OK -- +0.5 degC gives {pt:.3f} [{lo_:.3f}, {hi_:.3f}]&quot;)
+</code></pre>
+<p>Run: <code>python src/argo_eval.py</code>
+Expected: both the original assertions and the new bootstrap line pass.</p>
+<ul>
+<li>[ ] <strong>Step 3: Write <code>src/ablation.py</code></strong></li>
+</ul>
+<pre><code class="language-python">&quot;&quot;&quot;One ablation table from every result CSV in results/. Failures included on purpose.
+
+    python src/ablation.py [--split test] [--out results/ablation.md]
+
+The table is the core evidence of the whole project (CLAUDE.md sec.12): same held-out
+Argo, same depths, every stage that was tried -- including the four interventions that
+did not work, because those are what make the ceiling finding credible.
+&quot;&quot;&quot;
+import argparse
+import re
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from config import REPORT_DEPTHS, ROOT
+from metrics import summary
+
+RESULTS = ROOT / &quot;results&quot;
+SEED = re.compile(r&quot;_s\d+_&quot;)
+
+
+def rows(split):
+    &quot;&quot;&quot;Group every &lt;run&gt;_&lt;split&gt;_argo.csv by run, averaging across seeds.&quot;&quot;&quot;
+    out = {}
+    for f in sorted(RESULTS.glob(f&quot;*_{split}_argo.csv&quot;)):
+        name = SEED.sub(&quot;_&quot;, f.name).replace(f&quot;_{split}_argo.csv&quot;, &quot;&quot;)
+        out.setdefault(name, []).append(pd.read_csv(f))
+    table = []
+    for name, dfs in out.items():
+        blends = [summary(d) for d in dfs]
+        mean = pd.concat(dfs).groupby(&quot;depth_m&quot;).mean(numeric_only=True)
+        table.append({
+            &quot;run&quot;: name, &quot;seeds&quot;: len(dfs),
+            &quot;blended&quot;: float(np.mean(blends)),
+            &quot;sd&quot;: float(np.std(blends, ddof=1)) if len(blends) &gt; 1 else np.nan,
+            **{f&quot;rmse_{z}m&quot;: float(mean.loc[z, &quot;rmse&quot;]) for z in REPORT_DEPTHS},
+            &quot;bias_100m&quot;: float(mean.loc[100, &quot;bias&quot;]),
+        })
+    return pd.DataFrame(table).sort_values(&quot;blended&quot;).reset_index(drop=True)
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument(&quot;--split&quot;, default=&quot;test&quot;)
+    p.add_argument(&quot;--out&quot;, default=None)
+    a = p.parse_args()
+    df = rows(a.split)
+    assert len(df) &gt; 0, f&quot;no results/*_{a.split}_argo.csv found&quot;
+    df[&quot;blended&quot;] = df.apply(
+        lambda r: f&quot;{r.blended:.3f}&quot; + (&quot;&quot; if np.isnan(r.sd) else f&quot; ± {r.sd:.3f}&quot;), axis=1)
+    md = df.drop(columns=[&quot;sd&quot;]).to_markdown(index=False, floatfmt=&quot;.3f&quot;)
+    out = Path(a.out) if a.out else RESULTS / f&quot;ablation_{a.split}.md&quot;
+    out.write_text(f&quot;# Ablation vs Argo ({a.split} split)\n\n{md}\n&quot;)
+    print(md)
+    print(f&quot;\n-&gt; {out}&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    if len(sys.argv) &gt; 1:
+        main()
+        raise SystemExit
+    # self-check: two fake runs, one clearly worse, must come out in the right order
+    import tempfile
+    from metrics import depthwise
+    tmp = Path(tempfile.mkdtemp())
+    globals()[&quot;RESULTS&quot;] = tmp
+    rng = np.random.default_rng(0)
+    true = rng.normal(size=(15, 400))
+    for name, err in ((&quot;good&quot;, 0.4), (&quot;bad&quot;, 1.2)):
+        for s in (1, 2):
+            depthwise(true + err * rng.normal(size=true.shape), true).to_csv(
+                tmp / f&quot;{name}_s{s}_val_argo.csv&quot;, index=False)
+    df = rows(&quot;val&quot;)
+    assert list(df.run) == [&quot;good&quot;, &quot;bad&quot;], list(df.run)
+    assert (df.seeds == 2).all() and df.sd.notna().all()
+    assert df.blended.iloc[0] &lt; df.blended.iloc[1]
+    print(&quot;ablation self-check OK\n&quot;, df[[&quot;run&quot;, &quot;seeds&quot;, &quot;blended&quot;]].to_string(index=False))
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 4: Run the self-check</strong></li>
+</ul>
+<p>Run: <code>python src/ablation.py</code>
+Expected: <code>ablation self-check OK</code> and a two-row frame with <code>good</code> first.</p>
+<ul>
+<li>[ ] <strong>Step 5: Settle M4 vs M2 with the float-blocked bootstrap</strong></li>
+</ul>
+<pre><code class="language-bash">python - &lt;&lt;'EOF'
+import sys, pandas as pd, xarray as xr
+sys.path.append(&quot;src&quot;)
+from argo_eval import paired_bootstrap
+from config import SPLITS, INTERIM
+prof = pd.read_parquet(INTERIM / &quot;argo_nio.parquet&quot;)
+prof[&quot;time&quot;] = pd.to_datetime(prof[&quot;time&quot;]).dt.tz_localize(None)
+lo, hi = SPLITS[&quot;test&quot;]
+prof = prof[(prof.time &gt;= lo) &amp; (prof.time &lt;= pd.Timestamp(hi) + pd.Timedelta(days=1))]
+a = xr.open_dataarray(&quot;results/m4_convlstm_s1_best_test_cube.nc&quot;)
+b = xr.open_dataarray(&quot;results/m2_unet_s1_best_test_cube.nc&quot;)
+print(&quot;M4 - M2: %.4f  95%% CI [%.4f, %.4f]&quot; % paired_bootstrap(a, b, prof))
+EOF
+</code></pre>
+<p>Expected: a negative point estimate (M4 better) with an interval that probably <strong>straddles zero</strong> — which is the same conclusion doc 09 reached from three seeds, now on a proper footing. Report the interval either way; an interval that excludes zero would be the first statistically defensible architecture claim in the project.</p>
+<p>This needs <code>results/m2_unet_s1_best_test_cube.nc</code>, which requires the M2 checkpoint — it is one of the four that survived on S3. Fetch it: <code>aws s3 cp s3://oceanembed-sih26-data/oceanembed/checkpoints/m2_unet_best.pt checkpoints/</code>.</p>
+<ul>
+<li>[ ] <strong>Step 6: Generate the val table and commit</strong></li>
+</ul>
+<pre><code class="language-bash">python src/ablation.py --split val
+git add src/argo_eval.py src/ablation.py results/ablation_val.md
+git commit -m &quot;Ablation table generator; float-blocked paired bootstrap for model comparison&quot;
+</code></pre>
+<hr />
+<h2 id="task-10-freeze-evaluate-once-write-it-up">Task 10: Freeze, evaluate once, write it up</h2>
+<p>Spec item 10. One model, chosen on val, evaluated on test exactly once, reported depth-wise.</p>
+<p><strong>Files:</strong>
+- Modify: <code>docs/10-experiment-programme.md</code> (this file — the results section), <code>docs/index.md</code>, <code>CLAUDE.md</code> §2b
+- Create: <code>results/ablation_test.md</code>, <code>checkpoints/FROZEN.md</code></p>
+<ul>
+<li>[ ] <strong>Step 1: Choose the winner on val, and write the choice down before touching test</strong></li>
+</ul>
+<p>Record in the results table below: the winning configuration, its val blended RMSE and spread, the ensemble decision from Task 8, whether the bias correction is applied, and <strong>why</strong> — all before running Step 2. Once test is opened, this choice is not revisited.</p>
+<ul>
+<li>[ ] <strong>Step 2: Generate the final test cubes</strong></li>
+</ul>
+<pre><code class="language-bash">for s in 1 2 3; do python src/predict_cube.py --ckpt checkpoints/&lt;winner&gt;_s${s}_best.pt --split test; done
+python src/predict_cube.py --ensemble results/&lt;winner&gt;_s{1,2,3}_best_test_cube.nc \
+    --split test --run &lt;winner&gt;_ens
+python src/predict_cube.py --ensemble results/&lt;winner&gt;_s{1,2,3}_best_test_cube.nc \
+    --split test --run &lt;winner&gt;_ens_bc --offset results/&lt;winner&gt;_s1_best_offset.json
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 3: Produce the final table</strong></li>
+</ul>
+<pre><code class="language-bash">python src/ablation.py --split test --out results/ablation_test.md
+</code></pre>
+<p>Report <strong>RMSE, MAE, bias and correlation</strong> at 0, 50, 100, 200, 500 and 1000 m (<code>REPORT_DEPTHS</code>), plus the blended number with its 3-seed spread — and keep the <code>M0 climatology</code> and <code>GLORYS12V1 target</code> rows in the table, because the model's number is only interpretable between that floor and that ceiling.</p>
+<ul>
+<li>[ ] <strong>Step 4: Freeze the checkpoint</strong></li>
+</ul>
+<p><code>checkpoints/</code> is gitignored and <code>results/*.md</code> is tracked, so the manifest lives in <code>results/</code>.</p>
+<pre><code class="language-bash">aws s3 sync checkpoints s3://oceanembed-sih26-data/oceanembed/checkpoints
+cat &gt; results/FROZEN.md &lt;&lt;'EOF'
+&lt;winner&gt;_s1_best.pt  -- the demo and every reported number use this file.
+config: configs/&lt;winner&gt;.yaml      norm stats: data/processed/norm_stats.json
+climatology cache: data/processed/nio_daily.clim.npy  (train split, monthly)
+bathymetry cache:  data/processed/nio_daily.bathy.npy (train split)
+bias offset:       results/&lt;winner&gt;_s1_best_offset.json  (fitted on 2022 val Argo)
+git commit: &lt;sha&gt;
+EOF
+git add results/FROZEN.md &amp;&amp; git commit -m &quot;Freeze the final checkpoint&quot;
+</code></pre>
+<ul>
+<li>[ ] <strong>Step 5: Fill in the results section of this document</strong></li>
+</ul>
+<p>Every task above says "record". Consolidate: one table of all interventions with val and test numbers, the promote/reject decision for each, the bootstrap interval for the headline comparison, and a paragraph on what the programme taught. <strong>Include the failures.</strong> Doc 09's credibility comes from reporting four null results; this document should read the same way.</p>
+<ul>
+<li>[ ] <strong>Step 6: Update <code>CLAUDE.md</code> §2b and <code>docs/index.md</code></strong></li>
+</ul>
+<p>§2b is the frozen-results table the next session reads first. Update the numbers, keep the benchmark rule, and replace "the remaining levers are bias-correcting the target, adding input channels, and ensembling" with what this programme actually found. Update the one-sentence pitch in <code>docs/index.md</code> and add row 10 to its table.</p>
+<ul>
+<li>[ ] <strong>Step 7: Rebuild the site and commit</strong></li>
+</ul>
+<pre><code class="language-bash">python build_site.py
+git add docs results CLAUDE.md site
+git commit -m &quot;Programme complete: &lt;winner&gt; at &lt;score&gt; vs independent Argo&quot;
+</code></pre>
+<hr />
+<h2 id="compute-budget">Compute budget</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Runs</th>
+<th>GPU time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 — M4 baseline, 3 seeds</td>
+<td>3 × 20 ep × 66 s</td>
+<td>~66 min</td>
+</tr>
+<tr>
+<td>4 — anomaly screen</td>
+<td>1</td>
+<td>~22 min</td>
+</tr>
+<tr>
+<td>5 — climatology-as-input screen</td>
+<td>1</td>
+<td>~25 min</td>
+</tr>
+<tr>
+<td>6 — aux screen (+ combined)</td>
+<td>2</td>
+<td>~46 min</td>
+</tr>
+<tr>
+<td>7 — depth-weighted + gradient screens</td>
+<td>2</td>
+<td>~45 min</td>
+</tr>
+<tr>
+<td>8 — 2 extra seeds × up to 3 promoted</td>
+<td>≤6</td>
+<td>≤~2.5 h</td>
+</tr>
+<tr>
+<td>2, 3, 9, 10</td>
+<td>CPU only</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td></td>
+<td><strong>≈6–7 GPU-hours</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>Fits inside one week of Kaggle's free T4 quota (30 h). No paid compute needed. Everything outside training runs on the Windows box.</p>
+<h2 id="risks">Risks</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Task 1 fails to reproduce 0.890</td>
+<td>Stop. Compare torch/CUDA versions against <code>results/m4_convlstm_s*.csv</code> epoch times (66 s/epoch on the Day 2 T4); a different GPU changes timing but should not change the score by &gt;2σ.</td>
+</tr>
+<tr>
+<td>Instance dies mid-programme</td>
+<td>Task 0. Also <code>train.py</code> auto-resumes from <code>checkpoints/&lt;run&gt;.pt</code>.</td>
+</tr>
+<tr>
+<td><code>extra</code> channels break the existing configs</td>
+<td>Task 5 Step 5 explicitly re-runs <code>m2_unet</code> epoch 0 and compares the loss. <code>n_channels(()) == 7</code>.</td>
+</tr>
+<tr>
+<td>An inference path forgets <code>extra</code> and silently gets the wrong channel count</td>
+<td>The first conv would raise a shape error, not fail silently — but <code>predict_cube</code> must read <code>extra</code> from the checkpoint's cfg (Task 5 Step 4). This is the exact bug class of doc 09 §7's window bug.</td>
+</tr>
+<tr>
+<td>Bias correction quietly becomes selection-on-test</td>
+<td><code>bias_correct.py</code> refuses <code>--split test</code>; <code>predict_cube --offset</code> asserts the offset was not fitted on test. Two guards, both in code.</td>
+</tr>
+<tr>
+<td>Every intervention is null</td>
+<td>That <em>is</em> a result, and doc 09 §4 predicts it. The bias correction (Task 3) does not depend on any of them, so the programme still ends ~9% better than it started.</td>
+</tr>
+<tr>
+<td>GPU budget runs out during Task 8</td>
+<td>Promote in val-score order and stop; record which configs did not get their extra seeds rather than reporting a partial spread as a full one.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="results">Results</h2>
+<p><em>(Fill in as tasks complete. Every row records the split it was measured on.)</em></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Run</th>
+<th>Split</th>
+<th>Seeds</th>
+<th>Blended RMSE</th>
+<th>vs baseline</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M4 baseline</td>
+<td>val</td>
+<td>3</td>
+<td></td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>M4 baseline</td>
+<td>test</td>
+<td>3</td>
+<td>0.890 ± 0.008 (doc 09)</td>
+<td>—</td>
+<td>reproduction check</td>
+</tr>
+<tr>
+<td>M4 + bias correction (depth)</td>
+<td>test</td>
+<td>1</td>
+<td><em>predicted 0.82 ± 0.01</em></td>
+<td></td>
+<td>pre-registered</td>
+</tr>
+<tr>
+<td>M4 anomaly</td>
+<td>val</td>
+<td>1</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>M4 + climatology channels</td>
+<td>val</td>
+<td>1</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>M4 + aux channels</td>
+<td>val</td>
+<td>1</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>M4 + clim + aux</td>
+<td>val</td>
+<td>1</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>M4 depth-weighted loss</td>
+<td>val</td>
+<td>1</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>M4 gradient loss</td>
+<td>val</td>
+<td>1</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>seed ensemble</td>
+<td>val</td>
+<td>—</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>cross-config ensemble</td>
+<td>val</td>
+<td>—</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>final, frozen</strong></td>
+<td><strong>test</strong></td>
+<td><strong>3</strong></td>
+<td></td>
+<td></td>
+<td><strong>evaluated once</strong></td>
+</tr>
+</tbody>
+</table></div></article>
+  <footer>Ministry of Earth Sciences · INCOIS · Space Technology — Smart India Hackathon 2026</footer>
+</main>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    background: '#0d1b2a', primaryColor: '#14304a', primaryTextColor: '#dce8f2',
+    primaryBorderColor: '#2f6f9f', lineColor: '#4a9fd4', secondaryColor: '#123',
+    tertiaryColor: '#0f2436', fontSize: '14px'
+  }
+});
+</script>
+<script>
+document.getElementById('navtoggle').onclick = () => document.body.classList.toggle('nav-open');
+</script>
+</body>
+</html>

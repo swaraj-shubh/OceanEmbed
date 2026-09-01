@@ -32,6 +32,7 @@ PAGES = [
     ("07-results-and-handover.md", "07-results-and-handover.html", "07 · Results & Handover"),
     ("08-challenges.md", "08-challenges.html", "08 · Challenges Faced"),
     ("09-day2-handover.md", "09-day2-handover.html", "09 · Day 2 · Latest Results"),
+    ("10-experiment-programme.md", "10-experiment-programme.html", "10 · Experiment Programme"),
 ]
 
 FRONT_MATTER = re.compile(r"\A---\n.*?\n---\n", re.S)
