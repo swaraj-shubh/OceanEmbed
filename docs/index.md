@@ -19,4 +19,6 @@ Reconstruction of subsurface ocean temperature (15 depths, 0–1000 m) from 7 su
 | [**08 — Challenges Faced**](08-challenges.md) | Every problem that cost real time: symptom, actual cause, fix. Download failures, silent data corruption, the OOM misdiagnosed as a scheduler kill, and the result that turned out to be noise |
 | [**09 — Day 2 · Latest Results**](09-day2-handover.md) | **Current results.** Multi-seed error bars, four interventions measured (attention, gradient loss, anomaly, ConvLSTM), and the finding that the training target itself carries a +0.72 °C thermocline bias — a measured ceiling of 0.728 °C |
 
-**The pitch in one sentence:** an attention-fused, temporally-aware CNN embedding of 7 satellite surface fields, trained on GLORYS12 and validated depth-wise against independent Argo observations — the first such multivariate system focused on the North Indian Ocean.
+**The pitch in one sentence:** a CNN embedding of 7 satellite surface fields reconstructs temperature at 15 depths to **0.890 ± 0.008 °C — 23% better than climatology** — validated depth-wise against 6,093 *independent* Argo profiles in years the model never saw, with the training reanalysis' own +0.72 °C thermocline bias measured against those same observations.
+
+Attention and temporal context were both built and measured; neither moved the observational score by more than one standard deviation, and that is reported rather than hidden ([doc 09](09-day2-handover.md)).

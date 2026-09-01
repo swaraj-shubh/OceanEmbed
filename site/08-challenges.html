@@ -259,9 +259,19 @@ error in the headline validation.</p>
 <hr />
 <h2 id="5-modelling-and-method">5. Modelling and method</h2>
 <p><strong>Attention did nothing.</strong> M3 adds multi-head self-attention over the bottleneck
-(+331k parameters). Against raw Argo it scores <strong>0.908</strong> — identical to M2's <strong>0.908</strong>, to
-three decimals. Early stopping did not change it, so it is not overfitting. Reported as a
-null result.</p>
+(+331k parameters). Against raw Argo it scores <strong>0.907</strong>, against M2's <strong>0.901 ± 0.013</strong>
+over three seeds — 0.5 σ away. Early stopping did not change it, so it is not overfitting.
+Reported as a null result, and it holds under a real error bar.</p>
+<p><strong>Three further interventions also failed to beat M2 significantly.</strong> A vertical-gradient
+loss (0.918 ± 0.004) was worse and made the 100 m bias worse. An anomaly formulation
+(0.975 ± 0.020) was worse overall, though it was the first thing to beat climatology below
+500 m. M4 ConvLSTM (0.890 ± 0.008) was better but only by 0.80 pooled σ. Four
+interventions, no significant movement — see <a href="09-day2-handover.html">doc 09</a>.</p>
+<p><strong>The 100 m bias turned out not to be ours.</strong> GLORYS12V1, the training target, carries a
++0.723 °C warm bias at 100 m against the same Argo profiles; the model's +0.848 is largely
+that, reproduced faithfully. It also puts a measured ceiling of <strong>0.728 °C</strong> on anything
+trained on this target. Three attempts to fix the bias by modelling were, in hindsight,
+attempts to fix the data with a loss function.</p>
 <p><strong>A result was reported that turned out to be noise.</strong> M3 initially looked like an 11%
 improvement in GLORYS validation RMSE (0.739 → 0.660) and was reported as real. Rerunning
 the <em>same config with the same seed</em> produced 0.729 — a ~10% spread from nondeterministic
@@ -288,6 +298,20 @@ to rent a GPU and train on the processor.</p>
 <p><strong>The instance directory was not a git clone</strong>, so <code>git pull</code> failed and the code running
 there was not version-tracked. Files were copied in with <code>scp</code> as a workaround; it should
 be a proper clone.</p>
+<p><strong>Argo profiles were scored against land.</strong> A network emits <em>some</em> number on land, and
+Argo matching takes the nearest grid cell, so 42 of 6093 coastal profiles (0.7%) were
+scored against output the loss never constrained. Nearly invisible for M2 (0.891 → 0.890)
+and catastrophic for the anomaly model, whose climatology base is zeroed on land: it
+emitted ~0 °C where the truth is ~10, and those 0.7% of profiles alone moved its 500 m
+RMSE from 0.30 to 0.94. Found by chasing a result that was implausible rather than merely
+disappointing. Cubes now carry NaN on unsupervised cells.</p>
+<p><strong>A fork-after-threads deadlock.</strong> Training sat at zero epochs for twelve minutes with four
+DataLoader workers asleep and load average 0.00. Fitting the climatology runs a dask
+reduction that leaves a live thread pool in the parent; the DataLoader then forks workers
+onto that broken lock state. The cache is built in its own process now.</p>
+<p><strong>A global cache path that the self-check poisoned.</strong> The climatology cache was first
+written to a fixed location, so the self-check — which builds a tiny <em>fake</em> store — wrote
+its climatology where real runs would silently have picked it up. Caught before use.</p>
 <p><strong>The Vercel CLI crashed Node with a V8 out-of-memory.</strong> It uploads the whole project
 directory, and <code>data/</code> is 48 GB. A <code>.vercelignore</code> cuts the payload to 172 KB.</p>
 <p><strong>Pushing to GitHub did not deploy the site.</strong> The Vercel project is CLI-linked, not

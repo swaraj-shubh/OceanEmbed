@@ -187,13 +187,69 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </tbody>
 </table></div>
 <p><strong>Why not ViT/GNN/foundation model:</strong> PS mentions them but doesn't require them. CNN is data/compute-efficient for gridded fields; ViT needs more data, GNN adds graph-construction complexity. Attention is included as the fusion layer — that satisfies the "attention-based" checkbox honestly.</p>
+<h2 id="2b-frozen-results-measured-three-seeds-vs-6093-independent-argo-profiles">2b. FROZEN RESULTS (measured, three seeds, vs 6093 independent Argo profiles)</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Argo blended RMSE</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>GLORYS12V1 target itself</strong></td>
+<td><strong>0.728</strong></td>
+<td>the ceiling — no model trained on it can beat this</td>
+</tr>
+<tr>
+<td><strong>M4 ConvLSTM</strong></td>
+<td><strong>0.890 ± 0.008</strong></td>
+<td>best, but only 0.80 sigma over M2</td>
+</tr>
+<tr>
+<td><strong>M2 U-Net</strong></td>
+<td><strong>0.901 ± 0.013</strong></td>
+<td>simplest thing that works</td>
+</tr>
+<tr>
+<td>M3 attention</td>
+<td>0.907</td>
+<td>null result, 0.5 sigma</td>
+</tr>
+<tr>
+<td>M2 + gradient loss</td>
+<td>0.918 ± 0.004</td>
+<td>negative</td>
+</tr>
+<tr>
+<td>M2 anomaly</td>
+<td>0.975 ± 0.020</td>
+<td>worse overall; first to beat climatology below 500 m</td>
+</tr>
+<tr>
+<td>M0 climatology</td>
+<td>1.160</td>
+<td>baseline</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Key finding:</strong> GLORYS carries a +0.723 degC warm bias at 100 m against Argo. The model's
++0.848 is largely inherited, not produced. Four interventions moved the blended score by
+less than one sigma, so the binding constraint is information and target quality, not model
+capacity. <strong>Do not add capacity.</strong> The remaining levers are bias-correcting the target,
+adding input channels (bathymetry, day-of-year), and ensembling.</p>
+<p><strong>Benchmark rule:</strong> report against Argo, never GLORYS validation loss. Across three seeds
+val RMSE spreads 8% while the Argo score spreads 1.4%. Any architecture claim needs
+multiple seeds and a reported spread.</p>
+<hr />
 <h2 id="3-model-stages-build-progressively-never-skip-ahead">3. Model Stages (build progressively — never skip ahead)</h2>
 <ul>
 <li><strong>M0</strong> — Climatology / mean-profile baseline (non-AI). <em>Must exist before any DL claim; the OceanDepths paper shows climatology beats naive ML.</em></li>
 <li><strong>M1</strong> — Tiny CNN, SST-only or few channels, small subset. Prove the mapping is learnable.</li>
 <li><strong>M2</strong> — CNN/U-Net with all 7 variables. Meets the full SIH input requirement.</li>
 <li><strong>M3</strong> — + attention fusion → this <em>is</em> OceanEmbed.</li>
-<li><strong>M4</strong> — + ConvLSTM 7-day temporal context. Final PoC model.</li>
+<li><strong>M4</strong> — + ConvLSTM 7-day temporal context. Final PoC model. <strong>Built and measured: 0.890 ± 0.008, see §2b.</strong></li>
 </ul>
 <p>Report every stage against M0. If a stage doesn't beat the previous one, investigate before adding complexity.</p>
 <h2 id="4-data-sources-exact-products">4. Data Sources (exact products)</h2>
