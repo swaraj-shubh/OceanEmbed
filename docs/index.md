@@ -17,5 +17,6 @@ Reconstruction of subsurface ocean temperature (15 depths, 0–1000 m) from 7 su
 | [06 — Demo & Roadmap](06-demo-and-roadmap.md) | Streamlit demo spec, weekly milestones, risk register, Q&A ammunition |
 | [**07 — Results & Handover**](07-results-and-handover.md) | **What was actually built and measured**: final depth-wise accuracy vs independent Argo, the three findings, the bugs that would have corrupted results, infrastructure, limitations, next steps |
 | [**08 — Challenges Faced**](08-challenges.md) | Every problem that cost real time: symptom, actual cause, fix. Download failures, silent data corruption, the OOM misdiagnosed as a scheduler kill, and the result that turned out to be noise |
+| [**09 — Day 2 · Latest Results**](09-day2-handover.md) | **Current results.** Multi-seed error bars, four interventions measured (attention, gradient loss, anomaly, ConvLSTM), and the finding that the training target itself carries a +0.72 °C thermocline bias — a measured ceiling of 0.728 °C |
 
 **The pitch in one sentence:** an attention-fused, temporally-aware CNN embedding of 7 satellite surface fields, trained on GLORYS12 and validated depth-wise against independent Argo observations — the first such multivariate system focused on the North Indian Ocean.
