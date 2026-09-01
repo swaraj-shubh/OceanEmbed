@@ -29,13 +29,37 @@ Satellites see only the ocean surface (SST, SSS, SSH, currents, winds) at high r
 
 **Why not ViT/GNN/foundation model:** PS mentions them but doesn't require them. CNN is data/compute-efficient for gridded fields; ViT needs more data, GNN adds graph-construction complexity. Attention is included as the fusion layer — that satisfies the "attention-based" checkbox honestly.
 
+## 2b. FROZEN RESULTS (measured, three seeds, vs 6093 independent Argo profiles)
+
+| Model | Argo blended RMSE | Note |
+|---|---|---|
+| **GLORYS12V1 target itself** | **0.728** | the ceiling — no model trained on it can beat this |
+| **M4 ConvLSTM** | **0.890 ± 0.008** | best, but only 0.80 sigma over M2 |
+| **M2 U-Net** | **0.901 ± 0.013** | simplest thing that works |
+| M3 attention | 0.907 | null result, 0.5 sigma |
+| M2 + gradient loss | 0.918 ± 0.004 | negative |
+| M2 anomaly | 0.975 ± 0.020 | worse overall; first to beat climatology below 500 m |
+| M0 climatology | 1.160 | baseline |
+
+**Key finding:** GLORYS carries a +0.723 degC warm bias at 100 m against Argo. The model's
++0.848 is largely inherited, not produced. Four interventions moved the blended score by
+less than one sigma, so the binding constraint is information and target quality, not model
+capacity. **Do not add capacity.** The remaining levers are bias-correcting the target,
+adding input channels (bathymetry, day-of-year), and ensembling.
+
+**Benchmark rule:** report against Argo, never GLORYS validation loss. Across three seeds
+val RMSE spreads 8% while the Argo score spreads 1.4%. Any architecture claim needs
+multiple seeds and a reported spread.
+
+---
+
 ## 3. Model Stages (build progressively — never skip ahead)
 
 - **M0** — Climatology / mean-profile baseline (non-AI). *Must exist before any DL claim; the OceanDepths paper shows climatology beats naive ML.*
 - **M1** — Tiny CNN, SST-only or few channels, small subset. Prove the mapping is learnable.
 - **M2** — CNN/U-Net with all 7 variables. Meets the full SIH input requirement.
 - **M3** — + attention fusion → this *is* OceanEmbed.
-- **M4** — + ConvLSTM 7-day temporal context. Final PoC model.
+- **M4** — + ConvLSTM 7-day temporal context. Final PoC model. **Built and measured: 0.890 ± 0.008, see §2b.**
 
 Report every stage against M0. If a stage doesn't beat the previous one, investigate before adding complexity.
 

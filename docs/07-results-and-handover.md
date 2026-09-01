@@ -5,6 +5,13 @@ nav_order: 8
 
 # 07 — Results & Engineering Handover
 
+> **Superseded by [09 — Day 2](09-day2-handover.md).** Every number below is a single
+> seed with no error bar. Multi-seed runs put M2 at 0.901 ± 0.013 rather than 0.908, the
+> land-cell bug in the Argo scoring was found and fixed afterwards, and the training
+> target's own error against Argo (0.728 °C) is now measured — which reframes the 100 m
+> bias discussed here as inherited rather than produced by the model. Kept as the Day 1
+> record; read 09 for current results.
+
 Everything that was actually built, measured, and learned. Written for an ML engineer
 picking this up cold: what the system does, what the numbers are, what went wrong on the
 way, and what I would do next.
