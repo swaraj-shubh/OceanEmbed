@@ -76,6 +76,48 @@ class UNet(nn.Module):
         return self.head(x)
 
 
+class ConvLSTMCell(nn.Module):
+    """One convolutional LSTM step. Gates come from a single conv over [x, h], which is
+    the standard formulation and a quarter of the convs of four separate gate convs."""
+
+    def __init__(self, ch, k=3):
+        super().__init__()
+        self.ch = ch
+        self.conv = nn.Conv2d(2 * ch, 4 * ch, k, padding=k // 2)
+
+    def forward(self, x, state):
+        h, c = state
+        i, f, o, g = self.conv(torch.cat([x, h], 1)).chunk(4, 1)
+        c = torch.sigmoid(f) * c + torch.sigmoid(i) * torch.tanh(g)
+        return torch.sigmoid(o) * torch.tanh(c), c
+
+
+class OceanEmbedTemporal(UNet):
+    """M4 -- encoder per day, ConvLSTM over the 7-day sequence, then the U-Net decoder.
+
+    The recurrence runs at the BOTTLENECK, not at full resolution: 12x22 costs a fraction
+    of 96x176 per step, and the temporal signal being asked about here -- how the last week
+    of surface forcing set up today's subsurface structure -- is a basin-scale thing, not a
+    per-pixel one. Skips come from the LAST frame, so fine spatial detail is today's while
+    the bottleneck carries the week.
+    """
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.cell = ConvLSTMCell(self.head.in_channels * 2 ** (len(self.down) - 1))
+
+    def embed(self, x):
+        assert x.dim() == 5, f"expected [B, T, C, H, W], got {tuple(x.shape)}"
+        b, t = x.shape[:2]
+        h = c = None
+        for i in range(t):
+            z, skips = super().embed(x[:, i])          # attention, if any, applies per frame
+            if h is None:
+                h = torch.zeros_like(z); c = torch.zeros_like(z)
+            h, c = self.cell(z, (h, c))
+        return h, skips                                # skips are the final frame's
+
+
 class OceanEmbed(UNet):
     """M3 -- the U-Net with attention fusion switched on. Named separately so the config,
     the checkpoint and the ablation table all say which stage produced a number."""
@@ -183,3 +225,25 @@ if __name__ == "__main__":
     last = float(loss.detach())
     assert last < 0.05 * first, f"oceanembed cannot overfit: {first:.3f} -> {last:.3f}"
     print(f"oceanembed self-check OK -- overfit loss {first:.3f} -> {last:.4f}")
+
+    # M4: the whole claim is that history matters, so the test is that history CHANGES the
+    # answer. If shuffling the earlier days left the output alone, the ConvLSTM would be an
+    # expensive way to look at the last frame, and every M4-vs-M2 number would be noise.
+    torch.manual_seed(0)
+    tm = OceanEmbedTemporal().eval()
+    xt = torch.randn(2, 7, 7, 96, 176)
+    # Test at the BOTTLENECK, where the recurrence actually lives. Untrained, the LSTM
+    # starts near-neutral -- forget gates sit around 0.5, so six days back is already
+    # damped by 0.5^6 -- and the decoder's skips come from the last frame, so the effect is
+    # ~1e-7 at the output and invisible there. That is initialisation, not inertness: the
+    # bottleneck moves, and training is what grows the dependence.
+    with torch.no_grad():
+        lat_a, _ = tm.embed(xt)
+        no_hist = xt.clone(); no_hist[:, :6] = 0.0            # same last day, no history
+        lat_b, _ = tm.embed(no_hist)
+        lat_same, _ = tm.embed(xt)
+    assert float((lat_a - lat_same).abs().max()) == 0.0, "not deterministic; control is void"
+    assert float((lat_a - lat_b).abs().max()) > 1e-6,         "erasing six days of history left the bottleneck untouched -- the LSTM is inert"
+    assert tm(xt).shape == (2, 15, 96, 176)
+    print(f"temporal self-check OK -- params {sum(p.numel() for p in tm.parameters())/1e6:.2f}M, "
+          f"history moves the bottleneck by {float((lat_a - lat_b).abs().max()):.2e}")

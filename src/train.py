@@ -19,11 +19,11 @@ sys.path.append(str(Path(__file__).resolve().parent))
 from config import ROOT, ZARR
 from datasets import NIODataset
 from metrics import DepthStats, summary
-from models.unet import OceanEmbed, UNet, masked_mse
+from models.unet import OceanEmbed, OceanEmbedTemporal, UNet, masked_mse
 
 CKPT = ROOT / "checkpoints"
 RESULTS = ROOT / "results"
-MODELS = {"unet": UNet, "oceanembed": OceanEmbed}
+MODELS = {"unet": UNet, "oceanembed": OceanEmbed, "temporal": OceanEmbedTemporal}
 
 
 def build(cfg):
