@@ -18,12 +18,18 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from config import CHANNELS, DEPTHS, PROCESSED, SPLITS, ZARR, crop_to_model
 
 STATS_PATH = PROCESSED / "norm_stats.json"
+def clim_path(zarr_path):
+    """Cache file beside the store it was fitted from. NOT a fixed global path: the
+    self-check builds a tiny fake store, and a global cache meant its climatology was
+    written to the real one's location and would have been silently reused by real runs."""
+    return Path(zarr_path).with_suffix(".clim.npy")
 SPLIT_EDGE = SPLITS["val"][0]   # first day of the validation split; used by the self-check
 
 
@@ -50,10 +56,27 @@ class NIODataset:
     Targets are returned in physical units (degC); metrics are computed there.
     """
 
-    def __init__(self, split, zarr_path=ZARR, window=1, stats=STATS_PATH, crop=True):
+    def climatology(self, zarr_path):
+        """Train-split monthly mean, cached. Fitting it scans the whole train split, so it
+        is computed once and reused -- and it is train-only, like the norm stats."""
+        cache = clim_path(zarr_path)
+        if cache.exists():
+            return np.load(cache)
+        from baselines import Climatology
+        c = Climatology.fit(zarr_path, crop=self.crop).months
+        np.save(cache, c)
+        return c
+
+    def __init__(self, split, zarr_path=ZARR, window=1, stats=STATS_PATH, crop=True,
+                 anomaly=False):
         assert split in SPLITS, split
         self.ds = xr.open_zarr(zarr_path).sel(time=slice(*SPLITS[split]))
         self.window, self.crop = window, crop
+        # Anomaly mode: the sample carries the climatology for its month and the model
+        # predicts the departure from it, so climatology becomes the floor rather than
+        # something to relearn. Zeros in absolute mode keeps one code path.
+        self.clim = self.climatology(zarr_path) if anomaly else None
+        self.months = pd.DatetimeIndex(self.ds.time.values).month.to_numpy()
         s = json.loads(Path(stats).read_text()) if not isinstance(stats, dict) else stats
         self.xmu = np.asarray(s["X"]["mean"], np.float32)[:, None, None]
         self.xsd = np.asarray(s["X"]["std"], np.float32)[:, None, None]
@@ -73,7 +96,9 @@ class NIODataset:
         x = (x - self.xmu) / self.xsd
         x = np.nan_to_num(x, nan=0.0)          # missing -> train mean, post-normalisation
         mask = np.isfinite(y)
-        return (x[0] if self.window == 1 else x), np.nan_to_num(y, nan=0.0), mask
+        base = (np.nan_to_num(self.clim[self.months[t] - 1], nan=0.0).astype(np.float32)
+                if self.clim is not None else np.zeros_like(y))
+        return (x[0] if self.window == 1 else x), np.nan_to_num(y, nan=0.0), mask, base
 
     @property
     def time(self):
@@ -112,11 +137,19 @@ if __name__ == "__main__":
     assert len(tr) == 20 and len(va) == 20, (len(tr), len(va))          # split boundary respected
     assert tr.time.max() < va.time.min(), "train/val leakage"
 
-    x, y, m = tr[0]
+    x, y, m, b = tr[0]
     assert x.shape == (7, 96, 176) and y.shape == (15, 96, 176) and m.shape == y.shape
     assert np.isfinite(x).all(), "NaN leaked into inputs"
     assert not m[:, 0, 0].any() and m[:, 50, 50].all(), "land mask wrong"
     assert abs(float(x[0].mean())) < 0.5, "normalisation looks unapplied"
+    # absolute mode: the climatology base must be exactly zero, so pred + base == pred
+    assert b.shape == y.shape and not b.any(), "base must be zeros unless anomaly=True"
+
+    an = NIODataset("train", store, stats=tmp / "stats.json", anomaly=True)
+    xa, ya, ma, ba = an[0]
+    assert np.allclose(ya, y) and np.allclose(xa, x), "anomaly mode must not alter x or y"
+    assert ba.shape == y.shape and np.isfinite(ba).all()
+    assert ba.any(), "anomaly mode returned an all-zero climatology"
 
     w = NIODataset("train", store, window=7, stats=tmp / "stats.json")
     assert len(w) == 14 and w[0][0].shape == (7, 7, 96, 176)

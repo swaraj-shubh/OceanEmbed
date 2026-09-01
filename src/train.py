@@ -35,8 +35,10 @@ def run_val(net, loader, dev):
     net.eval()
     acc = DepthStats()
     with torch.no_grad():
-        for x, y, m in loader:
-            p = net(x.to(dev)).cpu().numpy()
+        for x, y, m, b in loader:
+            # `b` is the climatology in anomaly mode and zeros otherwise, so the loss and
+            # every metric stay in absolute degC and compare directly against M0/M2.
+            p = (net(x.to(dev)) + b.to(dev)).cpu().numpy()
             acc.update(p.transpose(1, 0, 2, 3), y.numpy().transpose(1, 0, 2, 3),
                        m.numpy().transpose(1, 0, 2, 3))
     net.train()
@@ -56,7 +58,8 @@ def main(cfg_path, seed=None):
     torch.manual_seed(cfg.get("seed", 0))
     dev = cfg.get("device") or ("cuda" if torch.cuda.is_available() else "cpu")
 
-    kw = {"window": cfg.get("window", 1), **({} if stats is None else {"stats": stats})}
+    kw = {"window": cfg.get("window", 1), "anomaly": cfg.get("anomaly", False),
+          **({} if stats is None else {"stats": stats})}
     # Measured on a T4: 142 ms/step of compute against 286 ms/batch of Zarr reads, so the
     # GPU idles unless loading runs in worker processes. The store is chunked time=1, which
     # is right for random access but means one small read per sample.
@@ -82,9 +85,9 @@ def main(cfg_path, seed=None):
         log.write_text("epoch,train_loss,val_rmse,secs\n")
     for ep in range(start, cfg.get("epochs", 30)):
         t0, losses = time.time(), []
-        for x, y, m in tr:
+        for x, y, m, b in tr:
             opt.zero_grad()
-            loss = masked_mse(net(x.to(dev)), y.to(dev), m.to(dev))
+            loss = masked_mse(net(x.to(dev)) + b.to(dev), y.to(dev), m.to(dev))
             loss.backward(); opt.step()
             losses.append(float(loss.detach()))
         df = run_val(net, va, dev)

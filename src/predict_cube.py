@@ -32,12 +32,14 @@ def predict_cube(ckpt, split, zarr=ZARR, batch=32, dev=None):
     net = MODELS[cfg.pop("kind")](**cfg).to(dev).eval()   # M2 and M3 share this path
     net.load_state_dict(st["model"])
 
-    ds = NIODataset(split, zarr)
+    ds = NIODataset(split, zarr, anomaly=st["cfg"].get("anomaly", False))
     out = np.empty((len(ds), len(DEPTHS), *MODEL_SHAPE), np.float32)
     with torch.no_grad():
         for i in range(0, len(ds), batch):
-            xb = torch.from_numpy(np.stack([ds[j][0] for j in range(i, min(i + batch, len(ds)))]))
-            out[i:i + xb.shape[0]] = net(xb.to(dev)).cpu().numpy()
+            j0, j1 = i, min(i + batch, len(ds))
+            xb = torch.from_numpy(np.stack([ds[j][0] for j in range(j0, j1)]))
+            bb = torch.from_numpy(np.stack([ds[j][3] for j in range(j0, j1)]))
+            out[j0:j1] = (net(xb.to(dev)) + bb.to(dev)).cpu().numpy()
 
     # crop_to_model trims 2 cells off each edge; the cube's coords must say so, or every
     # Argo profile would be matched to a cell two rows away from where it actually is.

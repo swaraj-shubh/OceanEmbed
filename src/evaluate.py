@@ -17,13 +17,15 @@ from metrics import DepthStats, summary
 RESULTS = ROOT / "results"
 
 
-def evaluate(predict, split="test", window=1, zarr=ZARR, stats=None, name=None):
-    ds = NIODataset(split, zarr, window=window, **({} if stats is None else {"stats": stats}))
+def evaluate(predict, split="test", window=1, zarr=ZARR, stats=None, name=None,
+             anomaly=False):
+    ds = NIODataset(split, zarr, window=window, anomaly=anomaly,
+                    **({} if stats is None else {"stats": stats}))
     acc = DepthStats()
     times = ds.time
     for i in range(len(ds)):
-        x, y, m = ds[i]
-        acc.update(predict(x, times[i]), y, m)
+        x, y, m, b = ds[i]
+        acc.update(predict(x, times[i]) + b, y, m)
     df = acc.table()
     if name:
         RESULTS.mkdir(exist_ok=True)
