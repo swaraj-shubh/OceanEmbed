@@ -1,0 +1,57 @@
+# Every module in src/ carries an `if __name__ == "__main__"` assert block instead of a
+# test framework (CLAUDE.md sec.13). This workflow runs the ones that build their own
+# synthetic data, so that convention is enforced rather than aspirational.
+#
+# audit_leakage.py is deliberately absent: it asserts against the real 3.1 GB Zarr store,
+# which is not in the repo. Run it locally before publishing any number.
+name: self-checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  selfchecks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install the subset the self-checks need
+        # Not requirements.txt: copernicusmarine and cartopy are heavy, need accounts or
+        # conda, and no self-check imports them.
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy pandas xarray dask zarr netCDF4 pyyaml
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Run module self-checks
+        run: |
+          set -e
+          for m in metrics argo_eval bias_correct ablation baselines datasets models/unet; do
+            echo "::group::src/$m.py"
+            python "src/$m.py"
+            echo "::endgroup::"
+          done
+
+      - name: Configs must parse and declare a known channel set
+        run: |
+          python - <<'PY'
+          import sys, yaml, pathlib
+          sys.path.append("src")
+          from config import n_channels
+          from train import MODELS
+          for f in sorted(pathlib.Path("configs").glob("*.yaml")):
+              c = yaml.safe_load(f.read_text())
+              assert c["model"]["kind"] in MODELS, f"{f.name}: unknown model kind"
+              extra = tuple(c.get("extra", ()))
+              assert set(extra) <= {"clim", "aux"}, f"{f.name}: unknown extra {extra}"
+              print(f"{f.name:22s} {c['model']['kind']:10s} in_ch={n_channels(extra)}")
+          PY

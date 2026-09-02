@@ -7,6 +7,9 @@ Reconstructs ocean temperature at **15 depth levels (0–1000 m)** from **7 sate
 (SST, SSS, SSH/SLA, currents U/V, winds U/V) over the **Arabian Sea + Bay of Bengal**,
 at **0.25° daily** resolution — validated against independent Argo profiles.
 
+[![self-checks](https://github.com/swaraj-shubh/OceanEmbed/actions/workflows/selfchecks.yml/badge.svg)](https://github.com/swaraj-shubh/OceanEmbed/actions/workflows/selfchecks.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **📖 Documentation site: https://oceanembed-sih26.vercel.app**
 
 ---
@@ -51,7 +54,8 @@ failure: [doc 10](docs/10-experiment-programme.md).
 | [07 Results & Handover](docs/07-results-and-handover.md) | Day 1 record *(numbers superseded)* |
 | [08 Challenges Faced](docs/08-challenges.md) | Every problem that cost real time: symptom, cause, fix |
 | [09 Day 2](docs/09-day2-handover.md) | Multi-seed error bars; the +0.72 °C bias in the target |
-| [**10 Experiment Programme**](docs/10-experiment-programme.md) | **Current results.** The full 11-task programme, final numbers, and the ablation table |
+| [10 Experiment Programme](docs/10-experiment-programme.md) | The 11-task programme: selection discipline, every task's steps, and the full ablation |
+| [**11 Day 3 · Handover**](docs/11-day3-handover.md) | **Start here.** Current results, what changed, what was tried and rejected, what's left |
 
 Team working agreement and frozen decisions: [`CLAUDE.md`](CLAUDE.md).
 
@@ -76,7 +80,14 @@ python src/audit_leakage.py          # 8/8 methodology assertions
 ### Data
 
 Downloads are resumable and safe to re-run. SST and Argo need no account; the rest need a
-free Copernicus Marine and NASA Earthdata account.
+free Copernicus Marine and NASA Earthdata account:
+
+```bash
+cp .env.example .env     # then fill in the four values; .env is gitignored
+```
+
+Credentials are only ever read by `src/download/`. **Training, evaluation and the demo need
+no credentials at all** — the processed store is self-contained.
 
 ```bash
 python src/download/oisst.py                 # SST
@@ -124,6 +135,8 @@ command nobody ran.
 ## Layout
 
 ```
+.env.example  template for the two download accounts; copy to .env
+.gitattributes line-ending normalisation (Windows dev box, Linux GPU box)
 docs/         01-10, published to the docs site by build_site.py
 configs/      one YAML per experiment
 src/
@@ -142,6 +155,17 @@ deploy/       EC2 bootstrap + S3 checkpoint sync
 
 `data/`, `checkpoints/`, `results/*.nc` and `.env` are gitignored. Checkpoints live in
 `s3://oceanembed-sih26-data/oceanembed/checkpoints/`.
+
+CI (`.github/workflows/selfchecks.yml`) runs the seven self-checks that build their own
+synthetic data, on every push. `audit_leakage.py` is not in CI because it asserts against
+the real 3.1 GB store — **run it locally before publishing any number.**
+
+---
+
+## License
+
+[MIT](LICENSE) for the code. The datasets carry their own terms — Copernicus Marine, NASA
+PO.DAAC, NOAA and the Argo programme — see [doc 04](docs/04-data.md) for products and DOIs.
 
 ---
 

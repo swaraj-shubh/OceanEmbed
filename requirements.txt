@@ -1,23 +1,28 @@
-# core data stack
-numpy
-pandas
-xarray
-dask                # xarray reads the Zarr store lazily; required, not optional
-zarr
-netCDF4             # prediction cubes are written as NetCDF
+# Tested on Python 3.14.4 (Windows dev) and 3.13 (AWS DLAMI, Tesla T4).
+# Versions in comments are what produced the numbers in docs/10 -- pin these if you need
+# to reproduce them exactly; the floors are what the code actually requires.
 
-# model + config
-torch
-pyyaml              # one YAML per experiment (CLAUDE.md rule 7)
+# --- core data stack (required to train, evaluate, or run the demo) ---
+numpy>=1.26              # tested 2.4.6
+pandas>=2.0              # tested 3.0.3
+xarray>=2024.1           # tested 2026.7.0
+dask>=2024.1             # tested 2026.8.0  -- xarray reads the Zarr store lazily; not optional
+zarr>=3.0                # tested 3.3.0     -- store is written zarr_format=2
+netCDF4>=1.6             # tested 1.7.4     -- prediction cubes are NetCDF
 
-# data access (accounts required: CMEMS, NASA Earthdata)
+# --- model + config ---
+torch>=2.0               # tested 2.13.0 (cpu wheel locally, cu130 on the T4)
+pyyaml>=6.0              # tested 6.0.3     -- one YAML per experiment (CLAUDE.md rule 7)
+
+# --- data download only (needs free CMEMS + NASA Earthdata accounts; see .env.example) ---
+# Not needed to train, evaluate, or demo -- the processed store is self-contained.
 copernicusmarine
-certifi             # src/download/argo.py hits Ifremer ERDDAP over TLS directly
-# argopy dropped: it pins an aiohttp with no wheel for recent Python and needs MSVC;
-# src/download/argo.py queries the ERDDAP tabledap endpoint instead.
+certifi                  # src/download/argo.py hits Ifremer ERDDAP over TLS directly
+# argopy is deliberately absent: it pins an aiohttp with no wheel for recent Python and
+# needs MSVC to build. src/download/argo.py queries the ERDDAP tabledap endpoint instead.
 
-# demo + figures (not needed to train or evaluate)
+# --- demo + figures only ---
 streamlit
 plotly
 matplotlib
-cartopy             # coastlines for the input-field figures; conda is the easier install
+cartopy                  # coastlines; conda-forge is the sane install route on Windows

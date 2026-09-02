@@ -7,9 +7,10 @@ checkpoints/
 # Prediction cubes are 0.3-0.7 GB each. The metric CSVs in results/ ARE tracked.
 results/*.nc
 
-# Credentials
+# Credentials. The .env.example template is the one file here that IS tracked.
 .env
 .env*
+!.env.example
 
 # Run logs (nohup output from downloads, training, site builds)
 *.log

@@ -115,6 +115,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <li><a href="08-challenges.html">08 · Challenges Faced</a></li>
 <li><a href="09-day2-handover.html">09 · Day 2 · Latest Results</a></li>
 <li><a href="10-experiment-programme.html" class="active">10 · Experiment Programme</a></li>
+<li><a href="11-day3-handover.html">11 · Day 3 · Handover</a></li>
 <li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
   <div class="aside-foot">
     <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
@@ -129,6 +130,9 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <p><strong>Architecture:</strong> Every intervention is a config flag on the existing M4 ConvLSTM. Three are data-side (Argo bias correction, climatology-as-input, auxiliary channels), two are loss-side (depth-weighted, vertical-gradient), one is formulation-side (anomaly residual). Nothing adds capacity — doc 09 §4 measured that capacity is not the binding constraint. Selection happens on <strong>val (2022) Argo</strong>; <strong>test (2023–24) Argo is touched exactly once</strong>, in Task 10.</p>
 <p><strong>Tech Stack:</strong> PyTorch, xarray/Zarr, NumPy, pandas. Kaggle T4 for training (~8 GPU-hours total), local CPU for all evaluation and post-processing.</p>
 <p><strong>Spec:</strong> the 10-item list below, plus <a href="09-day2-handover.html">doc 09 §8</a> ("What is left").</p>
+<blockquote>
+<p><strong>This page is the programme.</strong> For the narrative of what happened and the current results in handover form, read <a href="11-day3-handover.html">doc 11 (Day 3)</a> instead.</p>
+</blockquote>
 <hr />
 <h2 id="the-spec-verbatim">The spec, verbatim</h2>
 <ol>
