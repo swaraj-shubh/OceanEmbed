@@ -1,19 +1,23 @@
-# core
+# core data stack
 numpy
 pandas
 xarray
-netCDF4
+dask                # xarray reads the Zarr store lazily; required, not optional
 zarr
-scipy
-# model
+netCDF4             # prediction cubes are written as NetCDF
+
+# model + config
 torch
+pyyaml              # one YAML per experiment (CLAUDE.md rule 7)
+
 # data access (accounts required: CMEMS, NASA Earthdata)
 copernicusmarine
+certifi             # src/download/argo.py hits Ifremer ERDDAP over TLS directly
 # argopy dropped: it pins an aiohttp with no wheel for recent Python and needs MSVC;
-# src/download/argo.py hits the Ifremer ERDDAP endpoint directly instead
-certifi
-# viz / demo
-matplotlib
-cartopy
+# src/download/argo.py queries the ERDDAP tabledap endpoint instead.
+
+# demo + figures (not needed to train or evaluate)
 streamlit
 plotly
+matplotlib
+cartopy             # coastlines for the input-field figures; conda is the easier install
