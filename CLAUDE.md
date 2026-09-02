@@ -33,23 +33,52 @@ Satellites see only the ocean surface (SST, SSS, SSH, currents, winds) at high r
 
 | Model | Argo blended RMSE | Note |
 |---|---|---|
-| **GLORYS12V1 target itself** | **0.728** | the ceiling — no model trained on it can beat this |
-| **M4 ConvLSTM** | **0.890 ± 0.008** | best, but only 0.80 sigma over M2 |
-| **M2 U-Net** | **0.901 ± 0.013** | simplest thing that works |
-| M3 attention | 0.907 | null result, 0.5 sigma |
-| M2 + gradient loss | 0.918 ± 0.004 | negative |
-| M2 anomaly | 0.975 ± 0.020 | worse overall; first to beat climatology below 500 m |
+| **FINAL: 6-model ensemble + Argo bias correction** | **0.786** | **beats climatology at all 15 depths** |
+| GLORYS12V1 target itself | 0.728 | ceiling for an *uncorrected* model only — see finding 3 |
+| M4 3-seed ensemble + bias correction | 0.792 | |
+| M2+M3 ensemble + bias correction | 0.818 | from the two Aug-31 checkpoints alone |
+| M2 + Argo bias correction (depth) | 0.844 | 15 numbers fitted on val Argo |
+| M2 + bias correction (depth x month) | 0.850 | worse — 180 bins overfit |
+| 6-model ensemble, uncorrected | 0.859 | |
+| **M4 ConvLSTM** | **0.890 +/- 0.010** | doc 09's headline |
+| **M2 U-Net** | **0.902 +/- 0.014** | simplest thing that works |
+| M3 attention | 0.907 | null — bootstrap CI [-0.011, +0.011] contains zero |
+| M2 + gradient loss | 0.918 +/- 0.005 | negative |
+| M2 anomaly | 0.975 +/- 0.024 | negative |
 | M0 climatology | 1.160 | baseline |
 
-**Key finding:** GLORYS carries a +0.723 degC warm bias at 100 m against Argo. The model's
-+0.848 is largely inherited, not produced. Four interventions moved the blended score by
-less than one sigma, so the binding constraint is information and target quality, not model
-capacity. **Do not add capacity.** The remaining levers are bias-correcting the target,
-adding input channels (bathymetry, day-of-year), and ensembling.
+**FINAL model** = 3 seeds of `m4_convlstm` + 3 seeds of `m4_dw`, averaged, minus a depth-wise
+offset fitted on 2022 val Argo. Manifest: `results/FROZEN.md`. Selected on val, test read once.
+
+**Key finding 1:** GLORYS carries a +0.723 degC warm bias at 100 m against Argo; the model's
++0.85 is largely inherited, not produced.
+
+**Key finding 2:** the two biggest wins need **no training at all** — ensembling existing
+checkpoints (-3.5%) and a **15-number depth-wise offset fitted on val Argo** (-8.5%).
+Together 0.890 -> **0.786**, cutting the error the model adds on top of its target from
+0.162 to 0.058, a 64% reduction. Both significant under a float-blocked bootstrap. The
+offset is post-processing and is **always its own table row** — the network never sees Argo.
+The bias *drifts* (+0.590 fitted on 2022 vs +0.893 actual in 2023-24), so refit annually.
+
+**Key finding 3:** with the correction, **all 15 depths beat climatology** (doc 09's weakness
+at 500/700/1000 m is gone) and at 125/700/1000 m the model beats **GLORYS itself**. That
+defines the ceiling rather than breaking it: 0.728 bounds a model that only ever sees
+GLORYS. Quote it as "the bound for an uncorrected model".
+
+**Key finding 4 (docs/10):** SEVEN model-side interventions have now been tried — attention,
+ConvLSTM, gradient loss, anomaly, climatology-as-input, auxiliary channels, depth weighting.
+**None improved the observational score on its own.** `m4_aux` fit GLORYS better than the
+baseline (val GLORYS RMSE 0.659) and scored WORSE against Argo (0.889 vs 0.860). Depth
+weighting was the one survivor, promoted only because it is *complementary* (better at
+500-1000 m, worse at 50 m), so it earns an ensemble slot, not a replacement.
+**Do not add capacity. Do not add input channels. Work on the output side.**
 
 **Benchmark rule:** report against Argo, never GLORYS validation loss. Across three seeds
-val RMSE spreads 8% while the Argo score spreads 1.4%. Any architecture claim needs
-multiple seeds and a reported spread.
+val RMSE spreads 8% while the Argo score spreads 1.4%.
+
+**Statistics rule:** model comparisons use `argo_eval.paired_bootstrap`, which resamples
+**floats, not profiles** — 6,448 test casts come from only 147 floats, so a profile-level
+bootstrap reads ~6.6x too narrow. Selection happens on **val** Argo; test is read once.
 
 ---
 

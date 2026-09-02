@@ -168,13 +168,13 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <td><strong>Current results.</strong> Multi-seed error bars, four interventions measured (attention, gradient loss, anomaly, ConvLSTM), and the finding that the training target itself carries a +0.72 °C thermocline bias — a measured ceiling of 0.728 °C</td>
 </tr>
 <tr>
-<td><a href="10-experiment-programme.html"><strong>10 — Experiment Programme</strong></a></td>
-<td><strong>The plan being executed now.</strong> Eleven tasks: reproduce M4, audit leakage as runnable assertions, then six interventions screened on <em>val</em> Argo under a fixed decision rule, a float-blocked bootstrap, one ablation table including the failures, and a single final read on test. Leads with a measured result: a 15-number Argo bias correction recovers 96% of the achievable gain</td>
+<td><a href="10-experiment-programme.html"><strong>10 — Experiment Programme &amp; Results</strong></a></td>
+<td><strong>Current best results.</strong> Eleven tasks with a fixed selection discipline (screen on <em>val</em>, read test once). A seed ensemble plus an Argo bias correction take <strong>0.890 → 0.786 °C, almost all of it with no training at all</strong>, beating every architecture change in the project; <strong>all 15 depths now beat climatology</strong>; and a float-blocked bootstrap settles which differences are real</td>
 </tr>
 </tbody>
 </table></div>
-<p><strong>The pitch in one sentence:</strong> a CNN embedding of 7 satellite surface fields reconstructs temperature at 15 depths to <strong>0.890 ± 0.008 °C — 23% better than climatology</strong> — validated depth-wise against 6,093 <em>independent</em> Argo profiles in years the model never saw, with the training reanalysis' own +0.72 °C thermocline bias measured against those same observations.</p>
-<p>Attention and temporal context were both built and measured; neither moved the observational score by more than one standard deviation, and that is reported rather than hidden (<a href="09-day2-handover.html">doc 09</a>).</p></article>
+<p><strong>The pitch in one sentence:</strong> a CNN embedding of 7 satellite surface fields reconstructs temperature at 15 depths to <strong>0.786 °C — 32% better than climatology and better at every single depth</strong> — validated depth-wise against ~6,000 <em>independent</em> Argo profiles in years the model never saw, closing to within <strong>0.058 °C of the training reanalysis' own accuracy</strong> after correcting the +0.72 °C thermocline bias we measured in it.</p>
+<p>Attention and temporal context were both built and measured; neither moved the observational score by more than one standard deviation, and the attention result's bootstrap interval contains zero. That is reported rather than hidden (<a href="09-day2-handover.html">doc 09</a>, <a href="10-experiment-programme.html">doc 10</a>) — and it is what pointed at the data-side fixes that did work.</p></article>
   <footer>Ministry of Earth Sciences · INCOIS · Space Technology — Smart India Hackathon 2026</footer>
 </main>
 <script type="module">

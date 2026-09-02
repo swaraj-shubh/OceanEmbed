@@ -126,8 +126,16 @@ class OceanEmbed(UNet):
         super().__init__(*a, **{**kw, "attn": True})
 
 
-def masked_mse(pred, true, mask, grad_weight=0.0):
+def masked_mse(pred, true, mask, grad_weight=0.0, depth_weight=None):
     """Land and missing target cells never contribute (CLAUDE.md rule 5).
+
+    `depth_weight` is a [15] tensor re-weighting each level's contribution. Note that plain
+    MSE in degC ALREADY matches the reported blended metric almost exactly -- the blended
+    score is an n-weighted RMS across depths with roughly equal n per level, i.e. the mean
+    per-depth MSE. So depth weighting is a deliberate trade, not a free win: inverse-variance
+    weights (1/sd^2 from the frozen train stats: 0.38 at 100 m rising to 2.53 at 1000 m)
+    push effort out of the thermocline and into the deep, which is where climatology still
+    beats us. Expect the blended number to worsen and 500-1000 m to improve.
 
     `grad_weight` adds a penalty on the error in the VERTICAL profile shape -- the
     level-to-level differences rather than the levels themselves. Plain MSE is happy with a
@@ -139,7 +147,11 @@ def masked_mse(pred, true, mask, grad_weight=0.0):
     """
     n = mask.sum()
     assert n > 0, "batch has no valid target cells"
-    loss = ((pred - true) ** 2 * mask).sum() / n
+    if depth_weight is None:
+        loss = ((pred - true) ** 2 * mask).sum() / n
+    else:
+        wm = mask * depth_weight.view(1, -1, 1, 1).to(pred.device)
+        loss = ((pred - true) ** 2 * wm).sum() / wm.sum()
     if grad_weight:
         gm = mask[:, 1:] & mask[:, :-1]          # both levels of the pair must be valid
         if gm.any():
@@ -166,6 +178,16 @@ if __name__ == "__main__":
     assert masked_mse(warped, y.detach(), m, grad_weight=1.0) >            masked_mse(warped, y.detach(), m, grad_weight=0.0), "gradient term is inert"
     junk = y.detach().clone(); junk[:, :, :3, :3] = 1e6      # garbage only where masked
     assert masked_mse(junk, y.detach(), m) < 1e-6
+
+    # depth weighting: uniform weights must be a no-op, and a zero weight must silence its
+    # level completely. The unweighted control is what makes the second one a real test.
+    assert torch.isclose(masked_mse(y, y + 1, m, depth_weight=torch.ones(15)),
+                         masked_mse(y, y + 1, m)), "uniform depth weights must be a no-op"
+    w_deep = torch.zeros(15); w_deep[-1] = 1.0
+    err = y.detach().clone(); err[:, :-1] += 5.0            # error only at levels 0..13
+    assert masked_mse(err, y.detach(), m, depth_weight=w_deep) < 1e-6, \
+        "zero-weighted levels still contributed"
+    assert masked_mse(err, y.detach(), m) > 1.0, "control: unweighted must see the error"
 
     # must be able to overfit a single sample (CLAUDE.md sec.13).
     # Target is a smooth field, as real temperature fields are -- not white noise.

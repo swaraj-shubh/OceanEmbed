@@ -199,34 +199,64 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </thead>
 <tbody>
 <tr>
-<td><strong>GLORYS12V1 target itself</strong></td>
-<td><strong>0.728</strong></td>
-<td>the ceiling — no model trained on it can beat this</td>
+<td><strong>FINAL: 6-model ensemble + Argo bias correction</strong></td>
+<td><strong>0.786</strong></td>
+<td><strong>beats climatology at all 15 depths</strong></td>
+</tr>
+<tr>
+<td>GLORYS12V1 target itself</td>
+<td>0.728</td>
+<td>ceiling for an <em>uncorrected</em> model only — see finding 3</td>
+</tr>
+<tr>
+<td>M4 3-seed ensemble + bias correction</td>
+<td>0.792</td>
+<td></td>
+</tr>
+<tr>
+<td>M2+M3 ensemble + bias correction</td>
+<td>0.818</td>
+<td>from the two Aug-31 checkpoints alone</td>
+</tr>
+<tr>
+<td>M2 + Argo bias correction (depth)</td>
+<td>0.844</td>
+<td>15 numbers fitted on val Argo</td>
+</tr>
+<tr>
+<td>M2 + bias correction (depth x month)</td>
+<td>0.850</td>
+<td>worse — 180 bins overfit</td>
+</tr>
+<tr>
+<td>6-model ensemble, uncorrected</td>
+<td>0.859</td>
+<td></td>
 </tr>
 <tr>
 <td><strong>M4 ConvLSTM</strong></td>
-<td><strong>0.890 ± 0.008</strong></td>
-<td>best, but only 0.80 sigma over M2</td>
+<td><strong>0.890 +/- 0.010</strong></td>
+<td>doc 09's headline</td>
 </tr>
 <tr>
 <td><strong>M2 U-Net</strong></td>
-<td><strong>0.901 ± 0.013</strong></td>
+<td><strong>0.902 +/- 0.014</strong></td>
 <td>simplest thing that works</td>
 </tr>
 <tr>
 <td>M3 attention</td>
 <td>0.907</td>
-<td>null result, 0.5 sigma</td>
+<td>null — bootstrap CI [-0.011, +0.011] contains zero</td>
 </tr>
 <tr>
 <td>M2 + gradient loss</td>
-<td>0.918 ± 0.004</td>
+<td>0.918 +/- 0.005</td>
 <td>negative</td>
 </tr>
 <tr>
 <td>M2 anomaly</td>
-<td>0.975 ± 0.020</td>
-<td>worse overall; first to beat climatology below 500 m</td>
+<td>0.975 +/- 0.024</td>
+<td>negative</td>
 </tr>
 <tr>
 <td>M0 climatology</td>
@@ -235,14 +265,32 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </tr>
 </tbody>
 </table></div>
-<p><strong>Key finding:</strong> GLORYS carries a +0.723 degC warm bias at 100 m against Argo. The model's
-+0.848 is largely inherited, not produced. Four interventions moved the blended score by
-less than one sigma, so the binding constraint is information and target quality, not model
-capacity. <strong>Do not add capacity.</strong> The remaining levers are bias-correcting the target,
-adding input channels (bathymetry, day-of-year), and ensembling.</p>
+<p><strong>FINAL model</strong> = 3 seeds of <code>m4_convlstm</code> + 3 seeds of <code>m4_dw</code>, averaged, minus a depth-wise
+offset fitted on 2022 val Argo. Manifest: <code>results/FROZEN.md</code>. Selected on val, test read once.</p>
+<p><strong>Key finding 1:</strong> GLORYS carries a +0.723 degC warm bias at 100 m against Argo; the model's
++0.85 is largely inherited, not produced.</p>
+<p><strong>Key finding 2:</strong> the two biggest wins need <strong>no training at all</strong> — ensembling existing
+checkpoints (-3.5%) and a <strong>15-number depth-wise offset fitted on val Argo</strong> (-8.5%).
+Together 0.890 -&gt; <strong>0.786</strong>, cutting the error the model adds on top of its target from
+0.162 to 0.058, a 64% reduction. Both significant under a float-blocked bootstrap. The
+offset is post-processing and is <strong>always its own table row</strong> — the network never sees Argo.
+The bias <em>drifts</em> (+0.590 fitted on 2022 vs +0.893 actual in 2023-24), so refit annually.</p>
+<p><strong>Key finding 3:</strong> with the correction, <strong>all 15 depths beat climatology</strong> (doc 09's weakness
+at 500/700/1000 m is gone) and at 125/700/1000 m the model beats <strong>GLORYS itself</strong>. That
+defines the ceiling rather than breaking it: 0.728 bounds a model that only ever sees
+GLORYS. Quote it as "the bound for an uncorrected model".</p>
+<p><strong>Key finding 4 (docs/10):</strong> SEVEN model-side interventions have now been tried — attention,
+ConvLSTM, gradient loss, anomaly, climatology-as-input, auxiliary channels, depth weighting.
+<strong>None improved the observational score on its own.</strong> <code>m4_aux</code> fit GLORYS better than the
+baseline (val GLORYS RMSE 0.659) and scored WORSE against Argo (0.889 vs 0.860). Depth
+weighting was the one survivor, promoted only because it is <em>complementary</em> (better at
+500-1000 m, worse at 50 m), so it earns an ensemble slot, not a replacement.
+<strong>Do not add capacity. Do not add input channels. Work on the output side.</strong></p>
 <p><strong>Benchmark rule:</strong> report against Argo, never GLORYS validation loss. Across three seeds
-val RMSE spreads 8% while the Argo score spreads 1.4%. Any architecture claim needs
-multiple seeds and a reported spread.</p>
+val RMSE spreads 8% while the Argo score spreads 1.4%.</p>
+<p><strong>Statistics rule:</strong> model comparisons use <code>argo_eval.paired_bootstrap</code>, which resamples
+<strong>floats, not profiles</strong> — 6,448 test casts come from only 147 floats, so a profile-level
+bootstrap reads ~6.6x too narrow. Selection happens on <strong>val</strong> Argo; test is read once.</p>
 <hr />
 <h2 id="3-model-stages-build-progressively-never-skip-ahead">3. Model Stages (build progressively — never skip ahead)</h2>
 <ul>

@@ -1449,21 +1449,194 @@ Fits inside one week of Kaggle's free T4 quota (30 h). No paid compute needed. E
 | Every intervention is null | That *is* a result, and doc 09 §4 predicts it. The bias correction (Task 3) does not depend on any of them, so the programme still ends ~9% better than it started. |
 | GPU budget runs out during Task 8 | Promote in val-score order and stop; record which configs did not get their extra seeds rather than reporting a partial spread as a full one. |
 
-## Results
+## Results — programme complete
 
-*(Fill in as tasks complete. Every row records the split it was measured on.)*
+All eleven tasks executed. Six training experiments screened, one promoted, the winner
+selected on val and read on test exactly once.
 
-| Run | Split | Seeds | Blended RMSE | vs baseline | Decision |
-|---|---|---|---|---|---|
-| M4 baseline | val | 3 | | — | — |
-| M4 baseline | test | 3 | 0.890 ± 0.008 (doc 09) | — | reproduction check |
-| M4 + bias correction (depth) | test | 1 | *predicted 0.82 ± 0.01* | | pre-registered |
-| M4 anomaly | val | 1 | | | |
-| M4 + climatology channels | val | 1 | | | |
-| M4 + aux channels | val | 1 | | | |
-| M4 + clim + aux | val | 1 | | | |
-| M4 depth-weighted loss | val | 1 | | | |
-| M4 gradient loss | val | 1 | | | |
-| seed ensemble | val | — | | | |
-| cross-config ensemble | val | — | | | |
-| **final, frozen** | **test** | **3** | | | **evaluated once** |
+### Headline: 0.890 → 0.786 °C
+
+Blended RMSE against 6,056 independent Argo casts, test split 2023–24:
+
+| Run | Blended | vs M4 | Note |
+|---|---|---|---|
+| **FINAL — 6-model ensemble + Argo bias correction** | **0.786** | **−11.7%** | selected on val, read on test once |
+| GLORYS12V1 target itself | 0.728 | — | ceiling for an *uncorrected* model |
+| M4 3-seed ensemble + correction | 0.792 | −11.0% | |
+| M2+M3 ensemble + correction | 0.818 | −8.1% | from the two Aug-31 checkpoints alone |
+| M2 + correction (depth) | 0.844 | −5.2% | fifteen numbers |
+| M2 + correction (depth × month) | 0.850 | −4.5% | worse, as predicted out-of-sample |
+| 6-model ensemble, uncorrected | 0.859 | −3.5% | |
+| M4 3-seed ensemble | 0.862 | −3.1% | |
+| M4 ConvLSTM, 3 seeds | 0.890 ± 0.010 | — | doc 09's headline |
+| M2 U-Net, 4 seeds | 0.902 ± 0.014 | +1.3% | |
+| M3 attention | 0.907 | +1.9% | null |
+| M2 + gradient loss, 3 seeds | 0.918 ± 0.005 | +3.1% | negative |
+| M2 anomaly, 3 seeds | 0.975 ± 0.024 | +9.6% | negative |
+| M0 climatology | 1.160 | +30.3% | floor |
+
+**The error the model adds on top of its own training target falls from 0.162 °C to
+0.058 °C — a 64% reduction.** Neither of the two steps that got us there trained a new
+model: one averages checkpoints that already existed, the other is a fifteen-number table.
+
+The final model is a six-member ensemble — three seeds of M4 ConvLSTM plus three seeds of
+M4 with the inverse-variance depth-weighted loss — with a depth-wise offset fitted on 2022
+val Argo subtracted from its output.
+
+### Full depth-wise table (the primary result)
+
+| Depth (m) | M0 clim. | M4 | **FINAL** | GLORYS | MAE | Bias | Corr | R² |
+|---|---|---|---|---|---|---|---|---|
+| 0 | 0.745 | 0.468 | **0.426** | 0.357 | 0.292 | −0.108 | 0.965 | 0.925 |
+| 5 | 0.746 | 0.457 | **0.405** | 0.326 | 0.287 | −0.119 | 0.968 | 0.931 |
+| 10 | 0.751 | 0.455 | **0.425** | 0.367 | 0.290 | −0.122 | 0.964 | 0.924 |
+| 20 | 0.844 | 0.682 | **0.656** | 0.505 | 0.408 | −0.092 | 0.918 | 0.839 |
+| 30 | 0.949 | 0.846 | **0.810** | 0.614 | 0.560 | −0.151 | 0.897 | 0.797 |
+| 50 | 1.308 | 1.031 | **1.011** | 0.856 | 0.772 | −0.253 | 0.889 | 0.774 |
+| 75 | 1.946 | 1.411 | **1.274** | 1.206 | 0.973 | +0.051 | 0.850 | 0.717 |
+| 100 | 2.163 | 1.637 | **1.372** | 1.343 | 1.056 | +0.299 | 0.819 | 0.653 |
+| 125 | 1.821 | 1.423 | **1.158** | 1.178 | 0.883 | +0.241 | 0.863 | 0.732 |
+| 150 | 1.385 | 1.086 | **0.923** | 0.895 | 0.713 | +0.201 | 0.913 | 0.824 |
+| 200 | 0.881 | 0.730 | **0.680** | 0.603 | 0.523 | +0.176 | 0.953 | 0.902 |
+| 300 | 0.558 | 0.511 | **0.482** | 0.408 | 0.339 | +0.097 | 0.965 | 0.928 |
+| 500 | 0.273 | 0.279 | **0.245** | 0.226 | 0.185 | −0.018 | 0.982 | 0.963 |
+| 700 | 0.263 | 0.280 | **0.224** | 0.246 | 0.172 | −0.022 | 0.981 | 0.963 |
+| 1000 | 0.237 | 0.254 | **0.216** | 0.243 | 0.165 | −0.014 | 0.973 | 0.945 |
+| **blended** | **1.160** | **0.890** | **0.786** | **0.728** | | | | |
+
+**15 of 15 depths beat climatology.** Doc 09's standing weakness — losing to a monthly
+climatology at 500, 700 and 1000 m — is gone. At 100 m, R² goes 0.502 → **0.653** and the
+bias +0.850 → **+0.299**.
+
+**At 125 m, 700 m and 1000 m the corrected model beats GLORYS itself.** That does not break
+the 0.728 ceiling, it defines what the ceiling means: GLORYS bounds any model that only
+ever sees GLORYS. Once a correction fitted on *independent observations* is applied, the
+target's bias is no longer inherited, and at depths where that bias dominates GLORYS' own
+error we pass it. Quote the ceiling as **"the bound for an uncorrected model"**.
+
+### Screening: six interventions, one survivor
+
+Screened at one seed against a val baseline of **0.860 ± 0.004** (M4, three seeds, 2022
+Argo). Promote at ≤ 0.870, reject above 0.880.
+
+| Config | Val blended | vs baseline | Decision |
+|---|---|---|---|
+| M4 baseline (3 seeds) | 0.860 ± 0.004 | — | — |
+| **M4 depth-weighted loss** | **0.865** → 0.854 ± 0.010 at 3 seeds | +0.005 | **promoted** |
+| M4 gradient loss | 0.875 | +0.015 | rejected — borderline, no depth-wise win |
+| M4 + aux channels | 0.889 | +0.029 | rejected |
+| M4 + clim + aux | 0.889 | +0.029 | rejected |
+| M4 + climatology channels | 0.899 | +0.039 | rejected |
+| M4 anomaly | 0.928 | +0.068 | rejected |
+
+**The depth-weighted loss did exactly what this document predicted before it was run.** The
+prediction, written down in Task 7: plain MSE already matches the reported metric, so
+inverse-variance weighting is a trade, not a win — expect the blended number to worsen and
+500–1000 m to improve. Measured at one seed: 50 m 1.142 vs the baseline's 1.040 (worse),
+500 m 0.292 vs 0.347 and 1000 m 0.234 vs 0.257 (better). It is not a better model; it is a
+*complementary* one, which is why it earns its place in the ensemble rather than replacing
+anything.
+
+**The clearest single lesson came from `m4_aux`**, which had the best GLORYS validation RMSE
+of the three channel experiments (0.659, better than the baseline typically manages) and was
+*worse* against Argo (0.889 vs 0.860). Fitting the reanalysis better made agreement with
+observations worse. That is doc 09's benchmark rule demonstrated live, and it is why
+climatology-as-input fails too: handing the model the climatology lets it lean harder on
+GLORYS' climatological bias structure — it learns the target's errors more faithfully.
+
+**Running total: seven model-side interventions tried (attention, ConvLSTM, gradient loss,
+anomaly, climatology channels, auxiliary channels, depth weighting), none of which improved
+the observational score on its own. Two output-side steps, both of which did.**
+
+### Ensemble composition, chosen on val
+
+Selected uncorrected, so the bias offset was never fitted and chosen on the same data:
+
+| Composition | Val blended |
+|---|---|
+| **6 members: M4 ×3 + depth-weighted ×3** | **0.823** |
+| depth-weighted ×3 | 0.829 |
+| M4 baseline ×3 | 0.831 |
+
+The mixed six wins, and the depth-wise tables say why: the two families are strong in
+different layers. Test was opened only after this choice was locked.
+
+### The float-blocked bootstrap: which differences are real
+
+1,000 paired resamples over the 147 floats behind the test casts. Resampling profiles
+instead of floats would report intervals ~6.6× too narrow.
+
+| Comparison | Δ blended | 95% CI | Verdict |
+|---|---|---|---|
+| M3 attention − M2 | −0.0009 | [−0.0110, +0.0105] | **not significant** |
+| 6-model ensemble − M4 single seed | −0.0354 | [−0.0427, −0.0278] | significant |
+| correction, on top of the ensemble | −0.0730 | [−0.0863, −0.0601] | significant |
+| **FINAL − M4 single seed** | **−0.1084** | **[−0.1208, −0.0972]** | **significant** |
+
+Doc 09 called attention a null result from three seeds and an eyeball. It now has a proper
+interval and that interval contains zero. Every post-processing gain is unambiguous.
+
+### The bias drifts, and it costs us
+
+Fitted on 2022 val, the final ensemble's offset at 100 m is **+0.590 °C**; its actual
+2023–24 bias is **+0.893**. The correction under-shoots, which is why the model gains ~8%
+where the GLORYS probe gained 9.3%. A real limitation: an operational version must refit
+the offset annually against the most recent Argo.
+
+Depth × month scored 0.850 against depth-only's 0.844 — worse, exactly as the out-of-sample
+GLORYS probe predicted (0.675 vs 0.671). 180 bins over ~3,400 casts overfits. The form was
+chosen on that prior out-of-sample evidence, not on an in-sample val comparison that would
+have flattered the more flexible model.
+
+### Reproduction and leakage
+
+The current code reproduces every published number against the recovered checkpoints:
+**M2 = 0.908, M3 = 0.907, M4 = 0.890 (0.895 / 0.897 / 0.879)** — across two machines and
+both devices (CPU on the Windows box, T4 on the instance).
+
+`python src/audit_leakage.py` passes **8 / 8**, including the control that catches
+normalisation stats fitted on all years rather than train only.
+
+### On the checkpoints Day 2 "lost"
+
+They were never lost. All 28 were sitting on the running g4dn.xlarge, unsynced — the sync
+script existed but had to be started by hand, and was not. Task 0's change to
+`deploy/setup.sh` now starts it automatically, and everything is mirrored to
+`s3://oceanembed-sih26-data/oceanembed/checkpoints/`. Recovering them turned Task 1 from a
+retrain into a three-minute scoring pass.
+
+### Three bugs caught by the new self-checks
+
+- **The anomaly residual base leaked into climatology-as-input mode.** `__getitem__` keyed
+  the residual base off `self.clim is not None`, which is now also true for
+  `extra=("clim",)`. Tasks 4 and 5 would have been the same experiment. Fixed by gating on
+  `self.anomaly`.
+- **`--ensemble` tried to overwrite a cube it had open for reading**, because the input path
+  was relative and the output path absolute. Fixed by resolving both.
+- **Ensembling a window=7 model with a window=1 model.** A 7-day model cannot predict a
+  split's first six days, so its cube is shorter. `--ensemble` now aligns members on the
+  intersection of their time axes and reports how many days it dropped, rather than
+  silently averaging misaligned days.
+
+### Compute actually used
+
+About 3.5 GPU-hours on one g4dn.xlarge (T4): six screening runs at 20 epochs plus two extra
+seeds of the promoted config, at 65–90 s/epoch. Everything else — all scoring, ensembling,
+bias correction, bootstrapping — ran on CPU.
+
+### Files added or changed
+
+`src/audit_leakage.py`, `src/bias_correct.py`, `src/ablation.py` (new); `src/argo_eval.py`
+(`match_profiles`, `paired_bootstrap`), `src/config.py` (`n_channels`, `bathy_path`,
+channel names), `src/datasets.py` (`extra=` channel sets, `build_bathymetry`),
+`src/models/unet.py` (`depth_weight`), `src/train.py` (derive `in_ch`, thread `extra`, build
+depth weights), `src/predict_cube.py` (`score_cube`, `--offset`, `--ensemble`, time
+alignment), `deploy/setup.sh` (auto-start the checkpoint sync), and six `configs/m4_*.yaml`.
+
+Full tables: `results/ablation_test.md`, `results/ablation_val.md`.
+
+### What is left
+
+The Streamlit demo (doc 06's spec, an explicit PS requirement) and track B1 INCOIS gridded
+Argo. Nothing else in this programme is outstanding. Do not add model capacity — seven
+interventions now say the same thing.

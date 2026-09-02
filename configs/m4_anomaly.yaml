@@ -1,0 +1,13 @@
+run: m4_anomaly
+model:
+  kind: temporal
+  out_ch: 15
+  base: 32
+  depth: 3
+anomaly: true          # predict the departure from train-split monthly climatology
+window: 7
+batch_size: 16
+num_workers: 4
+lr: 0.001
+epochs: 20
+seed: 0

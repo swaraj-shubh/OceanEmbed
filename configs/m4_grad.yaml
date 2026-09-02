@@ -1,0 +1,13 @@
+run: m4_grad
+model:
+  kind: temporal
+  out_ch: 15
+  base: 32
+  depth: 3
+grad_weight: 1.0       # penalise error in the vertical profile SHAPE
+window: 7
+batch_size: 16
+num_workers: 4
+lr: 0.001
+epochs: 20
+seed: 0

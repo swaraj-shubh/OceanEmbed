@@ -1566,118 +1566,505 @@ git commit -m &quot;Programme complete: &lt;winner&gt; at &lt;score&gt; vs indep
 </tr>
 </tbody>
 </table></div>
-<h2 id="results">Results</h2>
-<p><em>(Fill in as tasks complete. Every row records the split it was measured on.)</em></p>
+<h2 id="results-programme-complete">Results — programme complete</h2>
+<p>All eleven tasks executed. Six training experiments screened, one promoted, the winner
+selected on val and read on test exactly once.</p>
+<h3 id="headline-0890-0786-c">Headline: 0.890 → 0.786 °C</h3>
+<p>Blended RMSE against 6,056 independent Argo casts, test split 2023–24:</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
 <th>Run</th>
-<th>Split</th>
-<th>Seeds</th>
-<th>Blended RMSE</th>
+<th>Blended</th>
+<th>vs M4</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>FINAL — 6-model ensemble + Argo bias correction</strong></td>
+<td><strong>0.786</strong></td>
+<td><strong>−11.7%</strong></td>
+<td>selected on val, read on test once</td>
+</tr>
+<tr>
+<td>GLORYS12V1 target itself</td>
+<td>0.728</td>
+<td>—</td>
+<td>ceiling for an <em>uncorrected</em> model</td>
+</tr>
+<tr>
+<td>M4 3-seed ensemble + correction</td>
+<td>0.792</td>
+<td>−11.0%</td>
+<td></td>
+</tr>
+<tr>
+<td>M2+M3 ensemble + correction</td>
+<td>0.818</td>
+<td>−8.1%</td>
+<td>from the two Aug-31 checkpoints alone</td>
+</tr>
+<tr>
+<td>M2 + correction (depth)</td>
+<td>0.844</td>
+<td>−5.2%</td>
+<td>fifteen numbers</td>
+</tr>
+<tr>
+<td>M2 + correction (depth × month)</td>
+<td>0.850</td>
+<td>−4.5%</td>
+<td>worse, as predicted out-of-sample</td>
+</tr>
+<tr>
+<td>6-model ensemble, uncorrected</td>
+<td>0.859</td>
+<td>−3.5%</td>
+<td></td>
+</tr>
+<tr>
+<td>M4 3-seed ensemble</td>
+<td>0.862</td>
+<td>−3.1%</td>
+<td></td>
+</tr>
+<tr>
+<td>M4 ConvLSTM, 3 seeds</td>
+<td>0.890 ± 0.010</td>
+<td>—</td>
+<td>doc 09's headline</td>
+</tr>
+<tr>
+<td>M2 U-Net, 4 seeds</td>
+<td>0.902 ± 0.014</td>
+<td>+1.3%</td>
+<td></td>
+</tr>
+<tr>
+<td>M3 attention</td>
+<td>0.907</td>
+<td>+1.9%</td>
+<td>null</td>
+</tr>
+<tr>
+<td>M2 + gradient loss, 3 seeds</td>
+<td>0.918 ± 0.005</td>
+<td>+3.1%</td>
+<td>negative</td>
+</tr>
+<tr>
+<td>M2 anomaly, 3 seeds</td>
+<td>0.975 ± 0.024</td>
+<td>+9.6%</td>
+<td>negative</td>
+</tr>
+<tr>
+<td>M0 climatology</td>
+<td>1.160</td>
+<td>+30.3%</td>
+<td>floor</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>The error the model adds on top of its own training target falls from 0.162 °C to
+0.058 °C — a 64% reduction.</strong> Neither of the two steps that got us there trained a new
+model: one averages checkpoints that already existed, the other is a fifteen-number table.</p>
+<p>The final model is a six-member ensemble — three seeds of M4 ConvLSTM plus three seeds of
+M4 with the inverse-variance depth-weighted loss — with a depth-wise offset fitted on 2022
+val Argo subtracted from its output.</p>
+<h3 id="full-depth-wise-table-the-primary-result">Full depth-wise table (the primary result)</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Depth (m)</th>
+<th>M0 clim.</th>
+<th>M4</th>
+<th><strong>FINAL</strong></th>
+<th>GLORYS</th>
+<th>MAE</th>
+<th>Bias</th>
+<th>Corr</th>
+<th>R²</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>0.745</td>
+<td>0.468</td>
+<td><strong>0.426</strong></td>
+<td>0.357</td>
+<td>0.292</td>
+<td>−0.108</td>
+<td>0.965</td>
+<td>0.925</td>
+</tr>
+<tr>
+<td>5</td>
+<td>0.746</td>
+<td>0.457</td>
+<td><strong>0.405</strong></td>
+<td>0.326</td>
+<td>0.287</td>
+<td>−0.119</td>
+<td>0.968</td>
+<td>0.931</td>
+</tr>
+<tr>
+<td>10</td>
+<td>0.751</td>
+<td>0.455</td>
+<td><strong>0.425</strong></td>
+<td>0.367</td>
+<td>0.290</td>
+<td>−0.122</td>
+<td>0.964</td>
+<td>0.924</td>
+</tr>
+<tr>
+<td>20</td>
+<td>0.844</td>
+<td>0.682</td>
+<td><strong>0.656</strong></td>
+<td>0.505</td>
+<td>0.408</td>
+<td>−0.092</td>
+<td>0.918</td>
+<td>0.839</td>
+</tr>
+<tr>
+<td>30</td>
+<td>0.949</td>
+<td>0.846</td>
+<td><strong>0.810</strong></td>
+<td>0.614</td>
+<td>0.560</td>
+<td>−0.151</td>
+<td>0.897</td>
+<td>0.797</td>
+</tr>
+<tr>
+<td>50</td>
+<td>1.308</td>
+<td>1.031</td>
+<td><strong>1.011</strong></td>
+<td>0.856</td>
+<td>0.772</td>
+<td>−0.253</td>
+<td>0.889</td>
+<td>0.774</td>
+</tr>
+<tr>
+<td>75</td>
+<td>1.946</td>
+<td>1.411</td>
+<td><strong>1.274</strong></td>
+<td>1.206</td>
+<td>0.973</td>
+<td>+0.051</td>
+<td>0.850</td>
+<td>0.717</td>
+</tr>
+<tr>
+<td>100</td>
+<td>2.163</td>
+<td>1.637</td>
+<td><strong>1.372</strong></td>
+<td>1.343</td>
+<td>1.056</td>
+<td>+0.299</td>
+<td>0.819</td>
+<td>0.653</td>
+</tr>
+<tr>
+<td>125</td>
+<td>1.821</td>
+<td>1.423</td>
+<td><strong>1.158</strong></td>
+<td>1.178</td>
+<td>0.883</td>
+<td>+0.241</td>
+<td>0.863</td>
+<td>0.732</td>
+</tr>
+<tr>
+<td>150</td>
+<td>1.385</td>
+<td>1.086</td>
+<td><strong>0.923</strong></td>
+<td>0.895</td>
+<td>0.713</td>
+<td>+0.201</td>
+<td>0.913</td>
+<td>0.824</td>
+</tr>
+<tr>
+<td>200</td>
+<td>0.881</td>
+<td>0.730</td>
+<td><strong>0.680</strong></td>
+<td>0.603</td>
+<td>0.523</td>
+<td>+0.176</td>
+<td>0.953</td>
+<td>0.902</td>
+</tr>
+<tr>
+<td>300</td>
+<td>0.558</td>
+<td>0.511</td>
+<td><strong>0.482</strong></td>
+<td>0.408</td>
+<td>0.339</td>
+<td>+0.097</td>
+<td>0.965</td>
+<td>0.928</td>
+</tr>
+<tr>
+<td>500</td>
+<td>0.273</td>
+<td>0.279</td>
+<td><strong>0.245</strong></td>
+<td>0.226</td>
+<td>0.185</td>
+<td>−0.018</td>
+<td>0.982</td>
+<td>0.963</td>
+</tr>
+<tr>
+<td>700</td>
+<td>0.263</td>
+<td>0.280</td>
+<td><strong>0.224</strong></td>
+<td>0.246</td>
+<td>0.172</td>
+<td>−0.022</td>
+<td>0.981</td>
+<td>0.963</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>0.237</td>
+<td>0.254</td>
+<td><strong>0.216</strong></td>
+<td>0.243</td>
+<td>0.165</td>
+<td>−0.014</td>
+<td>0.973</td>
+<td>0.945</td>
+</tr>
+<tr>
+<td><strong>blended</strong></td>
+<td><strong>1.160</strong></td>
+<td><strong>0.890</strong></td>
+<td><strong>0.786</strong></td>
+<td><strong>0.728</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>15 of 15 depths beat climatology.</strong> Doc 09's standing weakness — losing to a monthly
+climatology at 500, 700 and 1000 m — is gone. At 100 m, R² goes 0.502 → <strong>0.653</strong> and the
+bias +0.850 → <strong>+0.299</strong>.</p>
+<p><strong>At 125 m, 700 m and 1000 m the corrected model beats GLORYS itself.</strong> That does not break
+the 0.728 ceiling, it defines what the ceiling means: GLORYS bounds any model that only
+ever sees GLORYS. Once a correction fitted on <em>independent observations</em> is applied, the
+target's bias is no longer inherited, and at depths where that bias dominates GLORYS' own
+error we pass it. Quote the ceiling as <strong>"the bound for an uncorrected model"</strong>.</p>
+<h3 id="screening-six-interventions-one-survivor">Screening: six interventions, one survivor</h3>
+<p>Screened at one seed against a val baseline of <strong>0.860 ± 0.004</strong> (M4, three seeds, 2022
+Argo). Promote at ≤ 0.870, reject above 0.880.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Config</th>
+<th>Val blended</th>
 <th>vs baseline</th>
 <th>Decision</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>M4 baseline</td>
-<td>val</td>
-<td>3</td>
-<td></td>
+<td>M4 baseline (3 seeds)</td>
+<td>0.860 ± 0.004</td>
 <td>—</td>
 <td>—</td>
 </tr>
 <tr>
-<td>M4 baseline</td>
-<td>test</td>
-<td>3</td>
-<td>0.890 ± 0.008 (doc 09)</td>
-<td>—</td>
-<td>reproduction check</td>
-</tr>
-<tr>
-<td>M4 + bias correction (depth)</td>
-<td>test</td>
-<td>1</td>
-<td><em>predicted 0.82 ± 0.01</em></td>
-<td></td>
-<td>pre-registered</td>
-</tr>
-<tr>
-<td>M4 anomaly</td>
-<td>val</td>
-<td>1</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>M4 + climatology channels</td>
-<td>val</td>
-<td>1</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>M4 + aux channels</td>
-<td>val</td>
-<td>1</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>M4 + clim + aux</td>
-<td>val</td>
-<td>1</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>M4 depth-weighted loss</td>
-<td>val</td>
-<td>1</td>
-<td></td>
-<td></td>
-<td></td>
+<td><strong>M4 depth-weighted loss</strong></td>
+<td><strong>0.865</strong> → 0.854 ± 0.010 at 3 seeds</td>
+<td>+0.005</td>
+<td><strong>promoted</strong></td>
 </tr>
 <tr>
 <td>M4 gradient loss</td>
-<td>val</td>
-<td>1</td>
-<td></td>
-<td></td>
-<td></td>
+<td>0.875</td>
+<td>+0.015</td>
+<td>rejected — borderline, no depth-wise win</td>
 </tr>
 <tr>
-<td>seed ensemble</td>
-<td>val</td>
-<td>—</td>
-<td></td>
-<td></td>
-<td></td>
+<td>M4 + aux channels</td>
+<td>0.889</td>
+<td>+0.029</td>
+<td>rejected</td>
 </tr>
 <tr>
-<td>cross-config ensemble</td>
-<td>val</td>
-<td>—</td>
-<td></td>
-<td></td>
-<td></td>
+<td>M4 + clim + aux</td>
+<td>0.889</td>
+<td>+0.029</td>
+<td>rejected</td>
 </tr>
 <tr>
-<td><strong>final, frozen</strong></td>
-<td><strong>test</strong></td>
-<td><strong>3</strong></td>
-<td></td>
-<td></td>
-<td><strong>evaluated once</strong></td>
+<td>M4 + climatology channels</td>
+<td>0.899</td>
+<td>+0.039</td>
+<td>rejected</td>
+</tr>
+<tr>
+<td>M4 anomaly</td>
+<td>0.928</td>
+<td>+0.068</td>
+<td>rejected</td>
 </tr>
 </tbody>
-</table></div></article>
+</table></div>
+<p><strong>The depth-weighted loss did exactly what this document predicted before it was run.</strong> The
+prediction, written down in Task 7: plain MSE already matches the reported metric, so
+inverse-variance weighting is a trade, not a win — expect the blended number to worsen and
+500–1000 m to improve. Measured at one seed: 50 m 1.142 vs the baseline's 1.040 (worse),
+500 m 0.292 vs 0.347 and 1000 m 0.234 vs 0.257 (better). It is not a better model; it is a
+<em>complementary</em> one, which is why it earns its place in the ensemble rather than replacing
+anything.</p>
+<p><strong>The clearest single lesson came from <code>m4_aux</code></strong>, which had the best GLORYS validation RMSE
+of the three channel experiments (0.659, better than the baseline typically manages) and was
+<em>worse</em> against Argo (0.889 vs 0.860). Fitting the reanalysis better made agreement with
+observations worse. That is doc 09's benchmark rule demonstrated live, and it is why
+climatology-as-input fails too: handing the model the climatology lets it lean harder on
+GLORYS' climatological bias structure — it learns the target's errors more faithfully.</p>
+<p><strong>Running total: seven model-side interventions tried (attention, ConvLSTM, gradient loss,
+anomaly, climatology channels, auxiliary channels, depth weighting), none of which improved
+the observational score on its own. Two output-side steps, both of which did.</strong></p>
+<h3 id="ensemble-composition-chosen-on-val">Ensemble composition, chosen on val</h3>
+<p>Selected uncorrected, so the bias offset was never fitted and chosen on the same data:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Composition</th>
+<th>Val blended</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>6 members: M4 ×3 + depth-weighted ×3</strong></td>
+<td><strong>0.823</strong></td>
+</tr>
+<tr>
+<td>depth-weighted ×3</td>
+<td>0.829</td>
+</tr>
+<tr>
+<td>M4 baseline ×3</td>
+<td>0.831</td>
+</tr>
+</tbody>
+</table></div>
+<p>The mixed six wins, and the depth-wise tables say why: the two families are strong in
+different layers. Test was opened only after this choice was locked.</p>
+<h3 id="the-float-blocked-bootstrap-which-differences-are-real">The float-blocked bootstrap: which differences are real</h3>
+<p>1,000 paired resamples over the 147 floats behind the test casts. Resampling profiles
+instead of floats would report intervals ~6.6× too narrow.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Comparison</th>
+<th>Δ blended</th>
+<th>95% CI</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M3 attention − M2</td>
+<td>−0.0009</td>
+<td>[−0.0110, +0.0105]</td>
+<td><strong>not significant</strong></td>
+</tr>
+<tr>
+<td>6-model ensemble − M4 single seed</td>
+<td>−0.0354</td>
+<td>[−0.0427, −0.0278]</td>
+<td>significant</td>
+</tr>
+<tr>
+<td>correction, on top of the ensemble</td>
+<td>−0.0730</td>
+<td>[−0.0863, −0.0601]</td>
+<td>significant</td>
+</tr>
+<tr>
+<td><strong>FINAL − M4 single seed</strong></td>
+<td><strong>−0.1084</strong></td>
+<td><strong>[−0.1208, −0.0972]</strong></td>
+<td><strong>significant</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>Doc 09 called attention a null result from three seeds and an eyeball. It now has a proper
+interval and that interval contains zero. Every post-processing gain is unambiguous.</p>
+<h3 id="the-bias-drifts-and-it-costs-us">The bias drifts, and it costs us</h3>
+<p>Fitted on 2022 val, the final ensemble's offset at 100 m is <strong>+0.590 °C</strong>; its actual
+2023–24 bias is <strong>+0.893</strong>. The correction under-shoots, which is why the model gains ~8%
+where the GLORYS probe gained 9.3%. A real limitation: an operational version must refit
+the offset annually against the most recent Argo.</p>
+<p>Depth × month scored 0.850 against depth-only's 0.844 — worse, exactly as the out-of-sample
+GLORYS probe predicted (0.675 vs 0.671). 180 bins over ~3,400 casts overfits. The form was
+chosen on that prior out-of-sample evidence, not on an in-sample val comparison that would
+have flattered the more flexible model.</p>
+<h3 id="reproduction-and-leakage">Reproduction and leakage</h3>
+<p>The current code reproduces every published number against the recovered checkpoints:
+<strong>M2 = 0.908, M3 = 0.907, M4 = 0.890 (0.895 / 0.897 / 0.879)</strong> — across two machines and
+both devices (CPU on the Windows box, T4 on the instance).</p>
+<p><code>python src/audit_leakage.py</code> passes <strong>8 / 8</strong>, including the control that catches
+normalisation stats fitted on all years rather than train only.</p>
+<h3 id="on-the-checkpoints-day-2-lost">On the checkpoints Day 2 "lost"</h3>
+<p>They were never lost. All 28 were sitting on the running g4dn.xlarge, unsynced — the sync
+script existed but had to be started by hand, and was not. Task 0's change to
+<code>deploy/setup.sh</code> now starts it automatically, and everything is mirrored to
+<code>s3://oceanembed-sih26-data/oceanembed/checkpoints/</code>. Recovering them turned Task 1 from a
+retrain into a three-minute scoring pass.</p>
+<h3 id="three-bugs-caught-by-the-new-self-checks">Three bugs caught by the new self-checks</h3>
+<ul>
+<li><strong>The anomaly residual base leaked into climatology-as-input mode.</strong> <code>__getitem__</code> keyed
+  the residual base off <code>self.clim is not None</code>, which is now also true for
+  <code>extra=("clim",)</code>. Tasks 4 and 5 would have been the same experiment. Fixed by gating on
+  <code>self.anomaly</code>.</li>
+<li><strong><code>--ensemble</code> tried to overwrite a cube it had open for reading</strong>, because the input path
+  was relative and the output path absolute. Fixed by resolving both.</li>
+<li><strong>Ensembling a window=7 model with a window=1 model.</strong> A 7-day model cannot predict a
+  split's first six days, so its cube is shorter. <code>--ensemble</code> now aligns members on the
+  intersection of their time axes and reports how many days it dropped, rather than
+  silently averaging misaligned days.</li>
+</ul>
+<h3 id="compute-actually-used">Compute actually used</h3>
+<p>About 3.5 GPU-hours on one g4dn.xlarge (T4): six screening runs at 20 epochs plus two extra
+seeds of the promoted config, at 65–90 s/epoch. Everything else — all scoring, ensembling,
+bias correction, bootstrapping — ran on CPU.</p>
+<h3 id="files-added-or-changed">Files added or changed</h3>
+<p><code>src/audit_leakage.py</code>, <code>src/bias_correct.py</code>, <code>src/ablation.py</code> (new); <code>src/argo_eval.py</code>
+(<code>match_profiles</code>, <code>paired_bootstrap</code>), <code>src/config.py</code> (<code>n_channels</code>, <code>bathy_path</code>,
+channel names), <code>src/datasets.py</code> (<code>extra=</code> channel sets, <code>build_bathymetry</code>),
+<code>src/models/unet.py</code> (<code>depth_weight</code>), <code>src/train.py</code> (derive <code>in_ch</code>, thread <code>extra</code>, build
+depth weights), <code>src/predict_cube.py</code> (<code>score_cube</code>, <code>--offset</code>, <code>--ensemble</code>, time
+alignment), <code>deploy/setup.sh</code> (auto-start the checkpoint sync), and six <code>configs/m4_*.yaml</code>.</p>
+<p>Full tables: <code>results/ablation_test.md</code>, <code>results/ablation_val.md</code>.</p>
+<h3 id="what-is-left">What is left</h3>
+<p>The Streamlit demo (doc 06's spec, an explicit PS requirement) and track B1 INCOIS gridded
+Argo. Nothing else in this programme is outstanding. Do not add model capacity — seven
+interventions now say the same thing.</p></article>
   <footer>Ministry of Earth Sciences · INCOIS · Space Technology — Smart India Hackathon 2026</footer>
 </main>
 <script type="module">
