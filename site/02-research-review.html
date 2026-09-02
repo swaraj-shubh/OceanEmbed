@@ -264,12 +264,47 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <h2 id="why-glorys-as-target-argo-as-validation-is-the-right-split">Why GLORYS-as-target + Argo-as-validation is the right split</h2>
 <p>Reanalyses (GLORYS12) are dense but are <em>model outputs</em> with documented biases (seasonal T bias above 100 m; heat-content discrepancies at 700–2000 m — Verezemskaya et al. 2021). Training on GLORYS is fine (dense supervision), but <strong>evaluating only on GLORYS risks rewarding reproduction of its errors</strong>. OceanDepths, OceanBench, and OceanForecastBench all converge on the same protocol we use: train on reanalysis, validate on independent in-situ profiles. This is the single most defensible methodological choice in our stack — lead with it when questioned.</p>
 <h2 id="where-oceanembed-is-novel-our-pitch">Where OceanEmbed is novel (our pitch)</h2>
+<blockquote>
+<p><strong>Revised after measurement.</strong> The original pitch led with attention and ConvLSTM. We
+built both, measured both, and neither improves the observational score by a significant
+margin (attention's 95% bootstrap interval is [−0.011, +0.011]). Claiming them as
+contributions would hand a judge the counter-question. The real contribution turned out
+to be somewhere else, and it is a better one. See <a href="10-experiment-programme.html">doc 10</a>.</p>
+</blockquote>
 <ol>
-<li><strong>North Indian Ocean focus</strong> — most published regional systems are NW Pacific / Gulf of Mexico / South China Sea. Bay of Bengal has unique physics (huge freshwater input → salinity-stratified barrier layer → SSS matters far more than elsewhere), which justifies our 7-variable input over the SST+SSH-only SOTA.</li>
-<li><strong>Full 7-variable multivariate fusion with attention</strong> — published Indian Ocean work (EBAM-CNN) uses 3 inputs; we fuse 7.</li>
-<li><strong>Observation-validated</strong> — depth-wise metrics against INCOIS-relevant Argo floats, not just reanalysis self-consistency.</li>
-<li><strong>Temporal context</strong> — ~7-day ConvLSTM window, which the daily-snapshot papers omit.</li>
+<li><strong>We measured the training target's own error, and corrected it.</strong> GLORYS12V1 carries a
+   <strong>+0.723 °C warm bias at 100 m</strong> in this basin against the same independent Argo casts we
+   validate on. That is a <em>ceiling</em>: four architectural interventions failed to remove an
+   error the architecture never created. Correcting it with a fifteen-number depth-wise
+   offset fitted on validation-year Argo is worth <strong>−8.5%</strong>, more than every architecture
+   change in the project combined, and at 125/700/1000 m it takes the model <strong>past GLORYS
+   itself</strong>. This is the paper.</li>
+<li><strong>North Indian Ocean focus</strong> — most published regional systems are NW Pacific / Gulf of
+   Mexico / South China Sea. Bay of Bengal has unique physics (huge freshwater input →
+   salinity-stratified barrier layer → SSS matters far more than elsewhere), which justifies
+   our 7-variable input over the SST+SSH-only SOTA.</li>
+<li><strong>Observation-validated, with honest statistics</strong> — depth-wise metrics against
+   INCOIS-relevant Argo floats, not reanalysis self-consistency; and comparisons tested with
+   a paired bootstrap that <strong>blocks by float rather than by profile</strong>, because 6,448 casts
+   come from only 147 floats and a naive bootstrap reads ~6.6× too narrow. We have not seen
+   this done in the regional reconstruction literature, and it is what let us retract our own
+   attention result rather than publish noise.</li>
+<li><strong>A negative result worth reporting.</strong> Seven model-side interventions — attention,
+   ConvLSTM, vertical-gradient loss, anomaly formulation, climatology-as-input, auxiliary
+   channels (bathymetry / day-of-year / lat-lon), depth-weighted loss — none of which
+   improved the observational score on its own, against two output-side stages that both
+   did. Notably <code>m4_aux</code> fit the reanalysis <strong>better</strong> (val GLORYS RMSE 0.659) while scoring
+   <strong>worse</strong> against Argo. In a sparse-observation regime the binding constraint is target
+   quality, not model capacity, and the field's default move — more architecture — is the
+   wrong one.</li>
+<li><strong>Beats climatology at all 15 depths.</strong> A stronger claim than it sounds: climatology is a
+   hard baseline in the deep ocean, and the published work we build on (OceanDepths) reports
+   it beating naive ML. Every model we trained lost to it at 500–1000 m until the bias
+   correction was added.</li>
 </ol>
+<p><em>Temporal context (~7-day ConvLSTM) is still in the delivered system and is still absent
+from the daily-snapshot papers — but on our data it is worth 0.011 °C at 0.80 σ, so it is
+reported as a non-significant improvement, not sold as a contribution.</em></p>
 <h2 id="sources">Sources</h2>
 <ul>
 <li><a href="https://arxiv.org/abs/2608.16373">OceanDepths (arXiv 2608.16373)</a> · <a href="https://huggingface.co/datasets/ESA-philab/OceanDepths">dataset</a></li>
