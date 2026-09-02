@@ -15,6 +15,8 @@ nav_order: 11
 
 **Spec:** the 10-item list below, plus [doc 09 §8](09-day2-handover.html) ("What is left").
 
+> **This page is the programme.** For the narrative of what happened and the current results in handover form, read [doc 11 (Day 3)](11-day3-handover.html) instead.
+
 ---
 
 ## The spec, verbatim

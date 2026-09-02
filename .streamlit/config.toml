@@ -1,0 +1,9 @@
+# Charts read the theme at runtime (app/streamlit_app.py::theme) and switch to the
+# validated dark categorical steps, so both modes are deliberate rather than an auto-flip.
+[theme]
+base = "light"
+primaryColor = "#2a78d6"
+
+[server]
+# The demo runs offline at a venue; never phone home.
+headless = true

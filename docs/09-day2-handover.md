@@ -5,12 +5,15 @@ nav_order: 10
 
 # 09 — Day 2: Multi-Seed, Four Interventions, and a Measured Ceiling
 
-> **Superseded for headline results by [doc 10](10-experiment-programme.html).** The final
-> model scores **0.786 °C** and beats climatology at all 15 depths; this page's 0.890 is the
-> best *single* model, which is no longer what we ship. What stands on this page and is
-> still worth reading: §3 (why Argo is the benchmark, not GLORYS validation loss) and §4
-> (the +0.723 °C thermocline bias in the training target) — §4 is the measurement that
-> pointed at the two output-side fixes doc 10 built.
+> **Superseded by [doc 11 (Day 3)](11-day3-handover.html).** The final model scores
+> **0.786 °C** and beats climatology at all 15 depths; this page's 0.890 is the best
+> *single* model, which is no longer what we ship. Two claims here are corrected in doc 11
+> §2: "no model trained on GLORYS can beat 0.728" bounds only an *uncorrected* model, and
+> the Day 2 checkpoints were never actually lost.
+>
+> What stands on this page and is still worth reading: §3 (why Argo is the benchmark, not
+> GLORYS validation loss) and §4 (the +0.723 °C thermocline bias in the training target) —
+> §4 is the measurement that pointed at everything Day 3 built.
 
 Day 1 ([doc 07](07-results-and-handover.html)) ended with one model, one seed, and a
 headline of 0.908 °C. **Every number on that page is superseded by this one.** Day 2 added
