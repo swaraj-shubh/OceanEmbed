@@ -6,6 +6,7 @@ Resumes from the latest checkpoint automatically -- required for Spot/preemptibl
 (rule 6). Per-epoch depth-wise val metrics are appended to results/<run>.csv.
 """
 import argparse
+import json
 import sys
 import time
 from pathlib import Path
@@ -16,8 +17,8 @@ import yaml
 from torch.utils.data import DataLoader
 
 sys.path.append(str(Path(__file__).resolve().parent))
-from config import ROOT, ZARR
-from datasets import NIODataset
+from config import ROOT, ZARR, n_channels
+from datasets import NIODataset, STATS_PATH
 from metrics import DepthStats, summary
 from models.unet import OceanEmbed, OceanEmbedTemporal, UNet, masked_mse
 
@@ -58,8 +59,25 @@ def main(cfg_path, seed=None):
     torch.manual_seed(cfg.get("seed", 0))
     dev = cfg.get("device") or ("cuda" if torch.cuda.is_available() else "cpu")
 
+    extra = tuple(cfg.get("extra", ()))
+    # Derived, never hand-typed: a YAML saying in_ch: 7 next to extra: [clim] is a silent
+    # shape bug waiting to happen. The checkpoint carries cfg, so inference reads it back.
+    cfg["model"]["in_ch"] = n_channels(extra)
+
+    dw = cfg.get("depth_weight")
+    if dw in ("inv_var", "inv_std"):
+        # From the frozen TRAIN stats, normalised to mean 1 so the printed loss stays on the
+        # same scale as every other run and remains comparable across the ablation table.
+        sd = np.asarray(json.loads(Path(stats or STATS_PATH).read_text())["Y"]["std"])
+        w = 1.0 / (sd ** 2 if dw == "inv_var" else sd)
+        depth_weight = torch.tensor(w / w.mean(), dtype=torch.float32, device=dev)
+        print(f"depth_weight={dw}: {np.round(w / w.mean(), 2).tolist()}")
+    else:
+        assert dw is None, f"unknown depth_weight: {dw}"
+        depth_weight = None
+
     kw = {"window": cfg.get("window", 1), "anomaly": cfg.get("anomaly", False),
-          **({} if stats is None else {"stats": stats})}
+          "extra": extra, **({} if stats is None else {"stats": stats})}
     # Measured on a T4: 142 ms/step of compute against 286 ms/batch of Zarr reads, so the
     # GPU idles unless loading runs in worker processes. The store is chunked time=1, which
     # is right for random access but means one small read per sample.
@@ -88,7 +106,8 @@ def main(cfg_path, seed=None):
         for x, y, m, b in tr:
             opt.zero_grad()
             loss = masked_mse(net(x.to(dev)) + b.to(dev), y.to(dev), m.to(dev),
-                              grad_weight=cfg.get("grad_weight", 0.0))
+                              grad_weight=cfg.get("grad_weight", 0.0),
+                              depth_weight=depth_weight)
             loss.backward(); opt.step()
             losses.append(float(loss.detach()))
         df = run_val(net, va, dev)

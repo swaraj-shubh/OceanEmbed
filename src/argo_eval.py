@@ -17,7 +17,6 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from config import DEPTHS
-from metrics import DepthStats
 
 TARGET = np.asarray(DEPTHS, float)
 TOL = np.maximum(0.1 * TARGET, 10.0)
@@ -42,15 +41,22 @@ def interp_profile(z, t, depths=TARGET, tol=TOL):
     return np.where(gap <= tol, out, np.nan)
 
 
-def evaluate_argo(cube, profiles, max_days=1):
-    """cube: xr.DataArray (time, depth, lat, lon) in degC. profiles: DataFrame (see module doc).
+def match_profiles(cube, profiles, max_days=1):
+    """cube: xr.DataArray (time, depth, lat, lon) in degC. profiles: DataFrame (module doc).
 
-    Returns (depth-wise table, n_profiles_matched).
+    Returns (pred[15, N], obs[15, N], floats[N], times[N]) for the N matched casts.
+
+    `floats` is the Argo platform number, so callers can block-resample by float: the 6,448
+    test-split casts come from only 147 floats, and two casts from one float ten days apart
+    in the same water mass are not independent samples -- a profile-level bootstrap would
+    report an interval about sqrt(6448/147) ~ 6.6x too narrow. `times` is returned so
+    callers that bin by calendar month (bias_correct) never have to re-derive the match
+    order and risk falling out of step with the returned columns.
     """
     lat, lon = cube.lat.values, cube.lon.values
     times = cube.time.values.astype("datetime64[D]")
-    acc, matched = DepthStats(), 0
-    for _, g in profiles.groupby("profile"):
+    P, O, F, T = [], [], [], []
+    for pid, g in profiles.groupby("profile"):
         la, lo = float(g.lat.iloc[0]), float(g.lon.iloc[0])
         if not (lat.min() <= la <= lat.max() and lon.min() <= lo <= lon.max()):
             continue
@@ -64,9 +70,48 @@ def evaluate_argo(cube, profiles, max_days=1):
         i, j = int(np.abs(lat - la).argmin()), int(np.abs(lon - lo).argmin())
         pred = cube.isel(time=k, y=i, x=j).values if "y" in cube.dims else \
             cube.isel(time=k, lat=i, lon=j).values
-        acc.update(pred[:, None], obs[:, None])
-        matched += 1
-    return acc.table(), matched
+        P.append(pred)
+        O.append(obs)
+        F.append(str(pid).split("_")[0])
+        T.append(pd.Timestamp(g.time.iloc[0]))
+    if not P:
+        z = np.zeros((len(TARGET), 0))
+        return z, z, np.array([], dtype=object), pd.DatetimeIndex([])
+    return np.array(P).T, np.array(O).T, np.array(F, dtype=object), pd.DatetimeIndex(T)
+
+
+def evaluate_argo(cube, profiles, max_days=1):
+    """Returns (depth-wise table, n_profiles_matched)."""
+    from metrics import depthwise
+    pred, obs, _, _ = match_profiles(cube, profiles, max_days)
+    return depthwise(pred, obs), pred.shape[1]
+
+
+def paired_bootstrap(cube_a, cube_b, profiles, n=1000, seed=0, max_days=1):
+    """95% CI on (blended RMSE of a) - (blended RMSE of b), resampling FLOATS.
+
+    Paired: both models are scored on the same resampled casts, so the shared difficulty of
+    a hard water mass cancels and only the difference between the models is left. Blocked by
+    float for the reason in match_profiles' docstring -- resampling profiles would turn seed
+    noise into a publishable result.
+    """
+    from metrics import depthwise, summary
+    pa, oa, fa, _ = match_profiles(cube_a, profiles, max_days)
+    pb, ob, fb, _ = match_profiles(cube_b, profiles, max_days)
+    assert fa.shape == fb.shape and (fa == fb).all(), \
+        "cubes matched different casts -- compare cubes on the same grid and days"
+    assert np.allclose(np.nan_to_num(oa), np.nan_to_num(ob)), "observations differ"
+
+    floats = np.unique(fa)
+    idx = {f: np.flatnonzero(fa == f) for f in floats}
+    rng = np.random.default_rng(seed)
+    d = np.empty(n)
+    for k in range(n):
+        take = np.concatenate([idx[f] for f in rng.choice(floats, floats.size, replace=True)])
+        d[k] = (summary(depthwise(pa[:, take], oa[:, take]))
+                - summary(depthwise(pb[:, take], ob[:, take])))
+    point = summary(depthwise(pa, oa)) - summary(depthwise(pb, ob))
+    return point, float(np.percentile(d, 2.5)), float(np.percentile(d, 97.5))
 
 
 if __name__ == "__main__":
@@ -111,3 +156,31 @@ if __name__ == "__main__":
     old = df.assign(profile=3, time=pd.Timestamp("2021-06-01"))
     assert evaluate_argo(cube, old)[1] == 0, "stale profile must not match"
     print(f"argo_eval self-check OK -- matched {n} profile, RMSE {tab['rmse'].max():.2e}")
+
+    # match_profiles must hand back one column, one float id and one timestamp per cast
+    P, O, F, T = match_profiles(cube, df)
+    assert P.shape == O.shape == (len(DEPTHS), 1) and len(F) == 1 and len(T) == 1
+    assert F[0] == "1", "float id must be the part of the profile id before the underscore"
+
+    # A cube uniformly 0.5 degC warm must give a strictly positive interval; the same cube
+    # against itself must bracket zero exactly. Without the second check the first one
+    # would pass for a bootstrap that ignored its inputs.
+    lat2, lon2 = np.arange(0.125, 5, 0.25), np.arange(55.125, 60, 0.25)
+    t2 = pd.date_range("2023-01-01", periods=40)
+    truth2 = np.linspace(29.0, 4.0, len(DEPTHS))
+    base = xr.DataArray(
+        np.broadcast_to(truth2[None, :, None, None],
+                        (len(t2), len(DEPTHS), len(lat2), len(lon2))).copy(),
+        coords={"time": t2, "depth": DEPTHS, "lat": lat2, "lon": lon2},
+        dims=("time", "depth", "lat", "lon"))
+    zz = np.arange(0.0, 1010.0, 10.0)
+    pr = pd.concat([pd.DataFrame({"profile": f"59{k:05d}_1", "time": t2[k],
+                                  "lat": float(lat2[k % len(lat2)]),
+                                  "lon": float(lon2[k % len(lon2)]),
+                                  "pres": zz, "temp": np.interp(zz, DEPTHS, truth2)})
+                    for k in range(40)], ignore_index=True)
+    pt, lo_, hi_ = paired_bootstrap(base + 0.5, base, pr, n=200)
+    assert abs(pt - 0.5) < 1e-6 and lo_ > 0, (pt, lo_, hi_)
+    pt0, lo0, hi0 = paired_bootstrap(base, base, pr, n=200)
+    assert abs(pt0) < 1e-9 and lo0 <= 0 <= hi0, (pt0, lo0, hi0)
+    print(f"paired_bootstrap self-check OK -- +0.5 degC reads {pt:.3f} [{lo_:.3f}, {hi_:.3f}]")

@@ -22,7 +22,8 @@ import pandas as pd
 import xarray as xr
 
 sys.path.append(str(Path(__file__).resolve().parent))
-from config import CHANNELS, DEPTHS, PROCESSED, SPLITS, ZARR, crop_to_model
+from config import (CHANNELS, DEPTHS, GRID_SHAPE, LAT, LON, PROCESSED, SPLITS, ZARR,
+                    bathy_path, crop_to_model, n_channels)
 
 STATS_PATH = PROCESSED / "norm_stats.json"
 def clim_path(zarr_path):
@@ -59,6 +60,32 @@ def build_climatology(zarr_path=ZARR, crop=True):
     return c
 
 
+def build_bathymetry(zarr_path=ZARR, crop=True):
+    """Fraction of the 15 depth levels GLORYS resolves at each cell, from the TRAIN split.
+
+    0 on land, 1 where the full 1000 m column exists. This is free bathymetry: Y is already
+    NaN below the sea floor, on exactly the model grid, needing no download and no regrid.
+    Over the real store it is not degenerate -- 4,781 land cells, 11,199 full-depth cells
+    and ~2,020 shelf cells spread across 2-14 levels.
+
+    Fitted on train only. It is static, so no split could leak through it, but proving that
+    costs one slice and removes the argument.
+
+    ponytail: 15 quantised levels, not metres. If the channel earns its place, GEBCO or
+    ETOPO regridded to 0.25 deg is the continuous upgrade.
+
+    Run in its own process, like the climatology, for the same fork-after-threads reason.
+    """
+    y = xr.open_zarr(zarr_path).Y.sel(time=slice(*SPLITS["train"]))
+    # .all() over a month of days, not one day, so a single bad day cannot carve a hole in
+    # the sea floor.
+    valid = np.isfinite(y.isel(time=slice(0, 30))).all("time").values     # [15, H, W]
+    b = (valid.sum(0) / y.sizes["depth"]).astype(np.float32)
+    b = crop_to_model(b) if crop else b
+    np.save(bathy_path(zarr_path), b)
+    return b
+
+
 class NIODataset:
     """(X, Y, mask) samples for one time split.
 
@@ -81,18 +108,44 @@ class NIODataset:
         return np.load(cache)
 
     def __init__(self, split, zarr_path=ZARR, window=1, stats=STATS_PATH, crop=True,
-                 anomaly=False):
+                 anomaly=False, extra=()):
         assert split in SPLITS, split
         self.ds = xr.open_zarr(zarr_path).sel(time=slice(*SPLITS[split]))
         self.window, self.crop = window, crop
+        self.extra = tuple(extra)
+        assert set(self.extra) <= {"clim", "aux"}, self.extra
         # Anomaly mode: the sample carries the climatology for its month and the model
         # predicts the departure from it, so climatology becomes the floor rather than
         # something to relearn. Zeros in absolute mode keeps one code path.
-        self.clim = self.climatology(zarr_path) if anomaly else None
+        # extra=("clim",) needs the same array for a different purpose -- as INPUT channels
+        # the model may lean on per depth rather than a residual base it must lean on
+        # everywhere. The two are independently switchable on purpose: docs/09 sec.5.1
+        # measured the forced residual as worse above 200 m and better below 500 m.
+        self.clim = (self.climatology(zarr_path)
+                     if (anomaly or "clim" in self.extra) else None)
+        self.anomaly = anomaly
         self.months = pd.DatetimeIndex(self.ds.time.values).month.to_numpy()
         s = json.loads(Path(stats).read_text()) if not isinstance(stats, dict) else stats
         self.xmu = np.asarray(s["X"]["mean"], np.float32)[:, None, None]
         self.xsd = np.asarray(s["X"]["std"], np.float32)[:, None, None]
+        self.ymu = np.asarray(s["Y"]["mean"], np.float32)[:, None, None]
+        self.ysd = np.asarray(s["Y"]["std"], np.float32)[:, None, None]
+        if "aux" in self.extra:
+            self.bathy = np.load(bathy_path(zarr_path))[None]              # [1, H, W]
+            self.doy = pd.DatetimeIndex(self.ds.time.values).dayofyear.to_numpy()
+            # Absolute position is real signal here, not a nuisance to be made invariant:
+            # this is a regional model on a frozen grid, and the Arabian Sea and the Bay of
+            # Bengal behave differently. Scaled to [-1, 1] to sit on the same scale as the
+            # normalised surface channels.
+            def _plane(v):
+                v = crop_to_model(v) if crop else v
+                return (2 * (v - v.min()) / (v.max() - v.min()) - 1).astype(np.float32)
+            la = np.broadcast_to(LAT[:, None], GRID_SHAPE).astype(np.float32)
+            lo = np.broadcast_to(LON[None, :], GRID_SHAPE).astype(np.float32)
+            self.latlon = np.stack([_plane(la), _plane(lo)])
+            assert self.latlon.shape[-2:] == self.bathy.shape[-2:], (
+                "bathymetry cache and lat/lon planes disagree on the grid -- rebuild with "
+                "python src/datasets.py --clim")
         assert list(self.ds.channel.values) == CHANNELS
         assert list(self.ds.depth.values) == DEPTHS
         assert len(self) > 0, f"{split}: window {window} longer than the split"
@@ -108,9 +161,32 @@ class NIODataset:
             x, y = crop_to_model(x), crop_to_model(y)
         x = (x - self.xmu) / self.xsd
         x = np.nan_to_num(x, nan=0.0)          # missing -> train mean, post-normalisation
+        if self.extra:
+            parts = [x]                        # x is [window, 7, H, W]; order is frozen
+            if "clim" in self.extra:
+                # Each FRAME's own month -- a 7-day window can straddle a month boundary.
+                # Normalised with the Y stats: it is in degC on the target's scale, not the
+                # inputs'.
+                c = self.clim[self.months[i:t + 1] - 1]
+                parts.append((np.nan_to_num(c, nan=0.0) - self.ymu) / self.ysd)
+            if "aux" in self.extra:
+                # sin/cos so 31 Dec and 1 Jan are adjacent rather than 364 apart; per frame,
+                # because a 7-day window spans seven different days.
+                ang = 2 * np.pi * self.doy[i:t + 1].astype(np.float32) / 365.25
+                hw = self.bathy.shape[-2:]
+                season = np.broadcast_to(
+                    np.stack([np.sin(ang), np.cos(ang)], 1)[:, :, None, None],
+                    (t - i + 1, 2, *hw))
+                static = np.broadcast_to(
+                    np.concatenate([self.latlon, self.bathy])[None], (t - i + 1, 3, *hw))
+                parts.append(np.concatenate([season, static], 1))
+            x = np.concatenate(parts, axis=1).astype(np.float32)
         mask = np.isfinite(y)
+        # Gate on `anomaly`, NOT on `self.clim is not None`: the climatology array is also
+        # loaded for extra=("clim",), where it is an input channel and must NOT become a
+        # residual base as well.
         base = (np.nan_to_num(self.clim[self.months[t] - 1], nan=0.0).astype(np.float32)
-                if self.clim is not None else np.zeros_like(y))
+                if self.anomaly else np.zeros_like(y))
         return (x[0] if self.window == 1 else x), np.nan_to_num(y, nan=0.0), mask, base
 
     @property
@@ -141,9 +217,12 @@ if __name__ == "__main__":
     import sys as _sys
     import tempfile
 
-    if "--clim" in _sys.argv:                   # build the cache, then exit
+    if "--clim" in _sys.argv:                   # build both caches, then exit
         c = build_climatology()
+        b = build_bathymetry()
         print(f"climatology cached {c.shape} -> {clim_path(ZARR).name}")
+        print(f"bathymetry cached {b.shape}, {(b == 0).mean():.1%} land "
+              f"-> {bathy_path(ZARR).name}")
         raise SystemExit
     tmp = Path(tempfile.mkdtemp())
     store = tmp / "fake.zarr"
@@ -174,5 +253,39 @@ if __name__ == "__main__":
     w = NIODataset("train", store, window=7, stats=tmp / "stats.json")
     assert len(w) == 14 and w[0][0].shape == (7, 7, 96, 176)
     assert w.time[0] == tr.time[6], "window must end at t, not start at it"
+
+    # --- extra input channels (docs/10 tasks 5 and 6) ---
+    ce = NIODataset("train", store, stats=tmp / "stats.json", extra=("clim",))
+    xc, yc, mc, bc = ce[0]
+    assert xc.shape == (n_channels(("clim",)), 96, 176) == (22, 96, 176), xc.shape
+    assert np.allclose(xc[:7], x), "surface channels must come first and be unchanged"
+    assert np.isfinite(xc).all(), "NaN leaked in through the climatology channels"
+    assert np.abs(xc[7:]).max() > 0, "climatology channels are all zero"
+    # The two mechanisms must stay independently switchable, or tasks 4 and 5 stop being
+    # separable experiments: extra=("clim",) is INPUT, anomaly=True is a residual BASE.
+    assert not bc.any(), "extra=('clim',) must not switch on the anomaly residual base"
+
+    cw = NIODataset("train", store, window=7, stats=tmp / "stats.json", extra=("clim",))
+    assert cw[0][0].shape == (7, 22, 96, 176), cw[0][0].shape
+
+    build_bathymetry(store)
+    ae = NIODataset("train", store, stats=tmp / "stats.json", extra=("aux",))
+    xa2 = ae[0][0]
+    assert xa2.shape == (n_channels(("aux",)), 96, 176) == (12, 96, 176), xa2.shape
+    assert np.allclose(xa2[:7], x), "surface channels must come first and be unchanged"
+    assert np.isfinite(xa2).all()
+    assert xa2[7].std() < 1e-6 and xa2[8].std() < 1e-6, "day-of-year is not spatially flat"
+    # Catches a day-of-year computed once from the split's first date instead of per sample.
+    assert abs(float(xa2[7, 0, 0]) - float(ae[10][0][7, 0, 0])) > 1e-3, \
+        "day-of-year identical ten days apart -- the channel is inert"
+    assert xa2[9].min() >= -1.001 and xa2[9].max() <= 1.001, "lat channel out of [-1,1]"
+    assert xa2[10].min() >= -1.001 and xa2[10].max() <= 1.001, "lon channel out of [-1,1]"
+    assert xa2[9, 0, 0] < xa2[9, -1, 0], "lat channel is upside down"
+    assert xa2[11].min() == 0.0 and xa2[11].max() == 1.0, "bathymetry is not in [0,1]"
+
+    both = NIODataset("train", store, window=7, stats=tmp / "stats.json",
+                      extra=("clim", "aux"))
+    assert both[0][0].shape == (7, n_channels(("clim", "aux")), 96, 176) == (7, 27, 96, 176)
+
     shutil.rmtree(tmp, ignore_errors=True)
-    print("datasets self-check OK")
+    print("datasets self-check OK -- 7 / 22 / 12 / 27 channel sets all verified")

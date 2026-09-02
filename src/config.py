@@ -19,6 +19,32 @@ CHANNELS = ["sst", "sss", "sla", "cur_u", "cur_v", "wind_u", "wind_v"]
 DEPTHS = [0, 5, 10, 20, 30, 50, 75, 100, 125, 150, 200, 300, 500, 700, 1000]
 REPORT_DEPTHS = [0, 50, 100, 200, 500, 1000]  # depth-wise metrics table
 
+# Optional extra input channels (docs/10 tasks 5 and 6). Off by default: every committed
+# result up to doc 09 was measured with the seven surface channels alone.
+CLIM_CHANNELS = [f"clim_{d}m" for d in DEPTHS]                    # 15
+AUX_CHANNELS = ["doy_sin", "doy_cos", "lat", "lon", "bathy"]      # 5
+
+
+def n_channels(extra=()):
+    """Input channel count for a channel set.
+
+    The ORDER is frozen: surface, then climatology, then auxiliary. A checkpoint stores its
+    `extra` list, so anything that rebuilds a dataset for inference must pass the same one.
+    docs/09 sec.7 records what happens when predict_cube guesses instead: M4 was handed
+    [B, C, H, W] where it wanted [B, T, C, H, W].
+    """
+    n = len(CHANNELS)
+    if "clim" in extra:
+        n += len(CLIM_CHANNELS)
+    if "aux" in extra:
+        n += len(AUX_CHANNELS)
+    return n
+
+
+def bathy_path(zarr_path):
+    """Cache beside the store it was fitted from -- same rule as the climatology cache."""
+    return Path(zarr_path).with_suffix(".bathy.npy")
+
 # Start is a hard limit: SMAP SSS begins 2015-03-27 and nothing earlier exists.
 # End was originally 2022 because SMAP SSS *V4* stops 2022-07-11 -- but V4 is simply a
 # retired version. V6 runs to the present, OSCAR to 2026-01, GLORYS12V1 to 2026-06, so
