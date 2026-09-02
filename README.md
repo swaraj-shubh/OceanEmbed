@@ -137,8 +137,10 @@ command nobody ran.
 ```
 .env.example  template for the two download accounts; copy to .env
 .gitattributes line-ending normalisation (Windows dev box, Linux GPU box)
-docs/         01-10, published to the docs site by build_site.py
+docs/         01-11, published to the docs site by build_site.py
 configs/      one YAML per experiment
+app/          the Streamlit demo + its committed 60 MB offline data bundle
+scripts/      build_demo_bundle.py -- regenerates that bundle
 src/
   download/   one script per data source
   preprocess/ QC, regrid, align, build the Zarr store
@@ -171,7 +173,8 @@ PO.DAAC, NOAA and the Argo programme — see [doc 04](docs/04-data.md) for produ
 
 ## Status
 
-Modelling is complete and frozen. **Outstanding: the Streamlit demo** ([doc 06](docs/06-demo-and-roadmap.md)
-has the spec) and validation track B1 against INCOIS gridded Argo.
+Modelling is complete and frozen, and **the demo is built** — `streamlit run app/streamlit_app.py`
+(see [app/README.md](app/README.md)). Outstanding: validation track B1 against INCOIS
+gridded Argo, and refitting the bias offset annually if this ever runs operationally.
 
 Do not add model capacity or input channels — seven interventions now say the same thing.

@@ -286,12 +286,17 @@ nothing. Caught on the status check before committing.
 
 ## 9. What is left
 
-**1. The Streamlit demo — still not built.** The largest outstanding item and an explicit PS
-requirement. Design agreed in [doc 06](06-demo-and-roadmap.html): a committed ~68 MB bundle
-(int16-packed, 0.0002 °C round-trip error) covering **2023-10-01 → 2023-12-31** — a window
-chosen because it contains Cyclone Tej in the Arabian Sea and Cyclone Michaung in the Bay of
-Bengal, both inside the test split. Predictions are precomputed, so the app needs neither
-torch nor cartopy, which makes it deployable to Streamlit Cloud as well as running offline.
+**1. The Streamlit demo — built.** `streamlit run app/streamlit_app.py`. Runs fully
+offline from a committed 60 MB bundle (`app/demo_data/`, built by
+`scripts/build_demo_bundle.py`): no torch, no GPU, no network, and no cartopy, so it also
+deploys to Streamlit Cloud. Window **2023-10-01 to 2023-12-31** — inside the test split,
+and it contains Cyclone Tej (Arabian Sea) and Cyclone Michaung (Bay of Bengal). Four tabs:
+the seven surface inputs, the reconstruction with a GLORYS side-by-side and a difference
+view, click-to-profile with the nearest independent Argo cast overlaid, and the depth-wise
+skill table. 999 Argo casts fall inside the window, so a click almost always finds a match.
+On-screen profile metrics import `src/argo_eval.interp_profile` rather than re-implementing
+the matching rule, so the numbers a judge sees are the same measurement as the published
+ones.
 
 **2. Track B1 — INCOIS LAS Gridded ARGO.** PS-named, lower value: raw Argo (B2) is the
 stricter test and is done.

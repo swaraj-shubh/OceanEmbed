@@ -1,0 +1,64 @@
+{
+  "window": {
+    "start": "2023-10-01",
+    "end": "2023-12-31",
+    "days": 92
+  },
+  "split": "test (2023-01-01..2024-12-31) -- never seen in training",
+  "model": {
+    "members": [
+      "m4_convlstm_s1_best",
+      "m4_convlstm_s2_best",
+      "m4_convlstm_s3_best",
+      "m4_dw_s1_best",
+      "m4_dw_s2_best",
+      "m4_dw_s3_best"
+    ],
+    "offset": "ens_mix6_offset.json",
+    "offset_fitted_on": "val",
+    "blended_rmse_full_test": 0.786
+  },
+  "grid": {
+    "lat": [
+      0.625,
+      24.375
+    ],
+    "lon": [
+      55.625,
+      99.375
+    ],
+    "shape": [
+      96,
+      176
+    ]
+  },
+  "depths_m": [
+    0,
+    5,
+    10,
+    20,
+    30,
+    50,
+    75,
+    100,
+    125,
+    150,
+    200,
+    300,
+    500,
+    700,
+    1000
+  ],
+  "channels": [
+    "sst",
+    "sss",
+    "sla",
+    "cur_u",
+    "cur_v",
+    "wind_u",
+    "wind_v"
+  ],
+  "argo_profiles": 999,
+  "git_sha": "3247196",
+  "note": "int16-packed, ~0.0002 degC round-trip error. Built by scripts/build_demo_bundle.py; do not hand-edit."
+}

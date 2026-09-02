@@ -1,0 +1,11 @@
+# Dependencies for the demo ONLY. Deliberately much smaller than the repo's
+# requirements.txt: predictions are precomputed into app/demo_data/, so the app needs
+# neither torch nor a GPU, and it draws coastlines from the data's own land mask rather
+# than cartopy -- which is the dependency that makes this deployable at all.
+streamlit>=1.35        # on_select="rerun" for click-to-profile needs >=1.35
+plotly>=5.18
+xarray>=2024.1
+netCDF4>=1.6           # the bundle is int16-packed NetCDF
+pandas>=2.0
+numpy>=1.26
+pyarrow>=14.0          # argo.parquet
