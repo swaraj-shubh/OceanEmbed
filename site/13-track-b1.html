@@ -240,6 +240,58 @@ identically:</p>
 <p>Two things carry over from B2 unchanged: <strong>the thermocline is where the error lives</strong>
 (100 m is the worst level for every system, by a wide margin), and <strong>the correction
 helps</strong> — it moves the blended score 6.7% and cuts the 100 m bias from +1.016 to +0.422.</p>
+<p><strong>Blended MAE, Bias, Correlation and R² — GLORYS vs FINAL</strong>, same <code>n</code>-weighted pooling as
+the RMSE above (weighted RMS for RMSE, weighted mean for the other four; not yet a function
+in <code>metrics.py</code> — computed once from the two <code>*_test_incois_b1.csv</code> files):</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>GLORYS</th>
+<th>FINAL</th>
+<th>Δ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RMSE</td>
+<td>1.437</td>
+<td><strong>1.232</strong></td>
+<td>−0.205</td>
+</tr>
+<tr>
+<td>MAE</td>
+<td>0.993</td>
+<td><strong>0.851</strong></td>
+<td>−0.142</td>
+</tr>
+<tr>
+<td>Bias</td>
+<td>+0.622</td>
+<td><strong>+0.360</strong></td>
+<td>−0.263</td>
+</tr>
+<tr>
+<td>Corr</td>
+<td>0.678</td>
+<td><strong>0.700</strong></td>
+<td>+0.022</td>
+</tr>
+<tr>
+<td>R²</td>
+<td><strong>−0.230</strong></td>
+<td><strong>+0.070</strong></td>
+<td>+0.299</td>
+</tr>
+</tbody>
+</table></div>
+<p>FINAL wins every metric here, including correlation — not just bias as on B2. <strong>This is
+not evidence the model is more accurate than GLORYS.</strong> GLORYS's R² is <em>negative</em>: worse
+than predicting the mean at every point, which is not a plausible statement about a serious
+reanalysis product and is not what B2 (0.877) says about the same GLORYS field. It is a
+statement about this reference's smoothing, exactly as §3 below argues from RMSE alone —
+the correlation and R² numbers are further symptoms of the same artefact, not independent
+confirmation of a real accuracy win. Do not quote any of this row as "beats GLORYS."</p>
 <hr />
 <h2 id="3-the-ordering-inverts-and-that-is-the-finding">3. The ordering inverts, and that is the finding</h2>
 <p>In B2, GLORYS is the <strong>ceiling</strong>: 0.728, better than anything trained on it, exactly as

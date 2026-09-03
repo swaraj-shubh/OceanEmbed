@@ -1,4 +1,5 @@
-"""OceanEmbed — subsurface ocean temperature from satellite surface fields.
+"""
+OceanEmbed — subsurface ocean temperature from satellite surface fields.
 
     streamlit run app/streamlit_app.py
 
@@ -23,6 +24,273 @@ import loader as L
 
 st.set_page_config(page_title="OceanEmbed — subsurface temperature",
                    page_icon="🌊", layout="wide")
+
+# ============================================================
+# GLASSMORPHISM - Grayscale glass
+# ============================================================
+# Monochrome, with #6b7a8a (neutral grey-blue) used sparingly for active states and hover.
+# The page is light/dark GREY, never pure white or black -- glass panels need a tone
+# behind them or the blur has nothing to work with.
+#
+# Two accent variables, not one. #6b7a8a is only 3.9:1 as text on the light glass and
+# 4.4:1 under white, both short of WCAG 4.5 -- so the spec colour drives borders, glows
+# and hover tints, while --accent-text carries a darkened/lightened variant (5.9:1) for
+# anything that is actually read.
+#
+# Dark column lives under prefers-color-scheme -- Streamlit emits no data-theme attribute
+# anywhere in its static bundle, so that selector would never have matched.
+st.markdown("""
+<style>
+/* ----- import font ----- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Poppins', system-ui, sans-serif;
+}
+
+:root {
+    --app-bg: linear-gradient(145deg, #000000 0%, #0a0a0a 100%);
+    --glass-bg: rgba(20, 20, 20, 0.7);
+    --glass-border: transparent;
+    --glass-border-hover: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --heading-color: #ffffff;
+    --body-color: #e0e0e0;
+    --caption-color: #a0a0a0;
+    --accent: #f0f0f0;             /* active states */
+    --accent-text: #ffffff;        
+    --accent-tint: rgba(255, 255, 255, 0.1);
+    --control-hover: rgba(255, 255, 255, 0.1);
+    --metric-bg: rgba(20, 20, 20, 0.7);
+    --metric-text: #ffffff;
+    --alert-bg: rgba(20, 20, 20, 0.7);
+    --alert-border: rgba(255, 255, 255, 0.08);
+    --sidebar-bg: rgba(10, 10, 10, 0.8);
+    --sidebar-border: rgba(255, 255, 255, 0.05);
+}
+
+/* ----- base ----- */
+.stApp {
+    background: var(--app-bg);
+    background-attachment: fixed;   /* one gradient over the page, not one per scroll */
+    color: var(--body-color);
+}
+.block-container { padding-top: 2.4rem; }
+
+h1, h2, h3, h4 {
+    color: var(--heading-color) !important;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+[data-testid="stCaptionContainer"],
+[data-testid="stCaptionContainer"] * {
+    color: var(--caption-color) !important;
+}
+
+/* ----- glass panels ----- */
+[data-testid="stMetric"],
+[data-testid="stAlert"],
+.stPlotlyChart,
+[data-testid="stDataFrame"],
+[data-testid="stTable"] {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 24px !important;
+    box-shadow: var(--glass-shadow);
+    padding: 16px 18px;
+    transition: all 0.2s ease;
+}
+[data-testid="stMetric"]:hover,
+[data-testid="stAlert"]:hover,
+.stPlotlyChart:hover,
+[data-testid="stDataFrame"]:hover,
+[data-testid="stTable"]:hover {
+    border: 1px solid var(--glass-border-hover) !important;
+}
+
+/* right sidebar / bordered containers */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 22px !important;
+    box-shadow: var(--glass-shadow) !important;
+    padding: 16px !important;
+    transition: all 0.2s ease;
+}
+[data-testid="stVerticalBlockBorderWrapper"]:hover {
+    border: 1px solid var(--glass-border-hover) !important;
+}
+
+[data-testid="stMetric"] {
+    background: var(--metric-bg) !important;
+    padding: 16px 18px;
+}
+[data-testid="stMetricValue"] {
+    color: var(--metric-text);
+    font-weight: 600;
+}
+[data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {
+    color: var(--body-color);
+}
+[data-testid="stAlert"] {
+    background: var(--alert-bg) !important;
+    border-color: var(--alert-border);
+    padding: 14px 16px;
+}
+.stPlotlyChart { padding: 12px; }
+[data-testid="stDataFrame"] { padding: 6px; overflow: hidden; }
+
+/* ----- sidebar glass ----- */
+[data-testid="stSidebar"] {
+    background: var(--sidebar-bg) !important;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-right: 1px solid var(--sidebar-border);
+}
+[data-testid="stSidebarHeader"], [data-testid="stHeader"] {
+    padding: 0 !important;
+    display: none !important;
+}
+[data-testid="stSidebarUserContent"] {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+[data-testid="stSidebar"] > div:first-child {
+    margin: 12px !important;
+    padding: 16px !important;
+    border-radius: 22px !important;
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+    height: calc(100vh - 24px) !important;
+    max-height: calc(100vh - 24px) !important;
+    overflow-y: auto !important;
+}
+
+/* ----- tabs ----- */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 10px;
+    padding: 14px 20px;
+    margin-bottom: 18px;
+    border-radius: 999px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+}
+.stTabs [data-baseweb="tab"] {
+    border-radius: 999px;
+    padding: 10px 26px;
+    background: transparent;
+    color: var(--body-color);
+    font-weight: 500;
+    /* transparent border matches the selected tab's 1px, so selecting doesn't nudge
+       the row by a pixel */
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+}
+.stTabs [data-baseweb="tab"]:hover {
+    background: var(--control-hover);
+}
+/* active: a touch more glass + the accent, sparingly */
+.stTabs [aria-selected="true"] {
+    background: var(--accent-tint) !important;
+    border: 1px solid var(--accent);
+    color: var(--accent-text) !important;
+    font-weight: 600;
+}
+.stTabs [data-baseweb="tab-highlight"],
+.stTabs [data-baseweb="tab-border"] {
+    display: none;
+}
+
+/* ----- controls ----- */
+[data-baseweb="select"] > div,
+.stSlider [data-baseweb="slider"] > div:first-child {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 999px !important;
+    box-shadow: var(--glass-shadow);
+}
+.stSlider [role="slider"] {
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    box-shadow: var(--glass-shadow);
+}
+
+[data-testid="stRadio"] label[data-baseweb="radio"] {
+    background: var(--glass-bg);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    padding: 8px 16px;
+    margin: 4px 4px; /* adjusted for horizontal */
+    color: var(--body-color);
+    box-shadow: var(--glass-shadow);
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+/* Hide the default radio circle to make it look like a pure pill/button */
+[data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {
+    display: none !important;
+}
+[data-testid="stRadio"] label[data-baseweb="radio"]:hover {
+    background: var(--control-hover);
+}
+/* the picked region / view is the only "active" control on the page -- without this the
+   accent never shows up outside the tab bar */
+[data-testid="stRadio"] label[data-baseweb="radio"]:has(input:checked) {
+    background: var(--accent-tint);
+    border-color: var(--accent);
+    color: var(--accent-text);
+    font-weight: 600;
+}
+
+/* ----- buttons ----- */
+.stButton > button,
+.stDownloadButton > button {
+    background: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    padding: 0.55rem 1.8rem;
+    color: var(--accent-text);
+    font-weight: 600;
+    box-shadow: var(--glass-shadow);
+    transition: all 0.15s ease;
+}
+.stButton > button:hover,
+.stDownloadButton > button:hover {
+    background: var(--control-hover);
+    border-color: var(--accent);
+    transform: scale(0.98);
+}
+.stButton > button:active,
+.stDownloadButton > button:active {
+    transform: scale(0.95);
+}
+
+/* ----- divider ----- */
+hr {
+    border: none;
+    height: 1px;
+    background: var(--glass-border);
+    margin: 1.5rem 0;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # --- palette (validated with the dataviz validator; do not substitute by eye) ----------
 # Categorical slots in FIXED order, never cycled. Light / dark pairs.
@@ -52,14 +320,16 @@ def series(i):
 
 def base_layout(fig, height=420, **kw):
     fig.update_layout(
+        template="plotly_dark",
         height=height, margin=dict(l=8, r=8, t=34, b=8),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(size=12), hoverlabel=dict(font_size=12),
+        font=dict(size=12, family="Poppins, system-ui, sans-serif"),
+        hoverlabel=dict(font_size=12),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0,
                     bgcolor="rgba(0,0,0,0)"),
         **kw)
-    fig.update_xaxes(showgrid=True, gridcolor=GRID, zeroline=False)
-    fig.update_yaxes(showgrid=True, gridcolor=GRID, zeroline=False)
+    fig.update_xaxes(showgrid=True, gridcolor="rgba(255,255,255,0.1)", zeroline=False)
+    fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.1)", zeroline=False)
     return fig
 
 
@@ -124,7 +394,7 @@ with st.sidebar:
                             value=dates[len(dates) // 2],
                             format_func=lambda d: pd.Timestamp(d).strftime("%d %b %Y"))
     depth = st.select_slider("Depth (m)", options=L.depths(), value=100)
-    region = st.radio("Region", list(L.REGIONS), horizontal=False)
+    region = st.radio("Region", list(L.REGIONS), horizontal=True)
     st.divider()
     st.metric("Overall error vs Argo", "0.786 °C", "-11.7% vs single model",
               delta_color="inverse")
@@ -140,7 +410,7 @@ lon0, lon1 = L.REGIONS[region]
 sub = lambda da: da.sel(lon=slice(lon0, lon1))
 
 t_inputs, t_map, t_profile, t_skill = st.tabs(
-    ["① Surface inputs", "② Reconstruction", "③ Profile", "④ Skill"])
+    ["Surface inputs", "Reconstruction", "Profile", "Skill"])
 
 # --- ① the seven things a satellite can see -------------------------------------------
 with t_inputs:
@@ -164,13 +434,17 @@ with t_inputs:
 with t_map:
     c1, c2 = st.columns([3, 1])
     with c2:
-        view = st.radio("Show", ["Our reconstruction", "GLORYS reanalysis",
-                                 "Difference (ours − GLORYS)"])
-        st.caption(
-            "GLORYS is the reanalysis the model was **trained on**, not ground truth: it "
-            "runs about **+0.72 °C too warm at 100 m** against Argo floats in this basin. "
-            "Measuring that is what let us correct it."
-        )
+        with st.container(border=True):
+            st.markdown("#### Display Mode")
+            view = st.radio("Show", ["Our reconstruction", "GLORYS reanalysis",
+                                     "Difference (ours − GLORYS)"],
+                            label_visibility="collapsed")
+            st.divider()
+            st.caption(
+                "GLORYS is the reanalysis the model was **trained on**, not ground truth: it "
+                "runs about **+0.72 °C too warm at 100 m** against Argo floats in this basin. "
+                "Measuring that is what let us correct it."
+            )
     src = {"Our reconstruction": "prediction", "GLORYS reanalysis": "truth",
            "Difference (ours − GLORYS)": "error"}[view]
     da = sub(L.field(date, depth, src))
@@ -271,3 +545,4 @@ with t_skill:
                                 for c in tab.columns if c != "Depth (m)"})
     st.caption(f"Test split, {man['argo_profiles']} Argo casts inside this window "
                f"(~6,000 over the full 2023–24 test period).")
+               

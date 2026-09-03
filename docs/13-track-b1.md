@@ -72,6 +72,26 @@ Two things carry over from B2 unchanged: **the thermocline is where the error li
 (100 m is the worst level for every system, by a wide margin), and **the correction
 helps** — it moves the blended score 6.7% and cuts the 100 m bias from +1.016 to +0.422.
 
+**Blended MAE, Bias, Correlation and R² — GLORYS vs FINAL**, same `n`-weighted pooling as
+the RMSE above (weighted RMS for RMSE, weighted mean for the other four; not yet a function
+in `metrics.py` — computed once from the two `*_test_incois_b1.csv` files):
+
+| Metric | GLORYS | FINAL | Δ |
+|---|---|---|---|
+| RMSE | 1.437 | **1.232** | −0.205 |
+| MAE | 0.993 | **0.851** | −0.142 |
+| Bias | +0.622 | **+0.360** | −0.263 |
+| Corr | 0.678 | **0.700** | +0.022 |
+| R² | **−0.230** | **+0.070** | +0.299 |
+
+FINAL wins every metric here, including correlation — not just bias as on B2. **This is
+not evidence the model is more accurate than GLORYS.** GLORYS's R² is *negative*: worse
+than predicting the mean at every point, which is not a plausible statement about a serious
+reanalysis product and is not what B2 (0.877) says about the same GLORYS field. It is a
+statement about this reference's smoothing, exactly as §3 below argues from RMSE alone —
+the correlation and R² numbers are further symptoms of the same artefact, not independent
+confirmation of a real accuracy win. Do not quote any of this row as "beats GLORYS."
+
 ---
 
 ## 3. The ordering inverts, and that is the finding

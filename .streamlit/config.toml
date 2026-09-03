@@ -1,8 +1,14 @@
 # Charts read the theme at runtime (app/streamlit_app.py::theme) and switch to the
 # validated dark categorical steps, so both modes are deliberate rather than an auto-flip.
+# base is not cosmetic: it is what makes Streamlit paint its OWN chrome -- the dataframe
+# grid, select popovers, tooltips, and the plotly template that sets axis text. The CSS
+# in streamlit_app.py cannot reach those. Grayscale glass defaults to light, so: light.
 [theme]
 base = "light"
-primaryColor = "#2a78d6"
+primaryColor = "#6b7a8a"
+backgroundColor = "#e8eaec"
+secondaryBackgroundColor = "#dfe2e6"
+textColor = "#4a5157"
 
 [server]
 # The demo runs offline at a venue; never phone home.
