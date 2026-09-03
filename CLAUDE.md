@@ -20,7 +20,7 @@ Satellites see only the ocean surface (SST, SSS, SSH, currents, winds) at high r
 | Output Y | `[15, H, W]` — T at depths 0, 5, 10, 20, 30, 50, 75, 100, 125, 150, 200, 300, 500, 700, 1000 m |
 | Architecture | CNN encoder → ConvLSTM (7-day window, = OceanEmbed latent) → U-Net decoder. Attention was built and tested both alone (M3) and combined with the ConvLSTM (docs/09, docs/10 §5) — it did not improve the Argo score either time and is not in the shipped model. |
 | Training target | **GLORYS12V1** (PS-named, `doi:10.48670/moi-00021` = `GLOBAL_MULTIYEAR_PHY_001_030`), regridded + interpolated to the 15 SIH depths |
-| Validation | Two tracks: **B1 INCOIS LAS Gridded ARGO** (PS-named, 1°/10-day — aggregate our output up to it) and **B2 raw Argo profiles** (stricter). Depth-wise RMSE, MAE, Bias, Correlation |
+| Validation | Two tracks, both now measured: **B2 raw Argo profiles** — the reported number — and **B1 INCOIS LAS Gridded ARGO** (PS-named, 1°/10-day; aggregate our output up to it, never downscale it). Depth-wise RMSE, MAE, Bias, Correlation. **B1 ranks systems backwards from B2 because it is a smoothed analysis — report B2, see docs/13** |
 | Loss | MSE first; depth-weighted loss only if results justify it |
 | Demo | Streamlit: pick date/depth → reconstructed map; click location → 0–1000 m profile + nearby Argo overlay + metrics |
 | DL framework | PyTorch |
@@ -42,6 +42,12 @@ Satellites see only the ocean surface (SST, SSS, SSH, currents, winds) at high r
 | M2 + gradient loss | 0.918 ± 0.005 | negative |
 | M2 anomaly | 0.975 ± 0.024 | worse overall; first to beat climatology below 500 m |
 | M0 climatology | 1.160 | baseline |
+
+**Track B1 (docs/13):** 1.232 degC vs INCOIS gridded Argo, against 1.278 climatology and
+1.437 for GLORYS itself. The ordering *inverts* B2's because a 1deg/10-day objective analysis
+penalises any field sharper than itself, and it separates model from climatology by only 3.6%
+(B2: 32%). **Do not quote B1 as beating GLORYS.** What B1 did establish: the depth-wise
+correction, fitted on raw Argo, transfers to an independent product — 6.7% better there too.
 
 **The current best model is an ensemble + bias correction, not a single architecture.**
 Six ConvLSTM-family checkpoints (3 seeds `m4_convlstm` + 3 seeds `m4_dw`) averaged, then
@@ -89,7 +95,7 @@ Report every stage against M0. If a stage doesn't beat the previous one, investi
 | Currents U/V | NASA OSCAR v2.0 (PO.DAAC) | daily 0.25°; use `u`,`v` (total) not `ug`,`vg`; it is a 0–30 m mean |
 | Wind U/V | Copernicus `WIND_GLO_PHY_L3_MY_012_005` (daily gridded L3 scatterometer) | 0.125° daily → regrid to 0.25°; check swath-gap fraction, fallback `WIND_GLO_PHY_L4_MY_012_006` |
 | Target T | Copernicus GLORYS12V1 (`GLOBAL_MULTIYEAR_PHY_001_030`, `doi:10.48670/moi-00021`) — **named by the PS** | 1/12°, 50 levels → regrid to 0.25°, interp to 15 depths |
-| Validation B1 | **INCOIS LAS Gridded ARGO** — **named by the PS** | 1°×1°, 10-day/monthly objective analysis; aggregate our 0.25° output up to compare |
+| Validation B1 | **INCOIS LAS Gridded ARGO** — **named by the PS** | 1°×1°, 10-day objective analysis. `INCOIS_Argo_VAM_10d_{2022,2023,2024}.nc` merged to `data/interim/argo_10d.nc` (also on S3); run with `src/incois_eval.py`. Aggregate our 0.25° output up to compare |
 | Validation B2 | Raw Argo profiles (argopy / EN4) | point observations; stricter test. Neither track ever used as a training target |
 | Bootstrap | **ESA Φ-lab OceanDepths** (HuggingFace `ESA-philab/OceanDepths`) | ~120 GiB global; use its patches for M0/M1 before the 7-source pipeline exists |
 

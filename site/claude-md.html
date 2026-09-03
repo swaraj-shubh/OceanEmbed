@@ -116,7 +116,8 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <li><a href="09-day2-handover.html">09 · Day 2 Results</a></li>
 <li><a href="10-experiment-programme.html">10 · Experiment Programme</a></li>
 <li><a href="11-day3-handover.html">11 · Day 3 Handover</a></li>
-<li><a href="12-day4-audit.html">12 · Day 4 · Latest Results</a></li>
+<li><a href="12-day4-audit.html">12 · Day 4 · Audit</a></li>
+<li><a href="13-track-b1.html">13 · Day 5 · Track B1</a></li>
 <li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
   <div class="aside-foot">
     <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
@@ -165,7 +166,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </tr>
 <tr>
 <td>Validation</td>
-<td>Two tracks: <strong>B1 INCOIS LAS Gridded ARGO</strong> (PS-named, 1°/10-day — aggregate our output up to it) and <strong>B2 raw Argo profiles</strong> (stricter). Depth-wise RMSE, MAE, Bias, Correlation</td>
+<td>Two tracks, both now measured: <strong>B2 raw Argo profiles</strong> — the reported number — and <strong>B1 INCOIS LAS Gridded ARGO</strong> (PS-named, 1°/10-day; aggregate our output up to it, never downscale it). Depth-wise RMSE, MAE, Bias, Correlation. <strong>B1 ranks systems backwards from B2 because it is a smoothed analysis — report B2, see docs/13</strong></td>
 </tr>
 <tr>
 <td>Loss</td>
@@ -247,6 +248,11 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </tr>
 </tbody>
 </table></div>
+<p><strong>Track B1 (docs/13):</strong> 1.232 degC vs INCOIS gridded Argo, against 1.278 climatology and
+1.437 for GLORYS itself. The ordering <em>inverts</em> B2's because a 1deg/10-day objective analysis
+penalises any field sharper than itself, and it separates model from climatology by only 3.6%
+(B2: 32%). <strong>Do not quote B1 as beating GLORYS.</strong> What B1 did establish: the depth-wise
+correction, fitted on raw Argo, transfers to an independent product — 6.7% better there too.</p>
 <p><strong>The current best model is an ensemble + bias correction, not a single architecture.</strong>
 Six ConvLSTM-family checkpoints (3 seeds <code>m4_convlstm</code> + 3 seeds <code>m4_dw</code>) averaged, then
 corrected by a per-depth offset fit on 2022 Argo and applied unchanged to 2023–24. Fully
@@ -320,7 +326,7 @@ seeds, a reported spread, and the Argo number, never the validation number, as t
 <tr>
 <td>Validation B1</td>
 <td><strong>INCOIS LAS Gridded ARGO</strong> — <strong>named by the PS</strong></td>
-<td>1°×1°, 10-day/monthly objective analysis; aggregate our 0.25° output up to compare</td>
+<td>1°×1°, 10-day objective analysis. <code>INCOIS_Argo_VAM_10d_{2022,2023,2024}.nc</code> merged to <code>data/interim/argo_10d.nc</code> (also on S3); run with <code>src/incois_eval.py</code>. Aggregate our 0.25° output up to compare</td>
 </tr>
 <tr>
 <td>Validation B2</td>

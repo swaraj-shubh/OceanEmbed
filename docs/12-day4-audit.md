@@ -7,7 +7,8 @@ nav_order: 13
 
 Day 3 ([doc 11](11-day3-handover.html)) ended at **0.786 °C** with two output-side steps
 that worked and seven model-side interventions that did not, and named three things left:
-the demo (built), track B1 (not built), and an annual refit of the offset.
+the demo (built), track B1 (**now built — [doc 13](13-track-b1.html)**), and an
+annual refit of the offset.
 
 **Day 4 produced no improvement to that number, and that is the finding.** Four
 measurements were run against the frozen system. Three of them close directions that would
@@ -238,9 +239,11 @@ cyclone heat potential, the thing that makes this project matter for the Bay of 
 Interpolation and a depth integral over arrays we already have. *Half a day, and the
 strongest story-per-hour on this list.*
 
-**03 · Close track B1.** INCOIS LAS gridded Argo is named in the PS and is the one
-deliverable still absent. Scientifically weaker than the raw-profile track already done, so
-this is compliance, not discovery — but it is the gap a judge holding the PS will find.
+**03 · Close track B1.** ~~INCOIS LAS gridded Argo is named in the PS and is the one
+deliverable still absent.~~ **Done — [doc 13](13-track-b1.html).** 1.232 °C against the
+gridded product. Compliance as expected, but it returned one result worth more than the
+number: the depth-wise correction, fitted on raw Argo, transfers to a different
+institution's product built by a different method.
 
 **04 · Adopt the `m4_sched` recipe for cost.** Rebuild the ensemble on the same budget with
 more seeds. See §4.

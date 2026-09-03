@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 — Track B1: INCOIS Gridded Argo — OceanEmbed</title>
+<meta name="description" content="Satellite Embedding-Based Deep Learning Framework for Reconstruction of Subsurface Ocean Temperature — SIH 2026 PS 26066">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#08131e; --bg-soft:#0d1b2a; --panel:#101f30; --line:#1c3448;
+  --fg:#dbe7f2; --fg-dim:#8ba3ba; --accent:#4cc4e0; --accent-2:#6ee7b7;
+  --code-bg:#0b1926;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+  font-size:16px;line-height:1.7;display:flex;
+  background-image:radial-gradient(1200px 600px at 80% -10%,rgba(76,196,224,.10),transparent 60%),
+                   radial-gradient(900px 500px at -10% 110%,rgba(110,231,183,.07),transparent 60%);
+  background-attachment:fixed;
+}
+/* sidebar */
+aside{
+  position:sticky;top:0;height:100vh;flex:0 0 288px;overflow-y:auto;
+  background:rgba(13,27,42,.85);backdrop-filter:blur(8px);
+  border-right:1px solid var(--line);padding:22px 16px;
+}
+.brand{display:flex;gap:11px;align-items:center;text-decoration:none;color:var(--fg);
+  padding:6px 10px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.brand .wave{font-size:26px;filter:drop-shadow(0 0 10px rgba(76,196,224,.5))}
+.brand strong{display:block;font-size:18px;letter-spacing:.2px}
+.brand small{display:block;color:var(--fg-dim);font-size:11.5px;letter-spacing:.3px;margin-top:2px}
+nav ul{list-style:none;margin:0;padding:0}
+nav li{margin:1px 0}
+nav a{display:block;padding:8px 12px;border-radius:7px;color:var(--fg-dim);
+  text-decoration:none;font-size:14px;transition:.15s;border-left:2px solid transparent}
+nav a:hover{background:rgba(76,196,224,.09);color:var(--fg)}
+nav a.active{background:rgba(76,196,224,.14);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+nav li.sep{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.aside-foot{margin-top:24px;padding:0 12px;font-size:13px}
+.aside-foot a{color:var(--fg-dim);text-decoration:none}
+.aside-foot a:hover{color:var(--accent)}
+/* main */
+main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;padding:0 32px}
+article{width:100%;max-width:900px;padding:48px 0 24px}
+footer{width:100%;max-width:900px;border-top:1px solid var(--line);margin-top:40px;
+  padding:20px 0 56px;color:var(--fg-dim);font-size:13px}
+/* typography */
+h1,h2,h3,h4{line-height:1.3;font-weight:650;letter-spacing:-.01em}
+h1{font-size:2.05rem;margin:0 0 .6em;padding-bottom:.4em;border-bottom:1px solid var(--line)}
+h2{font-size:1.42rem;margin:2.2em 0 .7em;color:var(--accent)}
+h3{font-size:1.13rem;margin:1.8em 0 .5em}
+h4{font-size:1rem;margin:1.4em 0 .4em;color:var(--fg-dim)}
+p{margin:.9em 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(76,196,224,.3)}
+a:hover{border-bottom-color:var(--accent)}
+strong{color:#fff;font-weight:650}
+em{color:var(--accent-2)}
+hr{border:0;border-top:1px solid var(--line);margin:2.4em 0}
+ul,ol{padding-left:1.35em}
+li{margin:.35em 0}
+blockquote{border-left:3px solid var(--accent);margin:1.2em 0;padding:.1em 1em;
+  color:var(--fg-dim);background:rgba(76,196,224,.05);border-radius:0 6px 6px 0}
+/* code */
+code{font-family:var(--mono);font-size:.87em;background:var(--code-bg);
+  padding:.16em .42em;border-radius:4px;border:1px solid var(--line);color:var(--accent-2)}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;
+  padding:16px 18px;overflow-x:auto;margin:1.3em 0;font-size:13.5px;line-height:1.55}
+pre code{background:none;border:0;padding:0;color:#cfe3f0;font-size:inherit}
+pre.mermaid{background:var(--bg-soft);text-align:center;padding:24px;border:1px solid var(--line)}
+/* tables */
+.tablewrap{overflow-x:auto;margin:1.4em 0;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:rgba(76,196,224,.10);color:var(--accent);font-weight:600;
+  white-space:nowrap;position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+td code{white-space:nowrap}
+/* checkbox lists in the deliverables section */
+li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
+/* responsive */
+#navtoggle{display:none;position:fixed;top:14px;left:14px;z-index:30;
+  background:var(--panel);color:var(--fg);border:1px solid var(--line);
+  border-radius:8px;font-size:19px;padding:6px 12px;cursor:pointer}
+@media(max-width:900px){
+  #navtoggle{display:block}
+  aside{position:fixed;z-index:20;transform:translateX(-100%);transition:.22s;box-shadow:0 0 40px #000}
+  body.nav-open aside{transform:none}
+  main{padding:0 18px}
+  article{padding:64px 0 24px}
+  h1{font-size:1.65rem}
+}
+</style>
+</head>
+<body>
+<button id="navtoggle" aria-label="Toggle navigation">☰</button>
+<aside>
+  <a class="brand" href="index.html">
+    <span class="wave">🌊</span>
+    <span><strong>OceanEmbed</strong><small>SIH 2026 · PS 26066 · INCOIS</small></span>
+  </a>
+  <nav><ul><li><a href="index.html">Overview</a></li>
+<li><a href="01-problem-statement.html">01 · Problem Statement</a></li>
+<li><a href="02-research-review.html">02 · Research Review</a></li>
+<li><a href="03-architecture.html">03 · Architecture</a></li>
+<li><a href="04-data.html">04 · Data Pipeline</a></li>
+<li><a href="05-training-evaluation.html">05 · Training & Eval</a></li>
+<li><a href="06-demo-and-roadmap.html">06 · Demo & Roadmap</a></li>
+<li><a href="07-results-and-handover.html">07 · Results & Handover</a></li>
+<li><a href="08-challenges.html">08 · Challenges Faced</a></li>
+<li><a href="09-day2-handover.html">09 · Day 2 Results</a></li>
+<li><a href="10-experiment-programme.html">10 · Experiment Programme</a></li>
+<li><a href="11-day3-handover.html">11 · Day 3 Handover</a></li>
+<li><a href="12-day4-audit.html">12 · Day 4 · Audit</a></li>
+<li><a href="13-track-b1.html" class="active">13 · Day 5 · Track B1</a></li>
+<li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
+  <div class="aside-foot">
+    <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
+  </div>
+</aside>
+<main>
+  <article><h1 id="13-track-b1-incois-gridded-argo">13 — Track B1: INCOIS Gridded Argo</h1>
+<p>Doc 12 §7 listed <strong>03 · Close track B1</strong> as "the one deliverable still absent — the gap a
+judge holding the PS will find." It is now closed.</p>
+<p><strong>The headline number does not change. 0.786 °C, track B2, raw Argo profiles, stands.</strong>
+What this document adds is a second, independent reference product, the result of scoring
+against it, and — more usefully — the reason its ordering of the same four systems comes
+out <em>backwards</em>, which is a fact about the reference, not about the models.</p>
+<p>Read §3 if you read nothing else.</p>
+<hr />
+<h2 id="1-what-b1-is-and-why-it-exists">1. What B1 is and why it exists</h2>
+<p>The problem statement names <strong>INCOIS LAS Gridded ARGO</strong> by name. It is an objective
+analysis: raw Argo casts interpolated onto a <strong>1° × 1° grid in 10-day windows</strong>, 24 depth
+levels to 2000 m. It is not an observation; it is a smoothed <em>field</em> fitted to
+observations, filling every cell including those no float visited that window.</p>
+<p>That makes it categorically weaker evidence than track B2 (raw profiles, doc 11), and the
+project has always said so. It is here because the PS names it, and because a second
+reference with different failure modes is a real cross-check on the one result Day 3
+produced that mattered.</p>
+<p><strong>Data:</strong> <code>INCOIS_Argo_VAM_10d_{2022,2023,2024}.nc</code>, concatenated time-sorted with
+duplicate windows dropped into <code>data/interim/argo_10d.nc</code> (109 windows, 2021-12-30 →
+2024-12-30, <code>TEMP</code> only). Mirrored at
+<code>s3://oceanembed-sih26-data/oceanembed/interim/argo_10d.nc</code>.</p>
+<p><strong>Method:</strong> <code>src/incois_eval.py</code>, unchanged in substance since it was written — the
+comparison <strong>aggregates our 0.25° daily field up to the reference's 1°/10-day footprint</strong>,
+never the reverse (CLAUDE.md rule 3). One fix was needed to run it: INCOIS names its
+vertical axis <code>ZAX</code>, which was missing from the dimension rename map, so <code>("ZAX", "depth")</code>
+was added. The module's synthetic self-check passes unchanged.</p>
+<p><strong>Scope:</strong> 72 ten-day windows inside the test split (2023–24), 784,152 scored cell-levels,
+14 of our 15 depths. <strong>Depth 0 is not scored</strong> — INCOIS starts at 5 m.</p>
+<hr />
+<h2 id="2-the-result">2. The result</h2>
+<p>Blended RMSE against INCOIS gridded Argo, test split 2023–24, all four systems evaluated
+identically:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>System</th>
+<th><strong>B1</strong> (INCOIS gridded)</th>
+<th>B2 (raw Argo casts)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ens_mix6 + bias correction — shipped</strong></td>
+<td><strong>1.232</strong></td>
+<td><strong>0.786</strong></td>
+</tr>
+<tr>
+<td>M0 climatology</td>
+<td>1.278</td>
+<td>1.160</td>
+</tr>
+<tr>
+<td>ens_mix6, no correction</td>
+<td>1.320</td>
+<td>0.859</td>
+</tr>
+<tr>
+<td>GLORYS12V1 — the training target</td>
+<td>1.437</td>
+<td>0.728</td>
+</tr>
+</tbody>
+</table></div>
+<p>Depth-wise RMSE, the levels the PS asks to report:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Depth (m)</th>
+<th>FINAL</th>
+<th>M0 clim.</th>
+<th>GLORYS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5</td>
+<td>1.368</td>
+<td><strong>1.299</strong></td>
+<td>1.475</td>
+</tr>
+<tr>
+<td>50</td>
+<td><strong>1.158</strong></td>
+<td>1.297</td>
+<td>1.522</td>
+</tr>
+<tr>
+<td>100</td>
+<td><strong>1.825</strong></td>
+<td>2.033</td>
+<td>2.177</td>
+</tr>
+<tr>
+<td>200</td>
+<td>0.975</td>
+<td><strong>0.918</strong></td>
+<td>1.106</td>
+</tr>
+<tr>
+<td>500</td>
+<td>0.472</td>
+<td><strong>0.471</strong></td>
+<td>0.508</td>
+</tr>
+<tr>
+<td>1000</td>
+<td><strong>0.523</strong></td>
+<td>0.502</td>
+<td>0.556</td>
+</tr>
+</tbody>
+</table></div>
+<p>Two things carry over from B2 unchanged: <strong>the thermocline is where the error lives</strong>
+(100 m is the worst level for every system, by a wide margin), and <strong>the correction
+helps</strong> — it moves the blended score 6.7% and cuts the 100 m bias from +1.016 to +0.422.</p>
+<hr />
+<h2 id="3-the-ordering-inverts-and-that-is-the-finding">3. The ordering inverts, and that is the finding</h2>
+<p>In B2, GLORYS is the <strong>ceiling</strong>: 0.728, better than anything trained on it, exactly as
+doc 09 predicted. In B1, GLORYS is the <strong>worst of the four</strong> at 1.437 — worse than
+climatology.</p>
+<p>GLORYS did not get worse. <strong>The reference changed.</strong></p>
+<p>INCOIS VAM is a 1°, 10-day objective analysis. Its own smoothing removes the mesoscale —
+eddies, fronts, filaments — that GLORYS at 1/12° actually resolves. When a sharp field is
+scored against a smooth one, the sharpness is counted as error. Our prediction and the
+climatology are both smooth fields to begin with, so they are penalised far less. The
+ranking is measuring <strong>how much each product looks like a smoothed analysis</strong>, which is
+not the same question as how accurate it is.</p>
+<p>This has a direct consequence for the viva:</p>
+<blockquote>
+<p><strong>Do not cite "we beat GLORYS by 14%" from track B1.</strong> It is a representativeness
+artefact. The honest statement is that B1 and B2 rank the same four systems differently,
+that the reason is the reference product's smoothing, and that B2 — actual measurements —
+is the one to believe.</p>
+</blockquote>
+<h3 id="b1-barely-separates-the-model-from-climatology">B1 barely separates the model from climatology</h3>
+<p>The second consequence is about discriminating power:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>model vs climatology</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B2, raw casts</td>
+<td><strong>32% better</strong></td>
+</tr>
+<tr>
+<td>B1, gridded analysis</td>
+<td><strong>3.6% better</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>Ten-day, 1° averaging removes most of what the model adds. This is not a weakness of the
+model; it is a ceiling on what B1 can resolve, and it is why B1 could never have been the
+primary track. A reference that cannot separate a neural network from a monthly mean is a
+compliance artifact, not a benchmark.</p>
+<hr />
+<h2 id="4-what-b1-genuinely-bought">4. What B1 genuinely bought</h2>
+<p>Two things, and they are worth having:</p>
+<p><strong>1. The bias correction transfers to a reference it was never fitted against.</strong> The 15
+offsets were fitted on raw 2022 Argo casts. Applied unchanged, they improve the score
+against a <em>different product built by a different institution with a different method</em> by
+6.7%, and the 100 m bias falls from +1.016 to +0.422. Doc 12 §2 established that no
+<em>fancier form</em> of the correction helps; this establishes that the correction is not an
+artefact of the B2 metric it was tuned on. That is the strongest single sentence available
+about the correction, and it did not exist before today.</p>
+<p><strong>2. The thermocline diagnosis reproduces against an independent reference.</strong> Doc 12 §3
+found 62% of the squared error in 75–150 m and argued it was variance, not bias. B1 shows
+the same shape — 100 m the worst level for every system including the reanalysis, and the
+only level where the model beats climatology by a wide margin (10%). A finding that
+reproduces against a reference with entirely different failure modes is much harder to
+dismiss as an artefact of the Argo matching rule.</p>
+<h3 id="and-one-thing-to-be-honest-about">And one thing to be honest about</h3>
+<p>At <strong>5 m the model is worse than climatology</strong> (1.368 vs 1.299), the only level where that
+is true in either track. The near-surface is where the 10-day window hurts most — SST
+varies on shorter timescales than the reference averages over — and where our own input is
+strongest, so the model has the least excuse. Worth a sentence if asked, not worth an
+experiment: it is one level out of fourteen and the blended number already includes it.</p>
+<hr />
+<h2 id="5-reproduce">5. Reproduce</h2>
+<pre><code class="language-bash"># on the GPU box
+aws s3 cp s3://oceanembed-sih26-data/oceanembed/interim/argo_10d.nc data/interim/argo_10d.nc
+
+python src/incois_eval.py --cube results/ens_mix6_bc_test_cube.nc \
+                          --incois data/interim/argo_10d.nc --split test
+</code></pre>
+<p><code>results/*_test_incois_b1.csv</code> holds the depth-wise table for each of the four systems.
+The bias-corrected test cube is built by applying <code>results/ens_mix6_offset.json</code> to
+<code>results/ens_mix6_test_cube.nc</code> with <code>bias_correct.apply_offset</code>; the offset file's
+<code>depths</code> list is asserted against the cube's depth coordinate first, because a silent
+reorder there would corrupt every number above.</p>
+<hr />
+<h2 id="6-what-this-changes-in-the-plan">6. What this changes in the plan</h2>
+<p><strong>Doc 12 §7 item 03 is done.</strong> Nothing else on that list moves. The ranked plan stands:
+01 uncertainty band, 02 INCOIS-facing derived products (D20, MLD, OHC), 04 the <code>m4_sched</code>
+recipe for cost, then 05 bias-corrected target and 06 the EOF basis as the two research
+directions.</p>
+<p>One line in the constitution needed updating: CLAUDE.md §2 described B1 as a validation
+track to be built. It is built, and its result is recorded here rather than in the frozen
+results table — because <strong>B1 is not the number this project reports.</strong> B2 is.</p></article>
+  <footer>Ministry of Earth Sciences · INCOIS · Space Technology — Smart India Hackathon 2026</footer>
+</main>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    background: '#0d1b2a', primaryColor: '#14304a', primaryTextColor: '#dce8f2',
+    primaryBorderColor: '#2f6f9f', lineColor: '#4a9fd4', secondaryColor: '#123',
+    tertiaryColor: '#0f2436', fontSize: '14px'
+  }
+});
+</script>
+<script>
+document.getElementById('navtoggle').onclick = () => document.body.classList.toggle('nav-open');
+</script>
+</body>
+</html>
