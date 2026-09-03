@@ -50,16 +50,11 @@ failure: [doc 10](docs/10-experiment-programme.md).
 | [03 Architecture](docs/03-architecture.md) | CNN → ConvLSTM → Attention → U-Net spec |
 | [04 Data](docs/04-data.md) | Sources, access, preprocessing pipeline |
 | [05 Training & Evaluation](docs/05-training-evaluation.md) | Loss, protocol, metrics, ablations |
-| [06 Demo & Roadmap](docs/06-demo-and-roadmap.md) | Streamlit spec, milestones, risks, Q&A prep |
-| [07 Results & Handover](docs/07-results-and-handover.md) | Day 1 record *(numbers superseded)* |
-| [08 Challenges Faced](docs/08-challenges.md) | Every problem that cost real time: symptom, cause, fix |
-| [09 Day 2](docs/09-day2-handover.md) | Multi-seed error bars; the +0.72 °C bias in the target |
-| [10 Experiment Programme](docs/10-experiment-programme.md) | The 11-task programme: selection discipline, every task's steps, and the full ablation |
-| [**11 Day 3 · Handover**](docs/11-day3-handover.md) | **Start here.** Current results, what changed, what was tried and rejected, what's left |
-
-Team working agreement and frozen decisions: [`CLAUDE.md`](CLAUDE.md).
-
----
+| [06 Demo & Roadmap](docs/06-demo-and-roadmap.md) | Streamlit spec, milestones, risks |
+| [07 Results & Handover](docs/07-results-and-handover.md) | Day 1: first results, infra, limitations |
+| [08 Challenges Faced](docs/08-challenges.md) | Every bug that cost real time, and its actual cause |
+| [09 Day 2 Results](docs/09-day2-handover.md) | Multi-seed error bars, 4 interventions, the GLORYS-bias ceiling finding. Headline superseded by 10 |
+| [**10 Day 3 Results**](docs/10-day3-ensemble-and-bias-correction.md) | **Current numbers.** Best model 0.786 °C (ensemble + bias correction), full leakage audit, attention question closed |
 
 ## Running the code
 
@@ -67,8 +62,16 @@ Team working agreement and frozen decisions: [`CLAUDE.md`](CLAUDE.md).
 pip install -r requirements.txt
 ```
 
-Every module carries its own `__main__` self-check — no test framework. These should all
-print `OK`:
+**Status.** Full pipeline built, all 7 input channels + GLORYS12V1 target downloaded and
+regridded (2015-04 → 2024-12), M0–M4 trained and validated against 5,980–6,093 independent
+Argo profiles. Current best: **0.786 °C** blended RMSE (ensemble of 6 ConvLSTM models +
+bias correction), vs 1.160 for climatology and 0.728 for the GLORYS target's own error
+against Argo. Attention was tested twice (alone, and combined with the ConvLSTM) and
+helped neither time — the final architecture is CNN encoder → ConvLSTM → U-Net decoder,
+no attention. Full detail: [doc 09](docs/09-day2-handover.md) and
+[doc 10](docs/10-day3-ensemble-and-bias-correction.md). Streamlit demo written
+(`app/streamlit_app.py`), INCOIS LAS gridded Argo track (B1) blocked on an upstream
+service outage — see doc 10 §8 for both.
 
 ```bash
 for f in metrics datasets baselines argo_eval bias_correct ablation models/unet; do

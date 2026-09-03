@@ -17,7 +17,8 @@ import xarray as xr
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from argo_eval import evaluate_argo
-from config import DEPTHS, INTERIM, LAT, LON, MODEL_SHAPE, GRID_SHAPE, REPORT_DEPTHS, ROOT, SPLITS, ZARR
+from config import (DEPTHS, INTERIM, MODEL_SHAPE, REPORT_DEPTHS, ROOT, SPLITS, ZARR,
+                    crop_coords, crop_to_model)
 from datasets import NIODataset
 from evaluate import report
 from metrics import summary
@@ -51,12 +52,10 @@ def predict_cube(ckpt, split, zarr=ZARR, batch=32, dev=None):
 
     # crop_to_model trims 2 cells off each edge; the cube's coords must say so, or every
     # Argo profile would be matched to a cell two rows away from where it actually is.
-    dy = (GRID_SHAPE[0] - MODEL_SHAPE[0]) // 2
-    dx = (GRID_SHAPE[1] - MODEL_SHAPE[1]) // 2
+    clat, clon = crop_coords()
     cube = xr.DataArray(out, dims=("time", "depth", "lat", "lon"),
                         coords={"time": ds.time, "depth": DEPTHS,
-                                "lat": LAT[dy:dy + MODEL_SHAPE[0]],
-                                "lon": LON[dx:dx + MODEL_SHAPE[1]]})
+                                "lat": clat, "lon": clon})
 
     # Blank the cells the model was never supervised on. A network still emits *some*
     # number on land, and Argo matching takes the nearest grid cell, so 42 of 6093 coastal
@@ -65,8 +64,7 @@ def predict_cube(ckpt, split, zarr=ZARR, batch=32, dev=None):
     # -- its base is zeroed on land, so it emitted ~0 degC where the truth is ~10, and 0.7%
     # of profiles moved 500 m RMSE from 0.30 to 0.94. Metrics already drop non-finite
     # predictions, so NaN here is all that is needed.
-    land = np.isnan(ds.ds.Y).all("time").compute().values
-    land = land[:, dy:dy + MODEL_SHAPE[0], dx:dx + MODEL_SHAPE[1]]
+    land = crop_to_model(np.isnan(ds.ds.Y).all("time").compute().values)
     return cube.where(~xr.DataArray(land, dims=("depth", "lat", "lon"),
                                     coords={"depth": DEPTHS, "lat": cube.lat, "lon": cube.lon}))
 
@@ -102,19 +100,10 @@ def main():
 
     if a.ensemble:
         cubes = [xr.open_dataarray(c) for c in a.ensemble]
-        # Members can legitimately span different days: a window=7 model (M4) cannot predict
-        # the first six days of a split, so its cube is 6 shorter than a window=1 model's.
-        # Align on the intersection rather than refusing, but say how much was dropped --
-        # silently averaging misaligned days would be far worse than a shape error.
-        n_before = [c.sizes["time"] for c in cubes]
-        cubes = list(xr.align(*cubes, join="inner")) if len(cubes) > 1 else cubes
-        if cubes[0].sizes["time"] != max(n_before):
-            print(f"time axes differ {n_before} -> intersecting on "
-                  f"{cubes[0].sizes['time']} days")
         t0 = cubes[0]
         for c in cubes[1:]:
-            assert c.shape == t0.shape, f"cube shapes differ after align: {c.shape} vs {t0.shape}"
-            assert (c.time.values == t0.time.values).all(), "alignment failed"
+            assert c.shape == t0.shape, f"cube shapes differ: {c.shape} vs {t0.shape}"
+            assert (c.time.values == t0.time.values).all(), "cubes cover different days"
         # Every member is NaN on land, so a plain mean keeps land NaN -- which is what the
         # metrics need. Do NOT use nanmean: it would invent values on cells no member was
         # supervised on, which is exactly the bug docs/09 sec.2 describes.

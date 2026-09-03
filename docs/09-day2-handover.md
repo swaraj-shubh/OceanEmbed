@@ -20,7 +20,14 @@ headline of 0.908 °C. **Every number on that page is superseded by this one.** 
 error bars, three new interventions, a temporal architecture, and one measurement that
 reframes the whole problem.
 
-Read §1 and §4 if you read nothing else.
+**[Doc 10](10-day3-ensemble-and-bias-correction.html) supersedes this page's headline.**
+The current best model is 0.786 °C (an ensemble + bias correction, not a single
+architecture), and the attention question §8 leaves open below is now closed — attention
+combined with the ConvLSTM was built and tested, and it lost. Read this page for the
+ceiling-finding methodology (§4) and the multi-seed discipline (§2–3), which still hold;
+read doc 10 for the current numbers.
+
+Read §1 and §4 if you read nothing else here.
 
 ---
 
@@ -240,22 +247,34 @@ received `[B, C, H, W]` where it wanted `[B, T, C, H, W]`.
 
 ## 8. What is left
 
+*(§8 as originally written on Day 2, kept for history. See [doc 10](10-day3-ensemble-and-bias-correction.html) §8 for the current state of each item.)*
+
 **1. The Streamlit demo — not built.** The largest outstanding item and an explicit PS
 requirement: date + depth → map, the 7 surface inputs, click → 0–1000 m profile, nearby
 Argo overlay, live metrics. Runs offline from a frozen checkpoint and precomputed samples,
-so it needs no GPU.
+so it needs no GPU. *(Written as of Day 3, not yet run end-to-end — doc 10 §8.)*
 
 **2. Bias-correct GLORYS against Argo before training.** The only remaining direction that
-attacks the 0.728 ceiling rather than the 0.16 °C above it.
+attacks the 0.728 ceiling rather than the 0.16 °C above it. *(Done, differently than
+proposed here: rather than bias-correcting GLORYS before training, the correction is
+fit post-hoc against Argo and applied to the ensemble output — 0.890 → 0.786. See doc 10
+§1–2. The monthly/spatially-varying version of this is the next open direction.)*
 
 **3. More M4 seeds (5–7).** 0.890 ± 0.008 vs 0.901 ± 0.013 is 0.80 σ. Four more seeds
-would settle whether ConvLSTM is a real improvement. ~1.5 GPU-hours.
+would settle whether ConvLSTM is a real improvement. *(Superseded: M4 is now the
+uncontested best single architecture — see doc 10 §5, which instead answers the open
+attention question with 3 seeds of attn+ConvLSTM.)*
 
 **4. Hybrid depth formulation.** Absolute above ~300 m, anomaly below, crossover chosen on
 validation. Cheap, evidence-backed by §5.1, and would make every depth beat the baseline.
+*(Not done. Still open — the ensemble+bias-correction result in doc 10 achieves the same
+goal, beating climatology at every depth, by a different route, but the hybrid-depth
+idea itself was never tried.)*
 
 **5. INCOIS LAS gridded Argo (track B1).** PS-named but lower value — raw Argo (B2) is the
-stricter test and is done.
+stricter test and is done. *(Attempted on Day 3: INCOIS's OPeNDAP service was found
+non-responsive for every Argo dataset. Aggregation code is written and self-tested and
+needs only the file — doc 10 §8.)*
 
 Not recommended: bigger models, ViT, foundation models. Four interventions and 0.16 °C of
 headroom say capacity is not the binding constraint.

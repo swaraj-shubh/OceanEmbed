@@ -63,9 +63,68 @@ QC_RANGE = {"sst": (-2.0, 36.0), "sss": (5.0, 41.0), "sla": (-2.0, 2.0),
             "cur_u": (-3.0, 3.0), "cur_v": (-3.0, 3.0),
             "wind_u": (-40.0, 40.0), "wind_v": (-40.0, 40.0), "thetao": (-2.0, 36.0)}
 
+# Optional extra input channels (docs/10 tasks 5 and 6). Off by default: every committed
+# result up to doc 09 was measured with the seven surface channels alone.
+CLIM_CHANNELS = [f"clim_{d}m" for d in DEPTHS]                    # 15
+AUX_CHANNELS = ["doy_sin", "doy_cos", "lat", "lon", "bathy"]      # 5
+
+
+def n_channels(extra=()):
+    """Input channel count for a channel set.
+
+    The ORDER is frozen: surface, then climatology, then auxiliary. A checkpoint stores its
+    `extra` list, so anything that rebuilds a dataset for inference must pass the same one.
+    docs/09 sec.7 records what happens when predict_cube guesses instead: M4 was handed
+    [B, C, H, W] where it wanted [B, T, C, H, W].
+    """
+    n = len(CHANNELS)
+    if "clim" in extra:
+        n += len(CLIM_CHANNELS)
+    if "aux" in extra:
+        n += len(AUX_CHANNELS)
+    return n
+
+
+def bathy_path(zarr_path):
+    """Cache beside the store it was fitted from -- same rule as the climatology cache."""
+    return Path(zarr_path).with_suffix(".bathy.npy")
+
 
 def crop_to_model(da):
     """Centre-crop (100,180) -> (96,176) on the last two dims."""
     dy = (GRID_SHAPE[0] - MODEL_SHAPE[0]) // 2   # 2
     dx = (GRID_SHAPE[1] - MODEL_SHAPE[1]) // 2   # 2
     return da[..., dy:dy + MODEL_SHAPE[0], dx:dx + MODEL_SHAPE[1]]
+
+
+def crop_coords():
+    """The (lat, lon) of the cropped model grid.
+
+    Anything that draws or georeferences model output needs these, not LAT/LON: the crop
+    trims 2 cells off each edge, so the uncropped axes put every cell two rows and two
+    columns from where it actually is -- which for Argo matching is a silent ~50 km error.
+    """
+    dy = (GRID_SHAPE[0] - MODEL_SHAPE[0]) // 2
+    dx = (GRID_SHAPE[1] - MODEL_SHAPE[1]) // 2
+    return LAT[dy:dy + MODEL_SHAPE[0]], LON[dx:dx + MODEL_SHAPE[1]]
+
+
+if __name__ == "__main__":
+    assert GRID_SHAPE == (100, 180) and MODEL_SHAPE == (96, 176)
+    assert len(CHANNELS) == 7 and len(DEPTHS) == 15
+    assert all(h % 8 == 0 for h in MODEL_SHAPE), "3 poolings need both dims divisible by 8"
+    assert n_channels() == 7 and n_channels(("clim",)) == 22
+    assert n_channels(("aux",)) == 12 and n_channels(("clim", "aux")) == 27
+    la, lo = crop_coords()
+    assert (len(la), len(lo)) == MODEL_SHAPE
+    # the coords must be the ones crop_to_model actually keeps, not merely the right count
+    probe = np.stack([np.broadcast_to(LAT[:, None], GRID_SHAPE),
+                      np.broadcast_to(LON[None, :], GRID_SHAPE)])
+    kept = crop_to_model(probe)
+    assert np.array_equal(kept[0][:, 0], la) and np.array_equal(kept[1][0], lo), \
+        "crop_coords disagrees with crop_to_model -- output would be georeferenced wrong"
+    # splits must not overlap, or the time-based split rule is silently broken
+    edges = [SPLITS[k] for k in ("train", "val", "test")]
+    assert all(a[1] < b[0] for a, b in zip(edges, edges[1:])), "splits overlap"
+    print(f"config self-check OK -- {MODEL_SHAPE} grid, "
+          f"lat {la[0]:.3f}..{la[-1]:.3f}, lon {lo[0]:.3f}..{lo[-1]:.3f}")

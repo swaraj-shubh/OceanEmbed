@@ -113,9 +113,8 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <li><a href="06-demo-and-roadmap.html">06 · Demo & Roadmap</a></li>
 <li><a href="07-results-and-handover.html">07 · Results & Handover</a></li>
 <li><a href="08-challenges.html">08 · Challenges Faced</a></li>
-<li><a href="09-day2-handover.html" class="active">09 · Day 2 · Latest Results</a></li>
-<li><a href="10-experiment-programme.html">10 · Experiment Programme</a></li>
-<li><a href="11-day3-handover.html">11 · Day 3 · Handover</a></li>
+<li><a href="09-day2-handover.html" class="active">09 · Day 2 Results</a></li>
+<li><a href="10-day3-ensemble-and-bias-correction.html">10 · Day 3 · Latest Results</a></li>
 <li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
   <div class="aside-foot">
     <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
@@ -137,7 +136,13 @@ GLORYS validation loss) and §4 (the +0.723 °C thermocline bias in the training
 headline of 0.908 °C. <strong>Every number on that page is superseded by this one.</strong> Day 2 added
 error bars, three new interventions, a temporal architecture, and one measurement that
 reframes the whole problem.</p>
-<p>Read §1 and §4 if you read nothing else.</p>
+<p><strong><a href="10-day3-ensemble-and-bias-correction.html">Doc 10</a> supersedes this page's headline.</strong>
+The current best model is 0.786 °C (an ensemble + bias correction, not a single
+architecture), and the attention question §8 leaves open below is now closed — attention
+combined with the ConvLSTM was built and tested, and it lost. Read this page for the
+ceiling-finding methodology (§4) and the multi-seed discipline (§2–3), which still hold;
+read doc 10 for the current numbers.</p>
+<p>Read §1 and §4 if you read nothing else here.</p>
 <hr />
 <h2 id="1-what-changed-in-one-table">1. What changed, in one table</h2>
 <p>Blended RMSE against <strong>6,093 independent Argo profiles</strong>, test split 2023–24, three seeds
@@ -608,18 +613,29 @@ The cache is now keyed to the store it was fitted from.</p>
 received <code>[B, C, H, W]</code> where it wanted <code>[B, T, C, H, W]</code>.</p>
 <hr />
 <h2 id="8-what-is-left">8. What is left</h2>
+<p><em>(§8 as originally written on Day 2, kept for history. See <a href="10-day3-ensemble-and-bias-correction.html">doc 10</a> §8 for the current state of each item.)</em></p>
 <p><strong>1. The Streamlit demo — not built.</strong> The largest outstanding item and an explicit PS
 requirement: date + depth → map, the 7 surface inputs, click → 0–1000 m profile, nearby
 Argo overlay, live metrics. Runs offline from a frozen checkpoint and precomputed samples,
-so it needs no GPU.</p>
+so it needs no GPU. <em>(Written as of Day 3, not yet run end-to-end — doc 10 §8.)</em></p>
 <p><strong>2. Bias-correct GLORYS against Argo before training.</strong> The only remaining direction that
-attacks the 0.728 ceiling rather than the 0.16 °C above it.</p>
+attacks the 0.728 ceiling rather than the 0.16 °C above it. <em>(Done, differently than
+proposed here: rather than bias-correcting GLORYS before training, the correction is
+fit post-hoc against Argo and applied to the ensemble output — 0.890 → 0.786. See doc 10
+§1–2. The monthly/spatially-varying version of this is the next open direction.)</em></p>
 <p><strong>3. More M4 seeds (5–7).</strong> 0.890 ± 0.008 vs 0.901 ± 0.013 is 0.80 σ. Four more seeds
-would settle whether ConvLSTM is a real improvement. ~1.5 GPU-hours.</p>
+would settle whether ConvLSTM is a real improvement. <em>(Superseded: M4 is now the
+uncontested best single architecture — see doc 10 §5, which instead answers the open
+attention question with 3 seeds of attn+ConvLSTM.)</em></p>
 <p><strong>4. Hybrid depth formulation.</strong> Absolute above ~300 m, anomaly below, crossover chosen on
-validation. Cheap, evidence-backed by §5.1, and would make every depth beat the baseline.</p>
+validation. Cheap, evidence-backed by §5.1, and would make every depth beat the baseline.
+<em>(Not done. Still open — the ensemble+bias-correction result in doc 10 achieves the same
+goal, beating climatology at every depth, by a different route, but the hybrid-depth
+idea itself was never tried.)</em></p>
 <p><strong>5. INCOIS LAS gridded Argo (track B1).</strong> PS-named but lower value — raw Argo (B2) is the
-stricter test and is done.</p>
+stricter test and is done. <em>(Attempted on Day 3: INCOIS's OPeNDAP service was found
+non-responsive for every Argo dataset. Aggregation code is written and self-tested and
+needs only the file — doc 10 §8.)</em></p>
 <p>Not recommended: bigger models, ViT, foundation models. Four interventions and 0.16 °C of
 headroom say capacity is not the binding constraint.</p>
 <hr />
