@@ -62,8 +62,8 @@ html, body, [class*="css"] {
     --glass-border-hover: rgba(255, 255, 255, 0.08);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     --heading-color: #ffffff;
-    --body-color: #e0e0e0;
-    --caption-color: #a0a0a0;
+    --body-color: #ffffff;
+    --caption-color: #f0f0f0;
     --accent: #f0f0f0;             /* active states */
     --accent-text: #ffffff;        
     --accent-tint: rgba(255, 255, 255, 0.1);
@@ -82,6 +82,9 @@ html, body, [class*="css"] {
     background-attachment: fixed;   /* one gradient over the page, not one per scroll */
     color: var(--body-color);
 }
+p, label, span {
+    color: var(--body-color) !important;
+}
 .block-container { padding-top: 2.4rem; }
 
 h1, h2, h3, h4 {
@@ -93,6 +96,14 @@ h1, h2, h3, h4 {
 [data-testid="stCaptionContainer"],
 [data-testid="stCaptionContainer"] * {
     color: var(--caption-color) !important;
+}
+
+code {
+    background: rgba(255, 255, 255, 0.8) !important;
+    color: #000000 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
 }
 
 /* ----- glass panels ----- */
