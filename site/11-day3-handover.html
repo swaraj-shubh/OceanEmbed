@@ -664,14 +664,68 @@ are negative on M4 too. Do not revisit.</p>
 <td><strong>0.890</strong></td>
 <td><strong>0.786</strong></td>
 <td><strong>0.728</strong></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td><strong>0.511</strong></td>
+<td><strong>+0.012</strong></td>
+<td><strong>0.926</strong></td>
+<td><strong>0.853</strong></td>
 </tr>
 </tbody>
 </table></div>
 <p>At 100 m, the hardest layer: R² goes 0.502 → <strong>0.653</strong>, bias +0.850 → <strong>+0.299</strong>.</p>
+<p><strong>Blended MAE/Bias/Corr/R² are <code>n</code>-weighted means over the 15 depths — the same weighting
+<code>summary()</code> uses for RMSE, applied to the other four columns.</strong> No code computes this yet;
+these four numbers were derived once from <code>results/ens_mix6_bc_test_argo.csv</code> and
+<code>results/GLORYS_target_test_argo.csv</code> and are not reproducible by a script. If a
+<code>blend_all()</code> is ever added to <code>metrics.py</code>, replace this note with the command.</p>
+<p><strong>FINAL vs GLORYS, every metric:</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>GLORYS</th>
+<th>FINAL</th>
+<th>Δ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RMSE</td>
+<td>0.728</td>
+<td>0.786</td>
+<td>+0.058 (GLORYS lower — expected, it's the training target)</td>
+</tr>
+<tr>
+<td>MAE</td>
+<td>0.442</td>
+<td>0.511</td>
+<td>+0.070 (GLORYS lower)</td>
+</tr>
+<tr>
+<td><strong>Bias</strong></td>
+<td><strong>+0.193</strong></td>
+<td><strong>+0.012</strong></td>
+<td><strong>−0.181 (FINAL far better)</strong></td>
+</tr>
+<tr>
+<td>Corr</td>
+<td>0.947</td>
+<td>0.926</td>
+<td>−0.021 (GLORYS slightly higher)</td>
+</tr>
+<tr>
+<td>R²</td>
+<td>0.877</td>
+<td>0.853</td>
+<td>−0.024 (GLORYS slightly higher)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Four of five metrics slightly favour GLORYS, which is unsurprising — the model approximates
+its own training target and was never going to beat it outright. <strong>Bias is the exception,
+and it is not close.</strong> GLORYS carries a systematic +0.193 °C warm bias blended across all
+depths (peaking at +0.72 at 100 m); the bias-correction step brings FINAL's blended bias to
+essentially zero (+0.012). The correction was built to fix bias specifically, against Argo
+rather than against GLORYS, and this is the metric where that shows.</p>
 <hr />
 <h2 id="7-what-was-built">7. What was built</h2>
 <p>Six new or substantially changed modules. Every one carries an <code>if __name__ == "__main__"</code>
