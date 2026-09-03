@@ -14,6 +14,7 @@ than chosen by eye.
 import sys
 from pathlib import Path
 
+from PIL import Image
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -22,8 +23,14 @@ import streamlit as st
 sys.path.append(str(Path(__file__).resolve().parent))
 import loader as L
 
+logo_path = Path(__file__).parent / "logo.png"
+if logo_path.exists():
+    page_icon = Image.open(logo_path)
+else:
+    page_icon = "🌊"
+
 st.set_page_config(page_title="OceanEmbed — subsurface temperature",
-                   page_icon="🌊", layout="wide")
+                   page_icon=page_icon, layout="wide")
 
 # ============================================================
 # GLASSMORPHISM - Grayscale glass
@@ -55,8 +62,8 @@ html, body, [class*="css"] {
     --glass-border-hover: rgba(255, 255, 255, 0.08);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     --heading-color: #ffffff;
-    --body-color: #e0e0e0;
-    --caption-color: #a0a0a0;
+    --body-color: #ffffff;
+    --caption-color: #f0f0f0;
     --accent: #f0f0f0;             /* active states */
     --accent-text: #ffffff;        
     --accent-tint: rgba(255, 255, 255, 0.1);
@@ -75,6 +82,9 @@ html, body, [class*="css"] {
     background-attachment: fixed;   /* one gradient over the page, not one per scroll */
     color: var(--body-color);
 }
+p, label, span {
+    color: var(--body-color) !important;
+}
 .block-container { padding-top: 2.4rem; }
 
 h1, h2, h3, h4 {
@@ -86,6 +96,14 @@ h1, h2, h3, h4 {
 [data-testid="stCaptionContainer"],
 [data-testid="stCaptionContainer"] * {
     color: var(--caption-color) !important;
+}
+
+code {
+    background: rgba(255, 255, 255, 0.8) !important;
+    color: #000000 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
 }
 
 /* ----- glass panels ----- */
@@ -142,7 +160,7 @@ h1, h2, h3, h4 {
     border-color: var(--alert-border);
     padding: 14px 16px;
 }
-.stPlotlyChart { padding: 12px; }
+.stPlotlyChart { padding: 12px !important; overflow: hidden; }
 [data-testid="stDataFrame"] { padding: 6px; overflow: hidden; }
 
 /* ----- sidebar glass ----- */
@@ -160,6 +178,21 @@ h1, h2, h3, h4 {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
 }
+/* ----- fixed heading ----- */
+div[data-testid="stVerticalBlock"] > div:has(#fixed-header) {
+    position: sticky;
+    top: 12px;
+    z-index: 1000;
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 12px 20px 24px 20px;
+    box-shadow: var(--glass-shadow);
+    margin-bottom: 1rem;
+}
+
 [data-testid="stSidebar"] > div:first-child {
     margin: 12px !important;
     padding: 16px !important;
@@ -203,9 +236,10 @@ h1, h2, h3, h4 {
 /* active: a touch more glass + the accent, sparingly */
 .stTabs [aria-selected="true"] {
     background: var(--accent-tint) !important;
-    border: 1px solid var(--accent);
+    border: 1px solid transparent !important;
     color: var(--accent-text) !important;
     font-weight: 600;
+    outline: none !important;
 }
 .stTabs [data-baseweb="tab-highlight"],
 .stTabs [data-baseweb="tab-border"] {
@@ -321,12 +355,12 @@ def series(i):
 def base_layout(fig, height=420, **kw):
     fig.update_layout(
         template="plotly_dark",
-        height=height, margin=dict(l=8, r=8, t=34, b=8),
+        height=height, margin=dict(l=12, r=12, t=36, b=36),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(size=12, family="Poppins, system-ui, sans-serif"),
-        hoverlabel=dict(font_size=12),
+        font=dict(size=13, family="Poppins, system-ui, sans-serif", color="#ffffff"),
+        hoverlabel=dict(font_size=13, font_family="Poppins, system-ui, sans-serif", font_color="#ffffff"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0,
-                    bgcolor="rgba(0,0,0,0)"),
+                    bgcolor="rgba(0,0,0,0)", font=dict(size=14, color="#ffffff")),
         **kw)
     fig.update_xaxes(showgrid=True, gridcolor="rgba(255,255,255,0.1)", zeroline=False)
     fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.1)", zeroline=False)
@@ -348,7 +382,7 @@ def heatmap(da, title, colorscale=SEQ_TEMP, unit="°C", diverging=False, height=
         colorbar=dict(title=dict(text=unit, side="right"), thickness=12, outlinewidth=0),
         hovertemplate="%{y:.2f}°N  %{x:.2f}°E<br><b>%{z:.2f} " + unit + "</b><extra></extra>",
         **kw))
-    base_layout(fig, height=height, title=dict(text=title, x=0, font=dict(size=13)))
+    base_layout(fig, height=height, title=dict(text=title, x=0, font=dict(size=14, color="#ffffff")))
     # Pin both axes to the data. An equal-aspect lock (scaleanchor) is geographically
     # purer, but the region is 45 deg wide and 25 deg tall inside a panel that is roughly
     # square, so plotly satisfies the lock by padding latitude out to -5..42 and the map
@@ -380,7 +414,21 @@ def skill_table():
 
 # ======================================================================================
 man = L.manifest()
-st.title("OceanEmbed — subsurface ocean temperature from space")
+logo_path = Path(__file__).parent / "logo.png"
+if logo_path.exists():
+    import base64
+    logo_b64 = base64.b64encode(logo_path.read_bytes()).decode()
+    st.markdown(
+        f"""
+        <div id="fixed-header" style="display: flex; align-items: center; gap: 16px;">
+            <img src="data:image/png;base64,{logo_b64}" width="48" style="background-color: white; border-radius: 50%; padding: 2px; box-shadow: var(--glass-shadow);" />
+            <h1 style="margin: 0; padding: 0; padding-bottom: 4px;">OTER - Ocean Thermal Embedding Reconstruction</h1>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+else:
+    st.title("OTER - Ocean Thermal Embedding Reconstruction")
 st.caption(
     f"Seven satellite surface fields → temperature at 15 depths, 0–1000 m, over the "
     f"Arabian Sea and Bay of Bengal. Showing **{man['window']['start']} to "
@@ -490,8 +538,9 @@ with t_profile:
         # No chart title: the legend sits along the top and the two would collide. The
         # caption below carries the coordinates instead.
         base_layout(fig, height=470, hovermode="y unified")
-        st.markdown(f"**Column at {lat_s:.2f}°N, {lon_s:.2f}°E**")
+        # st.markdown(f"**Column at {lat_s:.2f}°N, {lon_s:.2f}°E**")
         st.plotly_chart(fig, use_container_width=True, key="prof")
+        st.markdown(f"**Column at {lat_s:.2f}°N, {lon_s:.2f}°E**")
 
     if cmp:
         st.success(
