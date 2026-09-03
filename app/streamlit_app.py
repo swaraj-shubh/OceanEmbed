@@ -357,10 +357,10 @@ def base_layout(fig, height=420, **kw):
         template="plotly_dark",
         height=height, margin=dict(l=12, r=12, t=36, b=36),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(size=12, family="Poppins, system-ui, sans-serif"),
-        hoverlabel=dict(font_size=12),
+        font=dict(size=13, family="Poppins, system-ui, sans-serif", color="#ffffff"),
+        hoverlabel=dict(font_size=13, font_family="Poppins, system-ui, sans-serif", font_color="#ffffff"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0,
-                    bgcolor="rgba(0,0,0,0)"),
+                    bgcolor="rgba(0,0,0,0)", font=dict(size=14, color="#ffffff")),
         **kw)
     fig.update_xaxes(showgrid=True, gridcolor="rgba(255,255,255,0.1)", zeroline=False)
     fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.1)", zeroline=False)
@@ -382,7 +382,7 @@ def heatmap(da, title, colorscale=SEQ_TEMP, unit="°C", diverging=False, height=
         colorbar=dict(title=dict(text=unit, side="right"), thickness=12, outlinewidth=0),
         hovertemplate="%{y:.2f}°N  %{x:.2f}°E<br><b>%{z:.2f} " + unit + "</b><extra></extra>",
         **kw))
-    base_layout(fig, height=height, title=dict(text=title, x=0, font=dict(size=13)))
+    base_layout(fig, height=height, title=dict(text=title, x=0, font=dict(size=14, color="#ffffff")))
     # Pin both axes to the data. An equal-aspect lock (scaleanchor) is geographically
     # purer, but the region is 45 deg wide and 25 deg tall inside a panel that is roughly
     # square, so plotly satisfies the lock by padding latitude out to -5..42 and the map
