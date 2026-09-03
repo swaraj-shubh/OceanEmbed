@@ -43,3 +43,34 @@ def crop_to_model(da):
     dy = (GRID_SHAPE[0] - MODEL_SHAPE[0]) // 2   # 2
     dx = (GRID_SHAPE[1] - MODEL_SHAPE[1]) // 2   # 2
     return da[..., dy:dy + MODEL_SHAPE[0], dx:dx + MODEL_SHAPE[1]]
+
+
+def crop_coords():
+    """The (lat, lon) of the cropped model grid.
+
+    Anything that draws or georeferences model output needs these, not LAT/LON: the crop
+    trims 2 cells off each edge, so the uncropped axes put every cell two rows and two
+    columns from where it actually is -- which for Argo matching is a silent ~50 km error.
+    """
+    dy = (GRID_SHAPE[0] - MODEL_SHAPE[0]) // 2
+    dx = (GRID_SHAPE[1] - MODEL_SHAPE[1]) // 2
+    return LAT[dy:dy + MODEL_SHAPE[0]], LON[dx:dx + MODEL_SHAPE[1]]
+
+
+if __name__ == "__main__":
+    assert GRID_SHAPE == (100, 180) and MODEL_SHAPE == (96, 176)
+    assert len(CHANNELS) == 7 and len(DEPTHS) == 15
+    assert all(h % 8 == 0 for h in MODEL_SHAPE), "3 poolings need both dims divisible by 8"
+    la, lo = crop_coords()
+    assert (len(la), len(lo)) == MODEL_SHAPE
+    # the coords must be the ones crop_to_model actually keeps, not merely the right count
+    probe = np.stack([np.broadcast_to(LAT[:, None], GRID_SHAPE),
+                      np.broadcast_to(LON[None, :], GRID_SHAPE)])
+    kept = crop_to_model(probe)
+    assert np.array_equal(kept[0][:, 0], la) and np.array_equal(kept[1][0], lo), \
+        "crop_coords disagrees with crop_to_model -- output would be georeferenced wrong"
+    # splits must not overlap, or the time-based split rule is silently broken
+    edges = [SPLITS[k] for k in ("train", "val", "test")]
+    assert all(a[1] < b[0] for a, b in zip(edges, edges[1:])), "splits overlap"
+    print(f"config self-check OK -- {MODEL_SHAPE} grid, "
+          f"lat {la[0]:.3f}..{la[-1]:.3f}, lon {lo[0]:.3f}..{lo[-1]:.3f}")

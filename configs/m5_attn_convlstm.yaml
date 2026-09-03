@@ -1,0 +1,15 @@
+run: m5_attn_convlstm
+model:
+  kind: temporal
+  in_ch: 7
+  out_ch: 15
+  base: 32
+  depth: 3
+  attn: true           # the missing ablation cell: attention AND ConvLSTM together
+  heads: 4
+window: 7              # attention runs per frame, BEFORE the ConvLSTM (see embed())
+batch_size: 16
+num_workers: 4
+lr: 0.001
+epochs: 20
+seed: 0

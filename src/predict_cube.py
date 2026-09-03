@@ -16,7 +16,8 @@ import xarray as xr
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from argo_eval import evaluate_argo
-from config import DEPTHS, INTERIM, LAT, LON, MODEL_SHAPE, GRID_SHAPE, REPORT_DEPTHS, ROOT, SPLITS, ZARR
+from config import DEPTHS, INTERIM, MODEL_SHAPE, REPORT_DEPTHS, ROOT, SPLITS, ZARR, crop_coords
+from config import crop_to_model
 from datasets import NIODataset
 from evaluate import report
 from metrics import summary
@@ -46,12 +47,10 @@ def predict_cube(ckpt, split, zarr=ZARR, batch=32, dev=None):
 
     # crop_to_model trims 2 cells off each edge; the cube's coords must say so, or every
     # Argo profile would be matched to a cell two rows away from where it actually is.
-    dy = (GRID_SHAPE[0] - MODEL_SHAPE[0]) // 2
-    dx = (GRID_SHAPE[1] - MODEL_SHAPE[1]) // 2
+    clat, clon = crop_coords()
     cube = xr.DataArray(out, dims=("time", "depth", "lat", "lon"),
                         coords={"time": ds.time, "depth": DEPTHS,
-                                "lat": LAT[dy:dy + MODEL_SHAPE[0]],
-                                "lon": LON[dx:dx + MODEL_SHAPE[1]]})
+                                "lat": clat, "lon": clon})
 
     # Blank the cells the model was never supervised on. A network still emits *some*
     # number on land, and Argo matching takes the nearest grid cell, so 42 of 6093 coastal
@@ -60,8 +59,7 @@ def predict_cube(ckpt, split, zarr=ZARR, batch=32, dev=None):
     # -- its base is zeroed on land, so it emitted ~0 degC where the truth is ~10, and 0.7%
     # of profiles moved 500 m RMSE from 0.30 to 0.94. Metrics already drop non-finite
     # predictions, so NaN here is all that is needed.
-    land = np.isnan(ds.ds.Y).all("time").compute().values
-    land = land[:, dy:dy + MODEL_SHAPE[0], dx:dx + MODEL_SHAPE[1]]
+    land = crop_to_model(np.isnan(ds.ds.Y).all("time").compute().values)
     return cube.where(~xr.DataArray(land, dims=("depth", "lat", "lon"),
                                     coords={"depth": DEPTHS, "lat": cube.lat, "lon": cube.lon}))
 

@@ -17,6 +17,10 @@ at **0.25° daily** resolution — validated against independent Argo profiles.
 | [04 Data](docs/04-data.md) | Sources, access, preprocessing pipeline |
 | [05 Training & Evaluation](docs/05-training-evaluation.md) | Loss, protocol, metrics, ablations |
 | [06 Demo & Roadmap](docs/06-demo-and-roadmap.md) | Streamlit spec, milestones, risks |
+| [07 Results & Handover](docs/07-results-and-handover.md) | Day 1: first results, infra, limitations |
+| [08 Challenges Faced](docs/08-challenges.md) | Every bug that cost real time, and its actual cause |
+| [09 Day 2 Results](docs/09-day2-handover.md) | Multi-seed error bars, 4 interventions, the GLORYS-bias ceiling finding. Headline superseded by 10 |
+| [**10 Day 3 Results**](docs/10-day3-ensemble-and-bias-correction.md) | **Current numbers.** Best model 0.786 °C (ensemble + bias correction), full leakage audit, attention question closed |
 
 ## Running the code
 
@@ -37,8 +41,15 @@ python src/train.py configs/m2_unet.yaml     # resumable; logs to results/<run>.
 python src/evaluate.py --model climatology --split test   # M0 reference
 ```
 
-**Status.** SST (2015-04 -> 2022-12) downloaded and verified. The other six input channels
-and the GLORYS12V1 target need a free Copernicus Marine account and a NASA Earthdata
-account; `build_store.py` names the exact product for each missing channel.
+**Status.** Full pipeline built, all 7 input channels + GLORYS12V1 target downloaded and
+regridded (2015-04 → 2024-12), M0–M4 trained and validated against 5,980–6,093 independent
+Argo profiles. Current best: **0.786 °C** blended RMSE (ensemble of 6 ConvLSTM models +
+bias correction), vs 1.160 for climatology and 0.728 for the GLORYS target's own error
+against Argo. Attention was tested twice (alone, and combined with the ConvLSTM) and
+helped neither time — the final architecture is CNN encoder → ConvLSTM → U-Net decoder,
+no attention. Full detail: [doc 09](docs/09-day2-handover.md) and
+[doc 10](docs/10-day3-ensemble-and-bias-correction.md). Streamlit demo written
+(`app/streamlit_app.py`), INCOIS LAS gridded Argo track (B1) blocked on an upstream
+service outage — see doc 10 §8 for both.
 
 Team working agreement: [`CLAUDE.md`](CLAUDE.md)

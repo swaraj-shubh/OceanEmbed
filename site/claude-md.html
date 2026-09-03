@@ -113,7 +113,8 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <li><a href="06-demo-and-roadmap.html">06 · Demo & Roadmap</a></li>
 <li><a href="07-results-and-handover.html">07 · Results & Handover</a></li>
 <li><a href="08-challenges.html">08 · Challenges Faced</a></li>
-<li><a href="09-day2-handover.html">09 · Day 2 · Latest Results</a></li>
+<li><a href="09-day2-handover.html">09 · Day 2 Results</a></li>
+<li><a href="10-day3-ensemble-and-bias-correction.html">10 · Day 3 · Latest Results</a></li>
 <li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
   <div class="aside-foot">
     <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
@@ -154,7 +155,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </tr>
 <tr>
 <td>Architecture</td>
-<td>CNN encoder → ConvLSTM (~7-day window) → Attention fusion (= OceanEmbed latent) → U-Net decoder</td>
+<td>CNN encoder → ConvLSTM (7-day window, = OceanEmbed latent) → U-Net decoder. Attention was built and tested both alone (M3) and combined with the ConvLSTM (docs/09, docs/10 §5) — it did not improve the Argo score either time and is not in the shipped model.</td>
 </tr>
 <tr>
 <td>Training target</td>
@@ -187,7 +188,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </tbody>
 </table></div>
 <p><strong>Why not ViT/GNN/foundation model:</strong> PS mentions them but doesn't require them. CNN is data/compute-efficient for gridded fields; ViT needs more data, GNN adds graph-construction complexity. Attention is included as the fusion layer — that satisfies the "attention-based" checkbox honestly.</p>
-<h2 id="2b-frozen-results-measured-three-seeds-vs-6093-independent-argo-profiles">2b. FROZEN RESULTS (measured, three seeds, vs 6093 independent Argo profiles)</h2>
+<h2 id="2b-frozen-results-measured-vs-59806093-independent-argo-profiles-see-docs10">2b. FROZEN RESULTS (measured, vs 5,980–6,093 independent Argo profiles; see docs/10)</h2>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -198,33 +199,43 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </thead>
 <tbody>
 <tr>
-<td><strong>GLORYS12V1 target itself</strong></td>
-<td><strong>0.728</strong></td>
-<td>the ceiling — no model trained on it can beat this</td>
+<td><strong>ens_mix6_bc — CURRENT BEST</strong></td>
+<td><strong>0.786</strong></td>
+<td>6× ConvLSTM models averaged + per-depth bias correction fit on val Argo</td>
 </tr>
 <tr>
-<td><strong>M4 ConvLSTM</strong></td>
-<td><strong>0.890 ± 0.008</strong></td>
-<td>best, but only 0.80 sigma over M2</td>
+<td>GLORYS12V1 target itself</td>
+<td>0.728</td>
+<td>the target's own error — no model trained purely on it beats this</td>
 </tr>
 <tr>
-<td><strong>M2 U-Net</strong></td>
-<td><strong>0.901 ± 0.013</strong></td>
+<td>M4 ConvLSTM (no attention)</td>
+<td>0.890 ± 0.010</td>
+<td>best single model; final architecture</td>
+</tr>
+<tr>
+<td>M2 U-Net</td>
+<td>0.901 ± 0.013</td>
 <td>simplest thing that works</td>
 </tr>
 <tr>
-<td>M3 attention</td>
+<td>M3 attention (no ConvLSTM)</td>
 <td>0.907</td>
-<td>null result, 0.5 sigma</td>
+<td>null result, within noise of M2</td>
+</tr>
+<tr>
+<td>M4 + attention</td>
+<td>0.917 ± 0.008</td>
+<td><strong>negative</strong> — beat M4 on val RMSE, lost on Argo; see docs/10 §5</td>
 </tr>
 <tr>
 <td>M2 + gradient loss</td>
-<td>0.918 ± 0.004</td>
+<td>0.918 ± 0.005</td>
 <td>negative</td>
 </tr>
 <tr>
 <td>M2 anomaly</td>
-<td>0.975 ± 0.020</td>
+<td>0.975 ± 0.024</td>
 <td>worse overall; first to beat climatology below 500 m</td>
 </tr>
 <tr>
@@ -234,22 +245,34 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </tr>
 </tbody>
 </table></div>
-<p><strong>Key finding:</strong> GLORYS carries a +0.723 degC warm bias at 100 m against Argo. The model's
-+0.848 is largely inherited, not produced. Four interventions moved the blended score by
-less than one sigma, so the binding constraint is information and target quality, not model
-capacity. <strong>Do not add capacity.</strong> The remaining levers are bias-correcting the target,
-adding input channels (bathymetry, day-of-year), and ensembling.</p>
+<p><strong>The current best model is an ensemble + bias correction, not a single architecture.</strong>
+Six ConvLSTM-family checkpoints (3 seeds <code>m4_convlstm</code> + 3 seeds <code>m4_dw</code>) averaged, then
+corrected by a per-depth offset fit on 2022 Argo and applied unchanged to 2023–24. Fully
+audited against leakage (<code>python src/audit_leakage.py</code>, 8 checks). Full detail: docs/10.</p>
+<p><strong>Attention is decided: it does not help, in either configuration tested (M3 alone, M4 +
+attention), and in the M4 case it made Argo performance <em>worse</em> while making validation
+RMSE look <em>better</em> — the exact scenario the benchmark rule below exists to catch. It is
+not part of the final architecture.</strong></p>
+<p><strong>Key finding (unchanged since Day 2):</strong> GLORYS carries a +0.723 degC warm bias at 100 m
+against Argo, largely inherited rather than produced by the model. Seven interventions
+now (four from Day 2, plus attention+ConvLSTM, monthly-climatology-as-input, and
+bathymetry/lat-lon/day-of-year-as-input from Day 3) have each moved the blended score by
+less than one architecture-level effect. <strong>Do not add capacity or input channels.</strong> The
+lever that actually worked is the bias correction — the remaining unexplored version of
+it is monthly or spatially-varying offsets (currently one flat constant per depth,
+year-round, whole-basin).</p>
 <p><strong>Benchmark rule:</strong> report against Argo, never GLORYS validation loss. Across three seeds
-val RMSE spreads 8% while the Argo score spreads 1.4%. Any architecture claim needs
-multiple seeds and a reported spread.</p>
+val RMSE spreads ~8% while the Argo score spreads ~1.4% — and the two metrics can disagree
+in <em>direction</em>, not just magnitude (docs/10 §5). Any architecture claim needs multiple
+seeds, a reported spread, and the Argo number, never the validation number, as the verdict.</p>
 <hr />
 <h2 id="3-model-stages-build-progressively-never-skip-ahead">3. Model Stages (build progressively — never skip ahead)</h2>
 <ul>
 <li><strong>M0</strong> — Climatology / mean-profile baseline (non-AI). <em>Must exist before any DL claim; the OceanDepths paper shows climatology beats naive ML.</em></li>
 <li><strong>M1</strong> — Tiny CNN, SST-only or few channels, small subset. Prove the mapping is learnable.</li>
 <li><strong>M2</strong> — CNN/U-Net with all 7 variables. Meets the full SIH input requirement.</li>
-<li><strong>M3</strong> — + attention fusion → this <em>is</em> OceanEmbed.</li>
-<li><strong>M4</strong> — + ConvLSTM 7-day temporal context. Final PoC model. <strong>Built and measured: 0.890 ± 0.008, see §2b.</strong></li>
+<li><strong>M3</strong> — + attention fusion. Tested, including combined with M4's ConvLSTM (docs/10 §5) — no Argo gain either time. Not in the final architecture; the OceanEmbed latent is the ConvLSTM bottleneck (M4), not the attended one.</li>
+<li><strong>M4</strong> — + ConvLSTM 7-day temporal context. Final PoC architecture (no attention — tested and rejected, §2b). <strong>Single-model best: 0.890 ± 0.010. Ensembled + bias-corrected: 0.786, current overall best, see §2b and docs/10.</strong></li>
 </ul>
 <p>Report every stage against M0. If a stage doesn't beat the previous one, investigate before adding complexity.</p>
 <h2 id="4-data-sources-exact-products">4. Data Sources (exact products)</h2>
