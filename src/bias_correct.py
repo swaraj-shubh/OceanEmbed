@@ -14,6 +14,12 @@ of the achievable gain from fifteen numbers. depth x month scored 0.675: 180 bin
 
 The bias also DRIFTS (+0.475 degC at 100 m in 2021 vs +0.716 in 2023-24), which is why
 fitting on val beats fitting on train, and why an operational version would refit annually.
+
+SIX alternative forms were then screened under float-blocked cross-validation and ALL are
+null -- basin, season, latitude band, basin x season, and a per-depth linear a + b*pred all
+land within +/-0.6% of this one against +/-1.9% fold noise. `src/correction_forms.py` is
+the instrument; docs/12 sec.2 is the table. Do not stratify this further: after the offset
+the residual is variance, not bias, and no lookup table reaches it.
 """
 import argparse
 import json

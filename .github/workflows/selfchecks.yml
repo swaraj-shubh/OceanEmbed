@@ -35,7 +35,7 @@ jobs:
       - name: Run module self-checks
         run: |
           set -e
-          for m in metrics argo_eval bias_correct ablation baselines datasets models/unet; do
+          for m in metrics argo_eval bias_correct correction_forms ablation baselines datasets models/unet; do
             echo "::group::src/$m.py"
             python "src/$m.py"
             echo "::endgroup::"
