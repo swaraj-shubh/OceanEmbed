@@ -128,7 +128,19 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </code></pre>
 <ul>
 <li><code>m</code> = land mask ∧ valid-target mask.</li>
-<li>Optional experiment after M4 works: <strong>depth-weighted MSE</strong> with weights peaking at 50–200 m (thermocline, where the error concentrates — doc 02 §3). Only keep it if the depth-wise table improves.</li>
+<li><strong>Depth-weighted MSE — tried, and the reasoning above turned out to be backwards.</strong> The
+  blended score is an n-weighted RMS across depths with roughly equal n per level, i.e.
+  almost exactly the mean per-depth MSE in °C — so <strong>plain masked MSE is already the loss
+  matched to the reported metric</strong>, and any re-weighting is a trade rather than a free win.
+  What was measured (<code>configs/m4_dw.yaml</code>, weights = 1/σ² from the frozen train stats, which
+  run 0.38 at 100 m up to 2.53 at 1000 m): blended slightly <em>worse</em> (0.865 vs 0.860 on val),
+  50 m worse (1.142 vs 1.040), and 500 m / 1000 m clearly <strong>better</strong> (0.292 vs 0.347, 0.234
+  vs 0.257). Weighting <em>toward</em> the thermocline as originally proposed would have made the
+  known-weak deep levels worse still. It is kept not as a replacement but as an <strong>ensemble
+  member</strong>, because it is complementary to the plain-MSE model. See
+  <a href="10-experiment-programme.html">doc 10</a>.</li>
+<li>A <strong>vertical-gradient loss</strong> (penalising error in level-to-level differences) was also
+  tried, on both M2 and M4, and is negative both times. Do not revisit.</li>
 <li>Normalize targets per depth channel (train-stats), predict in normalized space, denormalize for metrics. This stops the surface layers (high variance) from dominating the loss.</li>
 </ul>
 <h2 id="2-training-recipe-defaults-override-via-config">2. Training recipe (defaults — override via config)</h2>
@@ -195,6 +207,32 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </ol>
 <p>Report both tables. B1 is what the PS asked for; B2 is the one that proves we resolve structure the 1° product cannot. Where they differ, that gap quantifies what objective analysis smooths away — a result, not an embarrassment.</p>
 <p>Argo data is <strong>never</strong> an input or a training target at any stage, in either sub-track. If asked <em>"but GLORYS assimilated those Argo floats"</em> — correct, and it's why we report Track B at all rather than resting on Track A; this is the standard protocol (OceanBench, OceanForecastBench, OceanDepths). Genuinely assimilation-free validation would need withheld cruise data we don't have. State the limitation plainly; judges reward that more than an overclaim.</p>
+<h4 id="b3-post-processing-stages-added-in-doc-10">B3 — post-processing stages (added in <a href="10-experiment-programme.html">doc 10</a>)</h4>
+<p>Two stages sit between the network and the reported number. Both are model-agnostic, both
+are <strong>always reported as their own table rows</strong>, and neither puts Argo into training.</p>
+<ol>
+<li><strong>Ensemble.</strong> Average N checkpoints' prediction cubes. Members may differ in seed <em>and</em>
+   in config; cubes are aligned on the intersection of their time axes, because a window=7
+   model cannot predict a split's first six days. Worth −3.5%.</li>
+<li><strong>Depth-wise bias correction.</strong> Subtract a 15-number offset — mean(prediction −
+   observation) per depth — <strong>fitted on validation-split Argo only</strong>. <code>src/bias_correct.py</code>
+   refuses to fit on test; <code>predict_cube.py --offset</code> refuses to apply an offset fitted on
+   the split being scored. Worth −8.5%. Depth × month was tried and is worse (180 bins over
+   ~3,400 casts overfits). The bias <strong>drifts</strong> with time, so refit annually against the most
+   recent year.</li>
+</ol>
+<h3 id="selection-discipline-non-negotiable">Selection discipline (non-negotiable)</h3>
+<p>Interventions are screened at <strong>one seed on the val split (2022 Argo)</strong>, promoted to three
+seeds only if they pass, and the <strong>test split is read once</strong>, at the end, on the frozen
+winner. Doc 09 selected on test; doc 10 does not. Ensemble composition is also chosen on
+val, <em>uncorrected</em>, so the bias offset is never fitted and selected on the same data.</p>
+<h3 id="statistical-testing">Statistical testing</h3>
+<p>Model comparisons use <code>argo_eval.paired_bootstrap</code>: 1,000 paired resamples <strong>blocking by
+Argo float, not by profile</strong>. The 6,448 test casts come from only 147 floats, and two casts
+from one float ten days apart in the same water mass are not independent samples — a
+profile-level bootstrap reports intervals roughly √(6448/147) ≈ 6.6× too narrow, which is
+enough to turn seed noise into a publishable result. This is what finally showed that M3
+attention's advantage has a 95% interval of [−0.011, +0.011], i.e. nothing.</p>
 <h3 id="metrics-all-reported-per-depth">Metrics (all reported per depth)</h3>
 <div class="tablewrap"><table>
 <thead>
@@ -231,6 +269,8 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </tbody>
 </table></div>
 <h3 id="the-headline-table-fill-per-model-stage">The headline table (fill per model stage)</h3>
+<p>Filled in, for the frozen final model (6-member ensemble + Argo bias correction), against
+6,056 independent Argo casts on the 2023–24 test split:</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -239,13 +279,61 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <th>MAE</th>
 <th>Bias</th>
 <th>Corr</th>
-<th>AnomCorr</th>
+<th>R²</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>0 / 30 / 50 / 100 / 150 / 200 / 300 / 500 / 1000</td>
-<td>…</td>
+<td>0</td>
+<td>0.426</td>
+<td>0.292</td>
+<td>−0.108</td>
+<td>0.965</td>
+<td>0.925</td>
+</tr>
+<tr>
+<td>50</td>
+<td>1.011</td>
+<td>0.772</td>
+<td>−0.253</td>
+<td>0.889</td>
+<td>0.774</td>
+</tr>
+<tr>
+<td>100</td>
+<td>1.372</td>
+<td>1.056</td>
+<td>+0.299</td>
+<td>0.819</td>
+<td>0.653</td>
+</tr>
+<tr>
+<td>200</td>
+<td>0.680</td>
+<td>0.523</td>
+<td>+0.176</td>
+<td>0.953</td>
+<td>0.902</td>
+</tr>
+<tr>
+<td>500</td>
+<td>0.245</td>
+<td>0.185</td>
+<td>−0.018</td>
+<td>0.982</td>
+<td>0.963</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>0.216</td>
+<td>0.165</td>
+<td>−0.014</td>
+<td>0.973</td>
+<td>0.945</td>
+</tr>
+<tr>
+<td><strong>blended</strong></td>
+<td><strong>0.786</strong></td>
 <td></td>
 <td></td>
 <td></td>
@@ -253,14 +341,36 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 </tr>
 </tbody>
 </table></div>
-<p>Plus one figure: RMSE-vs-depth curves for M0…M4 on one plot (the single most persuasive figure we can make — expect the M4 curve to pull below M0 mainly in the 50–300 m band).</p>
+<p>Full 15-depth version in <a href="10-experiment-programme.html">doc 10</a>; regenerate with
+<code>python src/ablation.py --split test</code>.</p>
+<p>Plus one figure: RMSE-vs-depth curves for M0…M4 plus the final model on one plot (the single
+most persuasive figure we can make). The final curve sits below M0 at <strong>every</strong> depth —
+including 500–1000 m, where every single model lost to climatology until the bias correction
+was added.</p>
 <h2 id="4-ablation-table-deliverable">4. Ablation table (deliverable)</h2>
 <p>Same test set, same metrics, rows = M0 climatology · M1 tiny CNN · M2 U-Net 7-var · M3 +attention · M4 +ConvLSTM · (optional) M2 with SST-only vs 7-var — the last one directly proves the multivariate claim.</p>
+<p><strong>Generate it, don't hand-maintain it:</strong> <code>python src/ablation.py --split test</code> reads every
+<code>results/*_test_argo.csv</code>, averages across seeds, reports the spread, and writes
+<code>results/ablation_test.md</code>. The <code>--split val</code> form is what selection decisions are read from.</p>
+<p><strong>Include the failures.</strong> As of <a href="10-experiment-programme.html">doc 10</a> the table carries
+seven model-side interventions — attention, ConvLSTM, gradient loss, anomaly formulation,
+climatology-as-input, auxiliary channels, depth weighting — <strong>none of which improved the
+observational score on its own</strong>, against two output-side stages that both did. That
+asymmetry <em>is</em> the research finding, and it only reads as a finding if the failures are on
+the page. Keep the <code>M0 climatology</code> and <code>GLORYS12V1 target</code> rows in every version of the
+table: the model's number is only interpretable between that floor and that ceiling.</p>
 <h2 id="5-experiment-hygiene">5. Experiment hygiene</h2>
 <ul>
 <li>One YAML per run in <code>configs/</code>; run name = <code>m3_attn_lr3e4_2026xxxx</code>.</li>
 <li>Log train/val curves + final metrics to CSV (or W&amp;B free tier) — every number in the deck must be traceable to a run.</li>
-<li>Frozen final artifact for the demo: <code>checkpoints/final/{model.pt, config.yaml, norm_stats.json, metrics.json}</code>.</li>
+<li>Frozen final artifact for the demo: <strong><code>results/FROZEN.md</code></strong> is the manifest — six
+  checkpoints (<code>m4_convlstm_s{1,2,3}_best.pt</code>, <code>m4_dw_s{1,2,3}_best.pt</code>), their two configs,
+  <code>norm_stats.json</code>, the climatology and bathymetry caches, and
+  <code>results/ens_mix6_offset.json</code> (the bias offset). All mirrored to
+  <code>s3://oceanembed-sih26-data/oceanembed/checkpoints/</code>.</li>
+<li><strong>Never train without the checkpoint sync running.</strong> <code>deploy/setup.sh</code> now starts it
+  automatically; it used to be a separate manual command, and a day's worth of checkpoints
+  existed only on one instance's root volume because nobody ran it.</li>
 </ul>
 <h2 id="6-compute-plan">6. Compute plan</h2>
 <ol>

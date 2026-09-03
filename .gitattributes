@@ -1,0 +1,15 @@
+# Normalise line endings. Development happens on Windows, training on Linux, and shell
+# scripts shipped with CRLF fail on the GPU box with an unreadable "bad interpreter" error
+# -- which cost real time before this file existed.
+* text=auto
+
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.py   text eol=lf
+
+# Never try to diff or normalise these.
+*.nc   binary
+*.pt   binary
+*.npy  binary
+*.parquet binary

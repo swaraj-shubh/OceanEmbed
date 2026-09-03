@@ -27,3 +27,10 @@ print("cuda:", torch.cuda.is_available(),
       torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU ONLY")
 PY
 echo "ready:  python src/train.py configs/m2_unet.yaml"
+
+# The sync loop is not optional. Day 2 lost 18 checkpoints because it was a separate
+# manual command in a second shell that nobody ran. Starting it here means the only way
+# to train without a sync is to not use this script.
+pkill -f sync_checkpoints.sh || true
+BUCKET="$BUCKET" PREFIX="$PREFIX" nohup bash deploy/sync_checkpoints.sh > sync.log 2>&1 &
+echo "checkpoint sync -> s3://$BUCKET/$PREFIX/checkpoints (pid $!)"

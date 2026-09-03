@@ -142,6 +142,15 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
     E --> G["Streamlit demo<br/>maps · profiles · metrics"]
     A7 -. "never enters training" .-> F
 </pre>
+<blockquote>
+<p><strong>What we actually ship is one layer larger than this diagram.</strong> The delivered system is
+a <strong>six-member ensemble</strong> — three seeds of the M4 below plus three seeds of the same
+network trained with an inverse-variance depth-weighted loss — followed by a <strong>depth-wise
+bias correction</strong> fitted on validation-year Argo. Measured <strong>0.786 °C</strong>; the single M4
+drawn below is 0.890. See <a href="10-experiment-programme.html">doc 10</a>. Both extra stages are
+post-processing: the network architecture is exactly as specified here, and neither stage
+lets Argo into training. Manifest: <code>results/FROZEN.md</code>.</p>
+</blockquote>
 <h2 id="2-oceanembed-model-m4-final-poc-form">2. OceanEmbed model (M4, final PoC form)</h2>
 <pre class="mermaid">flowchart TD
     X["Input sequence<br/>[T=7 days, 7, H, W]"] --> ENC

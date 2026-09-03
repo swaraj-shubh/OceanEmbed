@@ -28,6 +28,14 @@ flowchart TD
     A7 -. "never enters training" .-> F
 ```
 
+> **What we actually ship is one layer larger than this diagram.** The delivered system is
+> a **six-member ensemble** — three seeds of the M4 below plus three seeds of the same
+> network trained with an inverse-variance depth-weighted loss — followed by a **depth-wise
+> bias correction** fitted on validation-year Argo. Measured **0.786 °C**; the single M4
+> drawn below is 0.890. See [doc 10](10-experiment-programme.html). Both extra stages are
+> post-processing: the network architecture is exactly as specified here, and neither stage
+> lets Argo into training. Manifest: `results/FROZEN.md`.
+
 ## 2. OceanEmbed model (M4, final PoC form)
 
 ```mermaid
