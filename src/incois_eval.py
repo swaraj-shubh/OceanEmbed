@@ -115,7 +115,7 @@ def main():
     ref = ds[a.var]
     ren = {n: t for n, t in (("latitude", "lat"), ("longitude", "lon"),
                              ("LATITUDE", "lat"), ("LONGITUDE", "lon"),
-                             ("lev", "depth"), ("level", "depth"), ("z", "depth"),
+                             ("lev", "depth"), ("level", "depth"), ("z", "depth"), ("ZAX", "depth"),
                              ("TIME", "time"), ("DEPTH", "depth")) if n in ref.dims}
     ref = ref.rename(ren) if ren else ref
 
