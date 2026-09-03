@@ -233,9 +233,32 @@ are negative on M4 too. Do not revisit.
 | 500 | 0.273 | 0.279 | **0.245** | 0.226 | 0.185 | −0.018 | 0.982 | 0.963 |
 | 700 | 0.263 | 0.280 | **0.224** | 0.246 | 0.172 | −0.022 | 0.981 | 0.963 |
 | 1000 | 0.237 | 0.254 | **0.216** | 0.243 | 0.165 | −0.014 | 0.973 | 0.945 |
-| **blended** | **1.160** | **0.890** | **0.786** | **0.728** | | | | |
+| **blended** | **1.160** | **0.890** | **0.786** | **0.728** | **0.511** | **+0.012** | **0.926** | **0.853** |
 
 At 100 m, the hardest layer: R² goes 0.502 → **0.653**, bias +0.850 → **+0.299**.
+
+**Blended MAE/Bias/Corr/R² are `n`-weighted means over the 15 depths — the same weighting
+`summary()` uses for RMSE, applied to the other four columns.** No code computes this yet;
+these four numbers were derived once from `results/ens_mix6_bc_test_argo.csv` and
+`results/GLORYS_target_test_argo.csv` and are not reproducible by a script. If a
+`blend_all()` is ever added to `metrics.py`, replace this note with the command.
+
+**FINAL vs GLORYS, every metric:**
+
+| Metric | GLORYS | FINAL | Δ |
+|---|---|---|---|
+| RMSE | 0.728 | 0.786 | +0.058 (GLORYS lower — expected, it's the training target) |
+| MAE | 0.442 | 0.511 | +0.070 (GLORYS lower) |
+| **Bias** | **+0.193** | **+0.012** | **−0.181 (FINAL far better)** |
+| Corr | 0.947 | 0.926 | −0.021 (GLORYS slightly higher) |
+| R² | 0.877 | 0.853 | −0.024 (GLORYS slightly higher) |
+
+Four of five metrics slightly favour GLORYS, which is unsurprising — the model approximates
+its own training target and was never going to beat it outright. **Bias is the exception,
+and it is not close.** GLORYS carries a systematic +0.193 °C warm bias blended across all
+depths (peaking at +0.72 at 100 m); the bias-correction step brings FINAL's blended bias to
+essentially zero (+0.012). The correction was built to fix bias specifically, against Argo
+rather than against GLORYS, and this is the metric where that shows.
 
 ---
 

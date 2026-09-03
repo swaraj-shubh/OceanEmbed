@@ -20,7 +20,7 @@ headline of 0.908 °C. **Every number on that page is superseded by this one.** 
 error bars, three new interventions, a temporal architecture, and one measurement that
 reframes the whole problem.
 
-**[Doc 10](10-day3-ensemble-and-bias-correction.html) supersedes this page's headline.**
+**[Doc 11](11-day3-handover.html) supersedes this page's headline.**
 The current best model is 0.786 °C (an ensemble + bias correction, not a single
 architecture), and the attention question §8 leaves open below is now closed — attention
 combined with the ConvLSTM was built and tested, and it lost. Read this page for the
@@ -247,7 +247,7 @@ received `[B, C, H, W]` where it wanted `[B, T, C, H, W]`.
 
 ## 8. What is left
 
-*(§8 as originally written on Day 2, kept for history. See [doc 10](10-day3-ensemble-and-bias-correction.html) §8 for the current state of each item.)*
+*(§8 as originally written on Day 2, kept for history. See [doc 11](11-day3-handover.html) and [doc 12](12-day4-audit.html) for the current state of each item.)*
 
 **1. The Streamlit demo — not built.** The largest outstanding item and an explicit PS
 requirement: date + depth → map, the 7 surface inputs, click → 0–1000 m profile, nearby

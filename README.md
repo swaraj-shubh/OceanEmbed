@@ -53,8 +53,10 @@ failure: [doc 10](docs/10-experiment-programme.md).
 | [06 Demo & Roadmap](docs/06-demo-and-roadmap.md) | Streamlit spec, milestones, risks |
 | [07 Results & Handover](docs/07-results-and-handover.md) | Day 1: first results, infra, limitations |
 | [08 Challenges Faced](docs/08-challenges.md) | Every bug that cost real time, and its actual cause |
-| [09 Day 2 Results](docs/09-day2-handover.md) | Multi-seed error bars, 4 interventions, the GLORYS-bias ceiling finding. Headline superseded by 10 |
-| [**10 Day 3 Results**](docs/10-day3-ensemble-and-bias-correction.md) | **Current numbers.** Best model 0.786 °C (ensemble + bias correction), full leakage audit, attention question closed |
+| [09 Day 2 Results](docs/09-day2-handover.md) | Multi-seed error bars, 4 interventions, the GLORYS-bias ceiling finding. Headline superseded by 11 |
+| [10 Experiment Programme](docs/10-experiment-programme.md) | The 10-step programme, its selection discipline, and every ablation including the failures |
+| [**11 Day 3 Handover**](docs/11-day3-handover.md) | **The result.** 0.786 °C: 6-member ensemble + depth-wise Argo bias correction |
+| [**12 Day 4 Audit**](docs/12-day4-audit.md) | **Current page.** Three directions closed; 62% of the remaining error is variance in 75–150 m, not bias |
 
 ## Running the code
 
@@ -62,16 +64,15 @@ failure: [doc 10](docs/10-experiment-programme.md).
 pip install -r requirements.txt
 ```
 
-**Status.** Full pipeline built, all 7 input channels + GLORYS12V1 target downloaded and
-regridded (2015-04 → 2024-12), M0–M4 trained and validated against 5,980–6,093 independent
-Argo profiles. Current best: **0.786 °C** blended RMSE (ensemble of 6 ConvLSTM models +
-bias correction), vs 1.160 for climatology and 0.728 for the GLORYS target's own error
-against Argo. Attention was tested twice (alone, and combined with the ConvLSTM) and
-helped neither time — the final architecture is CNN encoder → ConvLSTM → U-Net decoder,
-no attention. Full detail: [doc 09](docs/09-day2-handover.md) and
-[doc 10](docs/10-day3-ensemble-and-bias-correction.md). Streamlit demo written
-(`app/streamlit_app.py`), INCOIS LAS gridded Argo track (B1) blocked on an upstream
-service outage — see doc 10 §8 for both.
+**Status.** Full pipeline built and frozen; all 7 input channels and the GLORYS12V1 target
+downloaded and regridded (2015-04 → 2024-12); the final result is manifested in
+[`results/FROZEN.md`](results/FROZEN.md). The architecture is CNN encoder → ConvLSTM →
+U-Net decoder, **no attention** — it was tested alone and combined with the ConvLSTM and
+helped neither time ([doc 11](docs/11-day3-handover.md)). Streamlit demo built and running
+offline from a committed bundle. The one PS deliverable still open is validation track B1
+against INCOIS LAS gridded Argo: the code is written and self-checked
+(`src/incois_eval.py`), but INCOIS's OPeNDAP service returns no data for any Argo dataset
+while the same server answers other requests normally, so it has never been run.
 
 ```bash
 for f in metrics datasets baselines argo_eval bias_correct ablation models/unet; do
