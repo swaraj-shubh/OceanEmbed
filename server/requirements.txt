@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+numpy
+pandas
+xarray
+zarr
+pyarrow
+# CPU-only torch — no CUDA in the serving path (CLAUDE.md §7)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+# add netCDF4 only if you serve .nc cubes instead of the zarr
