@@ -18,7 +18,7 @@ Satellites see only the ocean surface (SST, SSS, SSH, currents, winds) at high r
 | Grid | 0.25° × 0.25°, daily |
 | Input X | `[7, H, W]` — SST, SSS, SSH/SLA, Current U, Current V, Wind U, Wind V |
 | Output Y | `[15, H, W]` — T at depths 0, 5, 10, 20, 30, 50, 75, 100, 125, 150, 200, 300, 500, 700, 1000 m |
-| Architecture | CNN encoder → ConvLSTM (~7-day window) → Attention fusion (= OceanEmbed latent) → U-Net decoder |
+| Architecture | CNN encoder → ConvLSTM (7-day window, = OceanEmbed latent) → U-Net decoder. Attention was built and tested both alone (M3) and combined with the ConvLSTM (docs/09, docs/10 §5) — it did not improve the Argo score either time and is not in the shipped model. |
 | Training target | **GLORYS12V1** (PS-named, `doi:10.48670/moi-00021` = `GLOBAL_MULTIYEAR_PHY_001_030`), regridded + interpolated to the 15 SIH depths |
 | Validation | Two tracks: **B1 INCOIS LAS Gridded ARGO** (PS-named, 1°/10-day — aggregate our output up to it) and **B2 raw Argo profiles** (stricter). Depth-wise RMSE, MAE, Bias, Correlation |
 | Loss | MSE first; depth-weighted loss only if results justify it |
@@ -29,56 +29,43 @@ Satellites see only the ocean surface (SST, SSS, SSH, currents, winds) at high r
 
 **Why not ViT/GNN/foundation model:** PS mentions them but doesn't require them. CNN is data/compute-efficient for gridded fields; ViT needs more data, GNN adds graph-construction complexity. Attention is included as the fusion layer — that satisfies the "attention-based" checkbox honestly.
 
-## 2b. FROZEN RESULTS (measured, three seeds, vs 6093 independent Argo profiles)
+## 2b. FROZEN RESULTS (measured, vs 5,980–6,093 independent Argo profiles; see docs/10)
 
 | Model | Argo blended RMSE | Note |
 |---|---|---|
-| **FINAL: 6-model ensemble + Argo bias correction** | **0.786** | **beats climatology at all 15 depths** |
-| GLORYS12V1 target itself | 0.728 | ceiling for an *uncorrected* model only — see finding 3 |
-| M4 3-seed ensemble + bias correction | 0.792 | |
-| M2+M3 ensemble + bias correction | 0.818 | from the two Aug-31 checkpoints alone |
-| M2 + Argo bias correction (depth) | 0.844 | 15 numbers fitted on val Argo |
-| M2 + bias correction (depth x month) | 0.850 | worse — 180 bins overfit |
-| 6-model ensemble, uncorrected | 0.859 | |
-| **M4 ConvLSTM** | **0.890 +/- 0.010** | doc 09's headline |
-| **M2 U-Net** | **0.902 +/- 0.014** | simplest thing that works |
-| M3 attention | 0.907 | null — bootstrap CI [-0.011, +0.011] contains zero |
-| M2 + gradient loss | 0.918 +/- 0.005 | negative |
-| M2 anomaly | 0.975 +/- 0.024 | negative |
+| **ens_mix6_bc — CURRENT BEST** | **0.786** | 6× ConvLSTM models averaged + per-depth bias correction fit on val Argo |
+| GLORYS12V1 target itself | 0.728 | the target's own error — no model trained purely on it beats this |
+| M4 ConvLSTM (no attention) | 0.890 ± 0.010 | best single model; final architecture |
+| M2 U-Net | 0.901 ± 0.013 | simplest thing that works |
+| M3 attention (no ConvLSTM) | 0.907 | null result, within noise of M2 |
+| M4 + attention | 0.917 ± 0.008 | **negative** — beat M4 on val RMSE, lost on Argo; see docs/10 §5 |
+| M2 + gradient loss | 0.918 ± 0.005 | negative |
+| M2 anomaly | 0.975 ± 0.024 | worse overall; first to beat climatology below 500 m |
 | M0 climatology | 1.160 | baseline |
 
-**FINAL model** = 3 seeds of `m4_convlstm` + 3 seeds of `m4_dw`, averaged, minus a depth-wise
-offset fitted on 2022 val Argo. Manifest: `results/FROZEN.md`. Selected on val, test read once.
+**The current best model is an ensemble + bias correction, not a single architecture.**
+Six ConvLSTM-family checkpoints (3 seeds `m4_convlstm` + 3 seeds `m4_dw`) averaged, then
+corrected by a per-depth offset fit on 2022 Argo and applied unchanged to 2023–24. Fully
+audited against leakage (`python src/audit_leakage.py`, 8 checks). Full detail: docs/10.
 
-**Key finding 1:** GLORYS carries a +0.723 degC warm bias at 100 m against Argo; the model's
-+0.85 is largely inherited, not produced.
+**Attention is decided: it does not help, in either configuration tested (M3 alone, M4 +
+attention), and in the M4 case it made Argo performance *worse* while making validation
+RMSE look *better* — the exact scenario the benchmark rule below exists to catch. It is
+not part of the final architecture.**
 
-**Key finding 2:** the two biggest wins need **no training at all** — ensembling existing
-checkpoints (-3.5%) and a **15-number depth-wise offset fitted on val Argo** (-8.5%).
-Together 0.890 -> **0.786**, cutting the error the model adds on top of its target from
-0.162 to 0.058, a 64% reduction. Both significant under a float-blocked bootstrap. The
-offset is post-processing and is **always its own table row** — the network never sees Argo.
-The bias *drifts* (+0.590 fitted on 2022 vs +0.893 actual in 2023-24), so refit annually.
-
-**Key finding 3:** with the correction, **all 15 depths beat climatology** (doc 09's weakness
-at 500/700/1000 m is gone) and at 125/700/1000 m the model beats **GLORYS itself**. That
-defines the ceiling rather than breaking it: 0.728 bounds a model that only ever sees
-GLORYS. Quote it as "the bound for an uncorrected model".
-
-**Key finding 4 (docs/10):** SEVEN model-side interventions have now been tried — attention,
-ConvLSTM, gradient loss, anomaly, climatology-as-input, auxiliary channels, depth weighting.
-**None improved the observational score on its own.** `m4_aux` fit GLORYS better than the
-baseline (val GLORYS RMSE 0.659) and scored WORSE against Argo (0.889 vs 0.860). Depth
-weighting was the one survivor, promoted only because it is *complementary* (better at
-500-1000 m, worse at 50 m), so it earns an ensemble slot, not a replacement.
-**Do not add capacity. Do not add input channels. Work on the output side.**
+**Key finding (unchanged since Day 2):** GLORYS carries a +0.723 degC warm bias at 100 m
+against Argo, largely inherited rather than produced by the model. Seven interventions
+now (four from Day 2, plus attention+ConvLSTM, monthly-climatology-as-input, and
+bathymetry/lat-lon/day-of-year-as-input from Day 3) have each moved the blended score by
+less than one architecture-level effect. **Do not add capacity or input channels.** The
+lever that actually worked is the bias correction — the remaining unexplored version of
+it is monthly or spatially-varying offsets (currently one flat constant per depth,
+year-round, whole-basin).
 
 **Benchmark rule:** report against Argo, never GLORYS validation loss. Across three seeds
-val RMSE spreads 8% while the Argo score spreads 1.4%.
-
-**Statistics rule:** model comparisons use `argo_eval.paired_bootstrap`, which resamples
-**floats, not profiles** — 6,448 test casts come from only 147 floats, so a profile-level
-bootstrap reads ~6.6x too narrow. Selection happens on **val** Argo; test is read once.
+val RMSE spreads ~8% while the Argo score spreads ~1.4% — and the two metrics can disagree
+in *direction*, not just magnitude (docs/10 §5). Any architecture claim needs multiple
+seeds, a reported spread, and the Argo number, never the validation number, as the verdict.
 
 ---
 
@@ -87,8 +74,8 @@ bootstrap reads ~6.6x too narrow. Selection happens on **val** Argo; test is rea
 - **M0** — Climatology / mean-profile baseline (non-AI). *Must exist before any DL claim; the OceanDepths paper shows climatology beats naive ML.*
 - **M1** — Tiny CNN, SST-only or few channels, small subset. Prove the mapping is learnable.
 - **M2** — CNN/U-Net with all 7 variables. Meets the full SIH input requirement.
-- **M3** — + attention fusion → this *is* OceanEmbed.
-- **M4** — + ConvLSTM 7-day temporal context. Final PoC model. **Built and measured: 0.890 ± 0.008, see §2b.**
+- **M3** — + attention fusion. Tested, including combined with M4's ConvLSTM (docs/10 §5) — no Argo gain either time. Not in the final architecture; the OceanEmbed latent is the ConvLSTM bottleneck (M4), not the attended one.
+- **M4** — + ConvLSTM 7-day temporal context. Final PoC architecture (no attention — tested and rejected, §2b). **Single-model best: 0.890 ± 0.010. Ensembled + bias-corrected: 0.786, current overall best, see §2b and docs/10.**
 
 Report every stage against M0. If a stage doesn't beat the previous one, investigate before adding complexity.
 

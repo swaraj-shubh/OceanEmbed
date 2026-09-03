@@ -1,25 +1,26 @@
-# Data and model artifacts -- reproducible, or mirrored to S3.
-# NOTE: .gitignore has no trailing comments. A pattern line is the whole line.
 data/
 checkpoints/
-*.zarr/
-
-# Prediction cubes are 0.3-0.7 GB each. The metric CSVs in results/ ARE tracked.
 results/*.nc
-
-# Credentials. The .env.example template is the one file here that IS tracked.
+*.zarr/
 .env
-.env*
-!.env.example
-
-# Run logs (nohup output from downloads, training, site builds)
-*.log
-*.err
-
-# Tooling
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
 .DS_Store
-.vercel
 .vercel/
+.vercel
+.env*
+glorys.log
+glorys.err
+build.log
+build.err
+stats.log
+stats.err
+m0.log
+m0.err
+audit.log
+audit.err
+loader.log
+loader.err
+s3*.log
+s3*.err

@@ -88,12 +88,27 @@ def main(cfg_path, seed=None):
                     num_workers=nw, persistent_workers=nw > 0)
 
     net = build(cfg).to(dev)
+    if cfg.get("init_head_bias"):
+        # Targets are raw degC (basin mean 15-25), and the 1x1 head starts at ~0, so the
+        # first five epochs are spent learning a constant: m4_convlstm_s1 opens at train
+        # loss 434 degC^2, i.e. RMSE 20.8, which is exactly "predict zero". Seeding the
+        # bias with the train-split per-depth mean hands the model that constant for free.
+        ym = json.loads(Path(stats or STATS_PATH).read_text())["Y"]["mean"]
+        with torch.no_grad():
+            net.head.bias.copy_(torch.tensor(ym, dtype=torch.float32))
+        print(f"head bias initialised to train means {[round(v, 1) for v in ym]}")
     opt = torch.optim.Adam(net.parameters(), cfg.get("lr", 1e-3))
+    # Constant 1e-3 leaves val RMSE bouncing +/-0.02 at the last epoch, so "best" is a
+    # draw from that noise rather than a converged number. Decay to ~0 instead.
+    sched = (torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=cfg.get("epochs", 30))
+             if cfg.get("sched") == "cosine" else None)
     CKPT.mkdir(exist_ok=True); RESULTS.mkdir(exist_ok=True)
     ckpt_path, start = CKPT / f"{run}.pt", 0
     if ckpt_path.exists():                                   # auto-resume after preemption
         st = torch.load(ckpt_path, map_location=dev, weights_only=False)
         net.load_state_dict(st["model"]); opt.load_state_dict(st["opt"])
+        if sched is not None and st.get("sched"):
+            sched.load_state_dict(st["sched"])       # resume must not restart the decay
         start = st["epoch"] + 1
         print(f"resumed {run} from epoch {start}")
 
@@ -110,6 +125,8 @@ def main(cfg_path, seed=None):
                               depth_weight=depth_weight)
             loss.backward(); opt.step()
             losses.append(float(loss.detach()))
+        if sched is not None:
+            sched.step()
         df = run_val(net, va, dev)
         vr = summary(df)
         print(f"ep {ep:3d}  train {np.mean(losses):.4f}  val RMSE {vr:.4f} degC "
@@ -117,7 +134,8 @@ def main(cfg_path, seed=None):
         with log.open("a") as f:
             f.write(f"{ep},{np.mean(losses):.5f},{vr:.5f},{time.time() - t0:.0f}\n")
         state = {"model": net.state_dict(), "opt": opt.state_dict(), "epoch": ep,
-                 "cfg": cfg, "stats": str(stats or ""), "best": best}
+                 "cfg": cfg, "stats": str(stats or ""), "best": best,
+                 "sched": sched.state_dict() if sched is not None else None}
         torch.save(state, ckpt_path)
         df.to_csv(RESULTS / f"{run}_val_depthwise.csv", index=False)
         # Keep the best-val epoch separately. The last epoch is not the best one: both M2

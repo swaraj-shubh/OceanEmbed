@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 — Day 3: The Best Model, and Two Closed Questions — OceanEmbed</title>
+<meta name="description" content="Satellite Embedding-Based Deep Learning Framework for Reconstruction of Subsurface Ocean Temperature — SIH 2026 PS 26066">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#08131e; --bg-soft:#0d1b2a; --panel:#101f30; --line:#1c3448;
+  --fg:#dbe7f2; --fg-dim:#8ba3ba; --accent:#4cc4e0; --accent-2:#6ee7b7;
+  --code-bg:#0b1926;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+  font-size:16px;line-height:1.7;display:flex;
+  background-image:radial-gradient(1200px 600px at 80% -10%,rgba(76,196,224,.10),transparent 60%),
+                   radial-gradient(900px 500px at -10% 110%,rgba(110,231,183,.07),transparent 60%);
+  background-attachment:fixed;
+}
+/* sidebar */
+aside{
+  position:sticky;top:0;height:100vh;flex:0 0 288px;overflow-y:auto;
+  background:rgba(13,27,42,.85);backdrop-filter:blur(8px);
+  border-right:1px solid var(--line);padding:22px 16px;
+}
+.brand{display:flex;gap:11px;align-items:center;text-decoration:none;color:var(--fg);
+  padding:6px 10px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.brand .wave{font-size:26px;filter:drop-shadow(0 0 10px rgba(76,196,224,.5))}
+.brand strong{display:block;font-size:18px;letter-spacing:.2px}
+.brand small{display:block;color:var(--fg-dim);font-size:11.5px;letter-spacing:.3px;margin-top:2px}
+nav ul{list-style:none;margin:0;padding:0}
+nav li{margin:1px 0}
+nav a{display:block;padding:8px 12px;border-radius:7px;color:var(--fg-dim);
+  text-decoration:none;font-size:14px;transition:.15s;border-left:2px solid transparent}
+nav a:hover{background:rgba(76,196,224,.09);color:var(--fg)}
+nav a.active{background:rgba(76,196,224,.14);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+nav li.sep{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.aside-foot{margin-top:24px;padding:0 12px;font-size:13px}
+.aside-foot a{color:var(--fg-dim);text-decoration:none}
+.aside-foot a:hover{color:var(--accent)}
+/* main */
+main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;padding:0 32px}
+article{width:100%;max-width:900px;padding:48px 0 24px}
+footer{width:100%;max-width:900px;border-top:1px solid var(--line);margin-top:40px;
+  padding:20px 0 56px;color:var(--fg-dim);font-size:13px}
+/* typography */
+h1,h2,h3,h4{line-height:1.3;font-weight:650;letter-spacing:-.01em}
+h1{font-size:2.05rem;margin:0 0 .6em;padding-bottom:.4em;border-bottom:1px solid var(--line)}
+h2{font-size:1.42rem;margin:2.2em 0 .7em;color:var(--accent)}
+h3{font-size:1.13rem;margin:1.8em 0 .5em}
+h4{font-size:1rem;margin:1.4em 0 .4em;color:var(--fg-dim)}
+p{margin:.9em 0}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(76,196,224,.3)}
+a:hover{border-bottom-color:var(--accent)}
+strong{color:#fff;font-weight:650}
+em{color:var(--accent-2)}
+hr{border:0;border-top:1px solid var(--line);margin:2.4em 0}
+ul,ol{padding-left:1.35em}
+li{margin:.35em 0}
+blockquote{border-left:3px solid var(--accent);margin:1.2em 0;padding:.1em 1em;
+  color:var(--fg-dim);background:rgba(76,196,224,.05);border-radius:0 6px 6px 0}
+/* code */
+code{font-family:var(--mono);font-size:.87em;background:var(--code-bg);
+  padding:.16em .42em;border-radius:4px;border:1px solid var(--line);color:var(--accent-2)}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;
+  padding:16px 18px;overflow-x:auto;margin:1.3em 0;font-size:13.5px;line-height:1.55}
+pre code{background:none;border:0;padding:0;color:#cfe3f0;font-size:inherit}
+pre.mermaid{background:var(--bg-soft);text-align:center;padding:24px;border:1px solid var(--line)}
+/* tables */
+.tablewrap{overflow-x:auto;margin:1.4em 0;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:rgba(76,196,224,.10);color:var(--accent);font-weight:600;
+  white-space:nowrap;position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+td code{white-space:nowrap}
+/* checkbox lists in the deliverables section */
+li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
+/* responsive */
+#navtoggle{display:none;position:fixed;top:14px;left:14px;z-index:30;
+  background:var(--panel);color:var(--fg);border:1px solid var(--line);
+  border-radius:8px;font-size:19px;padding:6px 12px;cursor:pointer}
+@media(max-width:900px){
+  #navtoggle{display:block}
+  aside{position:fixed;z-index:20;transform:translateX(-100%);transition:.22s;box-shadow:0 0 40px #000}
+  body.nav-open aside{transform:none}
+  main{padding:0 18px}
+  article{padding:64px 0 24px}
+  h1{font-size:1.65rem}
+}
+</style>
+</head>
+<body>
+<button id="navtoggle" aria-label="Toggle navigation">☰</button>
+<aside>
+  <a class="brand" href="index.html">
+    <span class="wave">🌊</span>
+    <span><strong>OceanEmbed</strong><small>SIH 2026 · PS 26066 · INCOIS</small></span>
+  </a>
+  <nav><ul><li><a href="index.html">Overview</a></li>
+<li><a href="01-problem-statement.html">01 · Problem Statement</a></li>
+<li><a href="02-research-review.html">02 · Research Review</a></li>
+<li><a href="03-architecture.html">03 · Architecture</a></li>
+<li><a href="04-data.html">04 · Data Pipeline</a></li>
+<li><a href="05-training-evaluation.html">05 · Training & Eval</a></li>
+<li><a href="06-demo-and-roadmap.html">06 · Demo & Roadmap</a></li>
+<li><a href="07-results-and-handover.html">07 · Results & Handover</a></li>
+<li><a href="08-challenges.html">08 · Challenges Faced</a></li>
+<li><a href="09-day2-handover.html">09 · Day 2 Results</a></li>
+<li><a href="10-day3-ensemble-and-bias-correction.html" class="active">10 · Day 3 · Latest Results</a></li>
+<li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
+  <div class="aside-foot">
+    <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
+  </div>
+</aside>
+<main>
+  <article><h1 id="10-day-3-the-best-model-and-two-closed-questions">10 — Day 3: The Best Model, and Two Closed Questions</h1>
+<p>Doc 09 ended with a ceiling: 0.890 °C against Argo, with four interventions unable to
+move it and a target (GLORYS) that is itself 0.728 off Argo. Day 3 attacks that ceiling
+directly instead of tuning around it, and closes the attention question doc 09 left open.</p>
+<p><strong>Read §1 and §5 if you read nothing else.</strong></p>
+<hr />
+<h2 id="1-the-new-best-model-0786-c">1. The new best model: 0.786 °C</h2>
+<pre><code>6× ConvLSTM models (3 seeds m4_convlstm + 3 seeds m4_dw), averaged
+  -&gt; per-depth bias correction, fitted on 2022 Argo, applied to 2023-24
+  -&gt; 0.786 degC blended RMSE, 5,980 independent Argo profiles
+</code></pre>
+<p>That is <strong>32% better than climatology</strong> and closes 65% of the gap between the old M4
+(0.890) and the GLORYS-vs-Argo floor (0.728).</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Depth (m)</th>
+<th>M0 clim.</th>
+<th>M4 (old best)</th>
+<th><strong>ens_mix6_bc</strong></th>
+<th>GLORYS (floor)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>0.745</td>
+<td>0.468</td>
+<td><strong>0.426</strong></td>
+<td>0.357</td>
+</tr>
+<tr>
+<td>50</td>
+<td>1.308</td>
+<td>1.031</td>
+<td><strong>1.011</strong></td>
+<td>0.856</td>
+</tr>
+<tr>
+<td>100</td>
+<td>2.163</td>
+<td>1.637</td>
+<td><strong>1.372</strong></td>
+<td>1.343</td>
+</tr>
+<tr>
+<td>150</td>
+<td>1.385</td>
+<td>(n/a)</td>
+<td><strong>0.923</strong></td>
+<td>0.895</td>
+</tr>
+<tr>
+<td>200</td>
+<td>0.881</td>
+<td>0.730</td>
+<td><strong>0.680</strong></td>
+<td>0.603</td>
+</tr>
+<tr>
+<td>500</td>
+<td>0.273</td>
+<td>0.279</td>
+<td><strong>0.245</strong></td>
+<td>0.226</td>
+</tr>
+<tr>
+<td>700</td>
+<td>0.263</td>
+<td>0.280</td>
+<td><strong>0.224</strong></td>
+<td>0.246</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>0.237</td>
+<td>0.254</td>
+<td><strong>0.216</strong></td>
+<td>0.243</td>
+</tr>
+<tr>
+<td><strong>blended</strong></td>
+<td>1.160</td>
+<td>0.890</td>
+<td><strong>0.786</strong></td>
+<td>0.728</td>
+</tr>
+</tbody>
+</table></div>
+<p>Two things worth stating in the deck:</p>
+<ul>
+<li><strong>It now beats climatology at every depth.</strong> The old M4 lost below 500 m; that
+  weakness is gone.</li>
+<li><strong>It beats GLORYS itself at 700 m and 1000 m</strong> (0.224 vs 0.246; 0.216 vs 0.243). This
+  is not a contradiction — the model is trained on GLORYS, but the bias correction is
+  fitted against independent Argo, so at depths where GLORYS itself is biased the
+  correction pulls the prediction past its own training target.</li>
+</ul>
+<h2 id="2-what-it-is-made-of">2. What it is made of</h2>
+<p><strong>Ingredient 1 — six models, not one.</strong> <code>m4_convlstm</code> (plain ConvLSTM) seeds 1–3, plus
+<code>m4_dw</code> (same architecture, inverse-variance depth-weighted loss) seeds 1–3. Averaged with
+a plain mean, deliberately not <code>nanmean</code>:</p>
+<pre><code class="language-python">cube = sum(cubes) / len(cubes)   # NOT np.nanmean -- see docs/09 sec.2
+</code></pre>
+<p><code>nanmean</code> would invent a value on any cell where even one of the six members happened to
+be NaN, which is exactly the land-contamination bug doc 09 §2 found. Every member is NaN
+on the same land mask, so a plain mean keeps land NaN, which is what the metrics need.</p>
+<p><strong>Ingredient 2 — a per-depth bias correction</strong>, fit as the mean <code>(prediction - observed)</code>
+over matched 2022 Argo casts:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Depth</th>
+<th>Offset subtracted</th>
+<th>Depth</th>
+<th>Offset subtracted</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 m</td>
+<td>+0.003</td>
+<td>150 m</td>
+<td>+0.334</td>
+</tr>
+<tr>
+<td>50 m</td>
+<td>+0.444</td>
+<td>200 m</td>
+<td>+0.051</td>
+</tr>
+<tr>
+<td>75 m</td>
+<td>+0.494</td>
+<td>300 m</td>
+<td>−0.025</td>
+</tr>
+<tr>
+<td><strong>100 m</strong></td>
+<td><strong>+0.590</strong></td>
+<td>500 m</td>
+<td>+0.002</td>
+</tr>
+<tr>
+<td>125 m</td>
+<td>+0.561</td>
+<td>1000 m</td>
+<td>−0.052</td>
+</tr>
+</tbody>
+</table></div>
+<p>Peaks exactly at the thermocline, near-zero at the surface and in the deep — physically
+coherent, not a fitting artefact.</p>
+<p><strong>Ingredient 3 — done without touching test.</strong> Composition chosen on val (three
+candidates scored, <code>ens_mix6</code> won), correction fit on val, test read once
+(<code>phase3.sh</code>). <code>src/bias_correct.py</code> refuses to fit on test at the code level:</p>
+<pre><code class="language-python">assert a.split != &quot;test&quot;, &quot;refusing to fit an offset on the test split (CLAUDE.md rule 3)&quot;
+</code></pre>
+<h2 id="3-leakage-audit-all-8-checks-run-live">3. Leakage audit — all 8 checks, run live</h2>
+<p><code>src/audit_leakage.py</code> turns every rule in CLAUDE.md sec.6 into a runnable assertion.
+Run before trusting any number in this doc:</p>
+<pre><code class="language-bash">python src/audit_leakage.py
+</code></pre>
+<ol>
+<li>Splits ordered, non-overlapping (train ≤2021 &lt; val 2022 &lt; test 2023-24)</li>
+<li>No sample window crosses a split boundary (checked for window=1 and window=7)</li>
+<li>Normalisation stats are a train-only fit — checked <em>against a control</em>: the stats
+   must reproduce the train-only mean AND differ from an all-years mean, so a stats file
+   secretly fitted on everything cannot pass by coincidence</li>
+<li>Climatology cache is a train-only fit</li>
+<li>Argo never appears in the Zarr store (<code>{X, Y}</code> only, no Argo variable)</li>
+<li>Argo used for scoring falls inside its own split window</li>
+<li><strong>GLORYS/Argo circularity, stated precisely</strong>: GLORYS12V1 assimilates Argo, so Argo
+   is <em>not</em> statistically independent of the target in general. The defensible claim is
+   narrower: the model trains on GLORYS 2015–2021 only, so no 2023–24 Argo cast — nor
+   the GLORYS state it informed — was ever seen in training. Say it that way, never
+   "Argo is independent of GLORYS."</li>
+<li>Effective sample size is floats, not profiles — 6,448 test profiles come from only
+   147 physical instruments, so quoting n=6,448 overstates statistical power by ~6.6x.
+   Model comparisons use <code>argo_eval.paired_bootstrap</code>, which blocks by float.</li>
+</ol>
+<h2 id="4-extra-questions-asked-of-the-0786-result-specifically">4. Extra questions asked of the 0.786 result specifically</h2>
+<p>Beyond the 8 standing checks, two things specific to the bias correction were verified:</p>
+<p><strong>Float overlap between the val fit and the test score.</strong> 71 of the 86 floats used to
+fit the offset also appear in the 147 test floats — so 3,411 of 5,980 test profiles come
+from an instrument that also contributed to the correction. This is <strong>not</strong> leakage: the
+offset is 15 constants (one per depth), far too low-capacity to memorise a cast, and it
+is meant to capture a basin-scale bias shared across floats. But state the number rather
+than let a judge find it unprompted.</p>
+<p><strong>Where the 468 dropped profiles went.</strong> 6,448 test profiles → 5,980 scored:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Outside the 96×176 model grid</td>
+<td>354</td>
+</tr>
+<tr>
+<td>No prediction within ±1 day (first 6 days of the split; the 7-day window can't start before it)</td>
+<td>37</td>
+</tr>
+<tr>
+<td>Rejected by the depth-acceptance rule (no measurement within <code>max(0.1z, 10 m)</code>)</td>
+<td>77</td>
+</tr>
+<tr>
+<td><strong>Scored</strong></td>
+<td><strong>5,980</strong></td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="5-the-attention-question-now-closed-with-the-wrong-metric-trap-caught-in-the-act">5. The attention question — now closed, with the wrong-metric trap caught in the act</h2>
+<p>Doc 09 left one cell of the ablation grid untested: attention <em>combined with</em> the
+ConvLSTM, rather than either alone. <code>configs/m4_attn.yaml</code> = <code>m4_convlstm</code> + <code>attn: true</code>
+(attention runs once per day, inside the encoder, before the recurrence). 3 seeds, 20
+epochs, 87 s/epoch (32% slower than plain M4 — attention runs 7x per sample at this
+window length, so it stops being hidden behind data loading).</p>
+<p><strong>On validation RMSE, attention looked like a clean win:</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Val RMSE (best epoch)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>m4_attn s1/s2/s3</td>
+<td>0.6507 / 0.6493 / 0.6492</td>
+</tr>
+<tr>
+<td>m4_convlstm s1/s2/s3</td>
+<td>0.6617 / 0.6551 / 0.6696</td>
+</tr>
+</tbody>
+</table></div>
+<p>Every attention seed beat every baseline seed. If Day 3 had stopped there, the
+conclusion would have been "attention helps, ship it."</p>
+<p><strong>On Argo — the metric that counts — it is worse, outside the noise band:</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Argo blended RMSE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>m4_attn (3 seeds)</td>
+<td><strong>0.917 ± 0.008</strong></td>
+</tr>
+<tr>
+<td>m4_convlstm (3 seeds)</td>
+<td><strong>0.890 ± 0.010</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>A 3% gap, larger than either model's own seed spread. This is the exact scenario
+doc 09 §3's benchmark rule exists to prevent: GLORYS validation loss swings ~8% between
+seeds and Argo swings ~1.4%, and here the two metrics don't just disagree on magnitude,
+they disagree on <strong>direction</strong>. Attention fit the training distribution slightly better
+and generalised to independent observations worse.</p>
+<p><strong>The full ablation grid is now complete:</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Combination</th>
+<th>Argo RMSE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>encoder → decoder (M2)</td>
+<td>0.901 ± 0.013</td>
+</tr>
+<tr>
+<td>encoder → attention → decoder (M3)</td>
+<td>0.907</td>
+</tr>
+<tr>
+<td>encoder → ConvLSTM → decoder (M4)</td>
+<td><strong>0.890 ± 0.010</strong> ✅</td>
+</tr>
+<tr>
+<td>encoder → attention → ConvLSTM → decoder</td>
+<td>0.917 ± 0.008</td>
+</tr>
+</tbody>
+</table></div>
+<p>Attention loses in both places it was tried, once inside the noise band (M3) and once
+clearly outside it (M4+attn). <strong>Final architecture: CNN encoder → ConvLSTM → U-Net
+decoder. No attention.</strong></p>
+<h2 id="6-extra-input-channels-tried-also-negative">6. Extra input channels — tried, also negative</h2>
+<p>Three additional input representations were built and tested, extending doc 09 §5's
+"four interventions moved nothing" finding to seven:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Extra channels</th>
+<th>Val RMSE</th>
+<th>vs m4_convlstm baseline (0.860 ± 0.004)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Monthly climatology (15 ch, <code>extra=("clim",)</code>)</td>
+<td>0.899</td>
+<td>worse</td>
+</tr>
+<tr>
+<td>Bathymetry + lat/lon + day-of-year sin/cos (12 ch, <code>extra=("aux",)</code>)</td>
+<td>0.889</td>
+<td>worse</td>
+</tr>
+<tr>
+<td>Both combined (27 ch)</td>
+<td>0.889</td>
+<td>worse</td>
+</tr>
+</tbody>
+</table></div>
+<p>Single seed each — not airtight — but the gap is ~7x the baseline's own seed spread, so
+this reads as a real loss, not noise. Consistent with the doc 09 finding: <strong>the seven
+satellite surface fields already carry the available signal; the binding constraint is
+target quality, not missing inputs.</strong></p>
+<h2 id="7-full-ablation-table-test-split-all-runs">7. Full ablation table (test split, all runs)</h2>
+<pre><code class="language-bash">python src/ablation.py --split test --out results/ablation_test.md
+</code></pre>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>run</th>
+<th>seeds</th>
+<th>blended</th>
+<th>rmse@0m</th>
+<th>rmse@50m</th>
+<th>rmse@100m</th>
+<th>rmse@200m</th>
+<th>rmse@500m</th>
+<th>rmse@1000m</th>
+<th>bias@100m</th>
+<th>corr@100m</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GLORYS_target</td>
+<td>1</td>
+<td>0.728</td>
+<td>0.357</td>
+<td>0.856</td>
+<td>1.343</td>
+<td>0.603</td>
+<td>0.226</td>
+<td>0.243</td>
+<td>0.723</td>
+<td>0.874</td>
+</tr>
+<tr>
+<td><strong>ens_mix6_bc</strong></td>
+<td>1</td>
+<td><strong>0.786</strong></td>
+<td>0.426</td>
+<td>1.011</td>
+<td>1.372</td>
+<td>0.680</td>
+<td>0.245</td>
+<td>0.216</td>
+<td>0.299</td>
+<td>0.819</td>
+</tr>
+<tr>
+<td>ens_mix6</td>
+<td>1</td>
+<td>0.859</td>
+<td>0.417</td>
+<td>0.999</td>
+<td>1.609</td>
+<td>0.693</td>
+<td>0.244</td>
+<td>0.226</td>
+<td>0.893</td>
+<td>0.819</td>
+</tr>
+<tr>
+<td>ens_base</td>
+<td>1</td>
+<td>0.862</td>
+<td>0.440</td>
+<td>1.005</td>
+<td>1.595</td>
+<td>0.700</td>
+<td>0.255</td>
+<td>0.238</td>
+<td>0.850</td>
+<td>0.815</td>
+</tr>
+<tr>
+<td>ens_dw</td>
+<td>1</td>
+<td>0.869</td>
+<td>0.406</td>
+<td>1.004</td>
+<td>1.641</td>
+<td>0.698</td>
+<td>0.242</td>
+<td>0.223</td>
+<td>0.937</td>
+<td>0.816</td>
+</tr>
+<tr>
+<td>m4_convlstm</td>
+<td>3</td>
+<td>0.890 ± 0.010</td>
+<td>0.468</td>
+<td>1.031</td>
+<td>1.637</td>
+<td>0.730</td>
+<td>0.279</td>
+<td>0.254</td>
+<td>0.850</td>
+<td>0.800</td>
+</tr>
+<tr>
+<td>m4_dw</td>
+<td>3</td>
+<td>0.892 ± 0.022</td>
+<td>0.434</td>
+<td>1.030</td>
+<td>1.669</td>
+<td>0.726</td>
+<td>0.257</td>
+<td>0.234</td>
+<td>0.937</td>
+<td>0.805</td>
+</tr>
+<tr>
+<td>m2_unet</td>
+<td>4</td>
+<td>0.903 ± 0.014</td>
+<td>0.476</td>
+<td>1.040</td>
+<td>1.643</td>
+<td>0.737</td>
+<td>0.293</td>
+<td>0.268</td>
+<td>0.853</td>
+<td>0.798</td>
+</tr>
+<tr>
+<td>m3_oceanembed (attn only)</td>
+<td>1</td>
+<td>0.907</td>
+<td>0.514</td>
+<td>1.031</td>
+<td>1.662</td>
+<td>0.708</td>
+<td>0.301</td>
+<td>0.287</td>
+<td>0.920</td>
+<td>0.804</td>
+</tr>
+<tr>
+<td><strong>m4_attn</strong> (attn + ConvLSTM)</td>
+<td>3</td>
+<td><strong>0.917 ± 0.008</strong></td>
+<td>0.472</td>
+<td>1.046</td>
+<td>1.708</td>
+<td>0.736</td>
+<td>0.280</td>
+<td>0.261</td>
+<td>0.999</td>
+<td>0.804</td>
+</tr>
+<tr>
+<td>m2_grad</td>
+<td>3</td>
+<td>0.918 ± 0.005</td>
+<td>0.492</td>
+<td>1.049</td>
+<td>1.690</td>
+<td>0.739</td>
+<td>0.312</td>
+<td>0.286</td>
+<td>0.939</td>
+<td>0.798</td>
+</tr>
+<tr>
+<td>m2_anomaly</td>
+<td>3</td>
+<td>0.975 ± 0.024</td>
+<td>0.605</td>
+<td>1.035</td>
+<td>1.807</td>
+<td>0.799</td>
+<td>0.252</td>
+<td>0.229</td>
+<td>0.984</td>
+<td>0.766</td>
+</tr>
+<tr>
+<td>M0_climatology</td>
+<td>1</td>
+<td>1.160</td>
+<td>0.745</td>
+<td>1.308</td>
+<td>2.163</td>
+<td>0.881</td>
+<td>0.273</td>
+<td>0.237</td>
+<td>0.811</td>
+<td>0.514</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="8-what-is-left">8. What is left</h2>
+<p><strong>1. Streamlit demo.</strong> Written (<code>app/streamlit_app.py</code>), not yet run end-to-end against
+a live checkpoint + store. Point it at <code>ens_mix6_bc</code>, not a single M4 checkpoint, since
+that is now the frozen best model. Needs a saved <code>_bc</code> cube or the offset applied at
+inference time — <code>predict_cube.py</code>'s <code>--offset</code> flag does this.</p>
+<p><strong>2. INCOIS LAS Gridded ARGO (track B1).</strong> PS-named product. Their OPeNDAP service was
+found non-responsive during this work (every Argo dataset times out with zero bytes
+after 4+ minutes, while non-existent paths on the same server 404 in under a second —
+their Ferret backend for this category is down, not a network or auth issue on our
+side). The aggregation code is written and self-tested (<code>src/incois_eval.py</code>, 7 checks:
+footprint-mean spatial aggregation, end-stamped 10-day windows, depth intersection only,
+NaN-safety, irregular-axis rejection). It needs only the file. B2 (this doc's entire
+result set) remains the primary, stricter track in the meantime.</p>
+<p><strong>3. Monthly or spatially-varying bias correction.</strong> The current offset is one flat
+constant per depth for the whole basin and the whole year. <code>bias_correct.py</code> already
+supports <code>--by-month</code> and was never used with it; a basin split (Arabian Sea vs Bay of
+Bengal) was never tried either. This is the only lever that has produced a large gain so
+far (0.890 → 0.786) and is the highest-value remaining direction.</p>
+<p><strong>4. More <code>ens_mix6_bc</code>-style seeds</strong>, if time allows — the current result is a single
+ensemble build, not an averaged-and-spread one like the individual models are.</p>
+<p>Not recommended: bigger models, more input channels, attention. Seven interventions
+(four from doc 09, three from §5–6 of this doc) have now moved the blended number by
+less than one architecture-level effect each; the constraint is target quality, not
+capacity or missing signal.</p>
+<h2 id="9-reproducing-day-3">9. Reproducing Day 3</h2>
+<pre><code class="language-bash">python src/train.py configs/m4_dw.yaml   --seed 1   # repeat for seeds 2, 3
+python src/train.py configs/m4_attn.yaml --seed 1   # repeat for seeds 2, 3
+
+bash phase3.sh   # ensemble composition on val, offset fit on val, test cubes built
+
+python src/audit_leakage.py                          # all 8 checks must pass
+python src/ablation.py --split test --out results/ablation_test.md
+</code></pre>
+<p>Checkpoints and result CSVs are mirrored to
+<code>s3://oceanembed-sih26-data/oceanembed/{checkpoints,results}/</code>. <code>src/</code>, the configs, and
+the phase scripts were <strong>not</strong> covered by that sync and existed only on the training
+instance until this doc was written — <code>deploy/sync_checkpoints.sh</code> now also syncs <code>src/</code>
+and <code>configs/</code> for exactly this reason.</p></article>
+  <footer>Ministry of Earth Sciences · INCOIS · Space Technology — Smart India Hackathon 2026</footer>
+</main>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    background: '#0d1b2a', primaryColor: '#14304a', primaryTextColor: '#dce8f2',
+    primaryBorderColor: '#2f6f9f', lineColor: '#4a9fd4', secondaryColor: '#123',
+    tertiaryColor: '#0f2436', fontSize: '14px'
+  }
+});
+</script>
+<script>
+document.getElementById('navtoggle').onclick = () => document.body.classList.toggle('nav-open');
+</script>
+</body>
+</html>
