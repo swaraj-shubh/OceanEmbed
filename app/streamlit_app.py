@@ -14,6 +14,7 @@ than chosen by eye.
 import sys
 from pathlib import Path
 
+from PIL import Image
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -22,8 +23,14 @@ import streamlit as st
 sys.path.append(str(Path(__file__).resolve().parent))
 import loader as L
 
+logo_path = Path(__file__).parent / "logo.png"
+if logo_path.exists():
+    page_icon = Image.open(logo_path)
+else:
+    page_icon = "🌊"
+
 st.set_page_config(page_title="OceanEmbed — subsurface temperature",
-                   page_icon="🌊", layout="wide")
+                   page_icon=page_icon, layout="wide")
 
 # ============================================================
 # GLASSMORPHISM - Grayscale glass
@@ -142,7 +149,7 @@ h1, h2, h3, h4 {
     border-color: var(--alert-border);
     padding: 14px 16px;
 }
-.stPlotlyChart { padding: 12px; }
+.stPlotlyChart { padding: 12px !important; overflow: hidden; }
 [data-testid="stDataFrame"] { padding: 6px; overflow: hidden; }
 
 /* ----- sidebar glass ----- */
@@ -160,6 +167,21 @@ h1, h2, h3, h4 {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
 }
+/* ----- fixed heading ----- */
+div[data-testid="stVerticalBlock"] > div:has(#fixed-header) {
+    position: sticky;
+    top: 12px;
+    z-index: 1000;
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 12px 20px 24px 20px;
+    box-shadow: var(--glass-shadow);
+    margin-bottom: 1rem;
+}
+
 [data-testid="stSidebar"] > div:first-child {
     margin: 12px !important;
     padding: 16px !important;
@@ -203,9 +225,10 @@ h1, h2, h3, h4 {
 /* active: a touch more glass + the accent, sparingly */
 .stTabs [aria-selected="true"] {
     background: var(--accent-tint) !important;
-    border: 1px solid var(--accent);
+    border: 1px solid transparent !important;
     color: var(--accent-text) !important;
     font-weight: 600;
+    outline: none !important;
 }
 .stTabs [data-baseweb="tab-highlight"],
 .stTabs [data-baseweb="tab-border"] {
@@ -321,7 +344,7 @@ def series(i):
 def base_layout(fig, height=420, **kw):
     fig.update_layout(
         template="plotly_dark",
-        height=height, margin=dict(l=8, r=8, t=34, b=8),
+        height=height, margin=dict(l=12, r=12, t=36, b=36),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         font=dict(size=12, family="Poppins, system-ui, sans-serif"),
         hoverlabel=dict(font_size=12),
@@ -380,7 +403,21 @@ def skill_table():
 
 # ======================================================================================
 man = L.manifest()
-st.title("OceanEmbed — subsurface ocean temperature from space")
+logo_path = Path(__file__).parent / "logo.png"
+if logo_path.exists():
+    import base64
+    logo_b64 = base64.b64encode(logo_path.read_bytes()).decode()
+    st.markdown(
+        f"""
+        <div id="fixed-header" style="display: flex; align-items: center; gap: 16px;">
+            <img src="data:image/png;base64,{logo_b64}" width="48" style="background-color: white; border-radius: 50%; padding: 2px; box-shadow: var(--glass-shadow);" />
+            <h1 style="margin: 0; padding: 0; padding-bottom: 4px;">OTER - Ocean Thermal Embedding Reconstruction</h1>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+else:
+    st.title("OTER - Ocean Thermal Embedding Reconstruction")
 st.caption(
     f"Seven satellite surface fields → temperature at 15 depths, 0–1000 m, over the "
     f"Arabian Sea and Bay of Bengal. Showing **{man['window']['start']} to "
@@ -490,8 +527,9 @@ with t_profile:
         # No chart title: the legend sits along the top and the two would collide. The
         # caption below carries the coordinates instead.
         base_layout(fig, height=470, hovermode="y unified")
-        st.markdown(f"**Column at {lat_s:.2f}°N, {lon_s:.2f}°E**")
+        # st.markdown(f"**Column at {lat_s:.2f}°N, {lon_s:.2f}°E**")
         st.plotly_chart(fig, use_container_width=True, key="prof")
+        st.markdown(f"**Column at {lat_s:.2f}°N, {lon_s:.2f}°E**")
 
     if cmp:
         st.success(
