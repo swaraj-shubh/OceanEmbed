@@ -37,6 +37,32 @@ QC_RANGE = {"sst": (-2.0, 36.0), "sss": (5.0, 41.0), "sla": (-2.0, 2.0),
             "cur_u": (-3.0, 3.0), "cur_v": (-3.0, 3.0),
             "wind_u": (-40.0, 40.0), "wind_v": (-40.0, 40.0), "thetao": (-2.0, 36.0)}
 
+# Optional extra input channels (docs/10 tasks 5 and 6). Off by default: every committed
+# result up to doc 09 was measured with the seven surface channels alone.
+CLIM_CHANNELS = [f"clim_{d}m" for d in DEPTHS]                    # 15
+AUX_CHANNELS = ["doy_sin", "doy_cos", "lat", "lon", "bathy"]      # 5
+
+
+def n_channels(extra=()):
+    """Input channel count for a channel set.
+
+    The ORDER is frozen: surface, then climatology, then auxiliary. A checkpoint stores its
+    `extra` list, so anything that rebuilds a dataset for inference must pass the same one.
+    docs/09 sec.7 records what happens when predict_cube guesses instead: M4 was handed
+    [B, C, H, W] where it wanted [B, T, C, H, W].
+    """
+    n = len(CHANNELS)
+    if "clim" in extra:
+        n += len(CLIM_CHANNELS)
+    if "aux" in extra:
+        n += len(AUX_CHANNELS)
+    return n
+
+
+def bathy_path(zarr_path):
+    """Cache beside the store it was fitted from -- same rule as the climatology cache."""
+    return Path(zarr_path).with_suffix(".bathy.npy")
+
 
 def crop_to_model(da):
     """Centre-crop (100,180) -> (96,176) on the last two dims."""
@@ -61,6 +87,8 @@ if __name__ == "__main__":
     assert GRID_SHAPE == (100, 180) and MODEL_SHAPE == (96, 176)
     assert len(CHANNELS) == 7 and len(DEPTHS) == 15
     assert all(h % 8 == 0 for h in MODEL_SHAPE), "3 poolings need both dims divisible by 8"
+    assert n_channels() == 7 and n_channels(("clim",)) == 22
+    assert n_channels(("aux",)) == 12 and n_channels(("clim", "aux")) == 27
     la, lo = crop_coords()
     assert (len(la), len(lo)) == MODEL_SHAPE
     # the coords must be the ones crop_to_model actually keeps, not merely the right count
