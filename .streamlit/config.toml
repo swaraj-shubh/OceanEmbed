@@ -1,14 +1,17 @@
-# Charts read the theme at runtime (app/streamlit_app.py::theme) and switch to the
-# validated dark categorical steps, so both modes are deliberate rather than an auto-flip.
 # base is not cosmetic: it is what makes Streamlit paint its OWN chrome -- the dataframe
-# grid, select popovers, tooltips, and the plotly template that sets axis text. The CSS
-# in streamlit_app.py cannot reach those. Grayscale glass defaults to light, so: light.
+# grid, select popovers and tooltips are canvas-rendered and the page CSS in
+# streamlit_app.py cannot reach them at all, so they follow this config, not the glass
+# theme's :root vars. The app's own CSS is unconditionally dark (--app-bg is a near-black
+# gradient); base was left at "light" from an earlier design and never updated when the
+# glass theme went dark, which is why the dataframe grid alone rendered light-on-dark.
+# Colours below are picked to match the CSS's own --glass-bg/--body-color, not chosen
+# fresh, so native chrome and the CSS-styled panels read as one surface.
 [theme]
-base = "light"
+base = "dark"
 primaryColor = "#6b7a8a"
-backgroundColor = "#e8eaec"
-secondaryBackgroundColor = "#dfe2e6"
-textColor = "#4a5157"
+backgroundColor = "#0a0a0a"
+secondaryBackgroundColor = "#141414"
+textColor = "#ffffff"
 
 [server]
 # The demo runs offline at a venue; never phone home.

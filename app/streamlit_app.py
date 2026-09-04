@@ -1,5 +1,5 @@
 """
-OceanEmbed — subsurface ocean temperature from satellite surface fields.
+OTER (Ocean Thermal Embedding Reconstruction) -- subsurface ocean temperature from satellite surface fields.
 
     streamlit run app/streamlit_app.py
 
@@ -29,7 +29,7 @@ if logo_path.exists():
 else:
     page_icon = "🌊"
 
-st.set_page_config(page_title="OceanEmbed — subsurface temperature",
+st.set_page_config(page_title="OTER — subsurface temperature",
                    page_icon=page_icon, layout="wide")
 
 # ============================================================
@@ -70,6 +70,13 @@ html, body, [class*="css"] {
     --control-hover: rgba(255, 255, 255, 0.1);
     --metric-bg: rgba(20, 20, 20, 0.7);
     --metric-text: #ffffff;
+    --metric-label: #e6e6e6;       /* was the same dim grey as caption text -- too low
+                                       contrast for a label sitting right above a big
+                                       number; lightened and bolded below */
+    --metric-delta: #5be08a;       /* every delta shown here is delta_color="inverse" on
+                                       a negative number, i.e. always "good news" -- one
+                                       bright colour, not Streamlit's default muted pair
+                                       that reads poorly on a near-black card */
     --alert-bg: rgba(20, 20, 20, 0.7);
     --alert-border: rgba(255, 255, 255, 0.08);
     --sidebar-bg: rgba(10, 10, 10, 0.8);
@@ -153,7 +160,16 @@ code {
     font-weight: 600;
 }
 [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {
-    color: var(--body-color);
+    color: var(--metric-label) !important;
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    opacity: 1 !important;   /* Streamlit's own label style ships a reduced opacity that
+                                 a plain color override doesn't cancel */
+}
+[data-testid="stMetricDelta"], [data-testid="stMetricDelta"] * {
+    color: var(--metric-delta) !important;
+    fill: var(--metric-delta) !important;   /* the up/down arrow is an inline SVG */
+    font-weight: 600 !important;
 }
 [data-testid="stAlert"] {
     background: var(--alert-bg) !important;
@@ -323,6 +339,28 @@ hr {
     background: var(--glass-border);
     margin: 1.5rem 0;
 }
+
+/* ----- plain HTML benchmark tables -----
+   st.dataframe's grid is canvas-drawn (glide-data-grid): no CSS selector reaches into it,
+   which is why header background/alignment can't be set through it -- only cell content
+   alignment is exposed, via column_config. A real <table> is CSS-reachable end to end. */
+.oter-table { width: 100%; border-collapse: collapse; margin: 6px 0 4px; font-size: 14px; }
+.oter-table th {
+    background: rgba(255, 255, 255, 0.08);   /* greyish, on the dark glass */
+    color: var(--body-color);
+    text-align: center;
+    padding: 10px 12px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--glass-border-hover);
+}
+.oter-table td {
+    text-align: center;
+    padding: 8px 12px;
+    color: var(--body-color);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.oter-table tr:last-child td { border-bottom: none; }
+.oter-table tbody tr:hover td { background: rgba(255, 255, 255, 0.04); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -358,7 +396,13 @@ def base_layout(fig, height=420, **kw):
         height=height, margin=dict(l=12, r=12, t=36, b=36),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         font=dict(size=13, family="Poppins, system-ui, sans-serif", color="#ffffff"),
-        hoverlabel=dict(font_size=13, font_family="Poppins, system-ui, sans-serif", font_color="#ffffff"),
+        # Plotly heatmaps default the hover box's background to the hovered cell's OWN
+        # colour when bgcolor is left unset -- white text on a light cell (the pale end of
+        # "Oranges", or the midpoint of the diverging scale) then reads as white-on-white.
+        # A fixed dark background makes every hover legible regardless of what's under it.
+        hoverlabel=dict(font_size=14, font_family="Poppins, system-ui, sans-serif",
+                        font_color="#ffffff", bgcolor="rgba(15,15,15,0.95)",
+                        bordercolor="rgba(255,255,255,0.35)"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0,
                     bgcolor="rgba(0,0,0,0)", font=dict(size=14, color="#ffffff")),
         **kw)
@@ -381,6 +425,11 @@ def heatmap(da, title, colorscale=SEQ_TEMP, unit="°C", diverging=False, height=
         colorscale=colorscale, hoverongaps=False,
         colorbar=dict(title=dict(text=unit, side="right"), thickness=12, outlinewidth=0),
         hovertemplate="%{y:.2f}°N  %{x:.2f}°E<br><b>%{z:.2f} " + unit + "</b><extra></extra>",
+        # Set again at the trace level, not just in base_layout: heatmap hover boxes can
+        # ignore the layout-level default and fall back to colouring themselves from the
+        # cell underneath, so the fix has to hold here too.
+        hoverlabel=dict(bgcolor="rgba(15,15,15,0.95)", bordercolor="rgba(255,255,255,0.35)",
+                        font=dict(color="#ffffff", size=14)),
         **kw))
     base_layout(fig, height=height, title=dict(text=title, x=0, font=dict(size=14, color="#ffffff")))
     # Pin both axes to the data. An equal-aspect lock (scaleanchor) is geographically
@@ -391,6 +440,23 @@ def heatmap(da, title, colorscale=SEQ_TEMP, unit="°C", diverging=False, height=
     fig.update_yaxes(title=None, range=[float(da.lat.min()), float(da.lat.max())])
     fig.update_xaxes(title=None, range=[float(da.lon.min()), float(da.lon.max())])
     return fig
+
+
+def html_table(df, formats=None):
+    """A benchmark table as plain HTML (see .oter-table CSS): centred, grey header, dark
+    body. st.dataframe's grid can't take a header colour or reliable header alignment from
+    CSS at all -- it's canvas-drawn -- so for a table this heavily styled, real HTML is the
+    native fit, not a workaround."""
+    formats = formats or {}
+    head = "".join(f"<th>{c}</th>" for c in df.columns)
+    rows_html = []
+    for _, row in df.iterrows():
+        cells = "".join(f"<td>{formats.get(c, '{}').format(row[c])}</td>" for c in df.columns)
+        rows_html.append(f"<tr>{cells}</tr>")
+    st.markdown(
+        f'<table class="oter-table"><thead><tr>{head}</tr></thead>'
+        f'<tbody>{"".join(rows_html)}</tbody></table>',
+        unsafe_allow_html=True)
 
 
 @st.cache_data(show_spinner=False)
@@ -459,7 +525,7 @@ lon0, lon1 = L.REGIONS[region]
 sub = lambda da: da.sel(lon=slice(lon0, lon1))
 
 t_inputs, t_map, t_profile, t_skill = st.tabs(
-    ["Surface inputs", "Reconstruction", "Profile", "Skill"])
+    ["Surface inputs", "Reconstruction", "Profile", "Benchmarks"])
 
 # --- ① the seven things a satellite can see -------------------------------------------
 with t_inputs:
@@ -485,8 +551,8 @@ with t_map:
     with c2:
         with st.container(border=True):
             st.markdown("#### Display Mode")
-            view = st.radio("Show", ["Our reconstruction", "GLORYS reanalysis",
-                                     "Difference (ours − GLORYS)"],
+            view = st.radio("Show", ["OTER", "GLORYS reanalysis",
+                                     "Difference (OTER − GLORYS)"],
                             label_visibility="collapsed")
             st.divider()
             st.caption(
@@ -494,8 +560,8 @@ with t_map:
                 "runs about **+0.72 °C too warm at 100 m** against Argo floats in this basin. "
                 "Measuring that is what let us correct it."
             )
-    src = {"Our reconstruction": "prediction", "GLORYS reanalysis": "truth",
-           "Difference (ours − GLORYS)": "error"}[view]
+    src = {"OTER": "prediction", "GLORYS reanalysis": "truth",
+           "Difference (OTER − GLORYS)": "error"}[view]
     da = sub(L.field(date, depth, src))
     with c1:
         st.plotly_chart(
@@ -524,9 +590,9 @@ with t_profile:
         zz, pred = L.profile(date, lat_s, lon_s)
         fig = go.Figure()
         fig.add_trace(go.Scatter(
-            x=pred, y=zz, name="OceanEmbed", mode="lines+markers",
+            x=pred, y=zz, name="OTER", mode="lines+markers",
             line=dict(color=series(0), width=2), marker=dict(size=8),
-            hovertemplate="%{y:.0f} m<br><b>%{x:.2f} °C</b><extra>OceanEmbed</extra>"))
+            hovertemplate="%{y:.0f} m<br><b>%{x:.2f} °C</b><extra>OTER</extra>"))
 
         cmp = L.argo_comparison(date, lat_s, lon_s)
         if cmp:
@@ -564,7 +630,7 @@ with t_profile:
 with t_skill:
     st.subheader("Accuracy against independent Argo floats")
     k = st.columns(4)
-    k[0].metric("OceanEmbed", "0.786 °C")
+    k[0].metric("OTER", "0.786 °C")
     k[1].metric("Climatology baseline", "1.160 °C", "-32% error", delta_color="inverse")
     k[2].metric("GLORYS reanalysis", "0.728 °C", help="The product the model learns from.")
     k[3].metric("Depths beating baseline", "15 / 15")
@@ -572,7 +638,7 @@ with t_skill:
     tab = skill_table()
     fig = go.Figure()
     for i, (col, name) in enumerate([("Climatology RMSE", "Climatology"),
-                                     ("RMSE (°C)", "OceanEmbed"),
+                                     ("RMSE (°C)", "OTER"),
                                      ("GLORYS RMSE", "GLORYS reanalysis")]):
         if col in tab:
             fig.add_trace(go.Scatter(
@@ -586,40 +652,16 @@ with t_skill:
     base_layout(fig, height=460, hovermode="y unified")
     st.markdown("**Error against Argo, by depth**")
     st.plotly_chart(fig, use_container_width=True, key="skill")
-    st.caption("OceanEmbed sits below climatology at **every** depth, and below GLORYS "
-               "itself at 125, 700 and 1000 m — where the reanalysis' own bias dominates "
-               "its error.")
 
-    st.dataframe(tab, use_container_width=True, hide_index=True,
-                 column_config={c: st.column_config.NumberColumn(format="%.3f")
-                                for c in tab.columns if c != "Depth (m)"})
+    html_table(tab, formats={"Depth (m)": "{:.0f}",
+                             **{c: "{:.3f}" for c in tab.columns if c != "Depth (m)"}})
     st.caption(f"Test split, all {man['argo_profiles']:,} independent Argo casts across "
                f"the full 2023–24 test period.")
 
-    with st.expander("Full metric comparison — FINAL vs the GLORYS reanalysis it learns from"):
+    with st.expander("Full metric comparison — OTER vs the GLORYS reanalysis it learns from"):
         fin, glo = L.final_vs_glorys()
-        # Verdict is a written judgement, not a number -- matches docs/11 sec.6, which this
-        # table reproduces live rather than restating by hand.
         LABEL = {"rmse": "RMSE", "mae": "MAE", "bias": "Bias", "corr": "Corr", "r2": "R²"}
-        VERDICT = {
-            "rmse": "GLORYS lower (expected — it's the training target)",
-            "mae": "GLORYS lower",
-            "bias": "Model far better",
-            "corr": "GLORYS slightly higher",
-            "r2": "GLORYS slightly higher",
-        }
         rows = pd.DataFrame([
-            {"Metric": LABEL[k], "GLORYS": glo[k], "FINAL (ens_mix6_bc)": fin[k],
-             "Δ": fin[k] - glo[k], "Verdict": VERDICT[k]}
+            {"Metric": LABEL[k], "GLORYS": glo[k], "OTER": fin[k]}
             for k in ("rmse", "mae", "bias", "corr", "r2")])
-        st.dataframe(rows, use_container_width=True, hide_index=True, column_config={
-            "GLORYS": st.column_config.NumberColumn(format="%.4f"),
-            "FINAL (ens_mix6_bc)": st.column_config.NumberColumn(format="%.4f"),
-            "Δ": st.column_config.NumberColumn(format="%+.4f"),
-        })
-        st.caption(
-            "Blended = n-weighted across all 15 depths, the same pooling the RMSE curve "
-            "above uses. RMSE/MAE/Corr/R² slightly favour GLORYS — expected, since the "
-            "model approximates its own training target. Bias is the exception: the "
-            "correction was fit against Argo, not GLORYS, and it shows here."
-        )
+        html_table(rows, formats={"GLORYS": "{:.4f}", "OTER": "{:.4f}"})
