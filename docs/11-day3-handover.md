@@ -238,10 +238,19 @@ are negative on M4 too. Do not revisit.
 At 100 m, the hardest layer: R² goes 0.502 → **0.653**, bias +0.850 → **+0.299**.
 
 **Blended MAE/Bias/Corr/R² are `n`-weighted means over the 15 depths — the same weighting
-`summary()` uses for RMSE, applied to the other four columns.** No code computes this yet;
-these four numbers were derived once from `results/ens_mix6_bc_test_argo.csv` and
-`results/GLORYS_target_test_argo.csv` and are not reproducible by a script. If a
-`blend_all()` is ever added to `metrics.py`, replace this note with the command.
+`summary()` uses for RMSE, applied to the other four columns.** Computed by
+`metrics.blend_all()`, exercised by the Skill tab's live "Full metric comparison" expander
+(`app/loader.final_vs_glorys()`):
+
+```bash
+python -c "
+import sys; sys.path.append('src')
+from metrics import blend_all
+import pandas as pd
+print(blend_all(pd.read_csv('results/ens_mix6_bc_test_argo.csv')))
+print(blend_all(pd.read_csv('results/GLORYS_target_test_argo.csv')))
+"
+```
 
 **FINAL vs GLORYS, every metric:**
 

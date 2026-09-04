@@ -27,6 +27,7 @@ DATA = ROOT / "app" / "demo_data"
 # on screen must come from the same code or they are a different measurement.
 sys.path.append(str(ROOT / "src"))
 from argo_eval import interp_profile  # noqa: E402
+from metrics import blend_all  # noqa: E402
 
 # Streamlit's cache when running in the app, a plain lru_cache otherwise, so this module
 # stays importable (and testable) outside Streamlit.
@@ -114,6 +115,16 @@ def argo():
 def metrics(name):
     """One metric CSV from the bundle, e.g. 'ens_mix6_bc_test_argo.csv'."""
     return pd.read_csv(_need(DATA / "metrics" / name))
+
+
+@cache
+def final_vs_glorys():
+    """The frozen model's blended skill vs the training target it was measured against,
+    every standard metric -- not just RMSE. Source: the same two CSVs the Skill tab's
+    RMSE-vs-depth curve already reads. Returns (final, glorys), each a blend_all() dict."""
+    fin = blend_all(metrics("ens_mix6_bc_test_argo.csv"))
+    glo = blend_all(metrics("GLORYS_target_test_argo.csv"))
+    return fin, glo
 
 
 def dates():
@@ -265,6 +276,16 @@ if __name__ == "__main__":
 
     tab = metrics("ens_mix6_bc_test_argo.csv")
     assert {"depth_m", "rmse", "bias", "corr"} <= set(tab.columns)
+
+    # The blended FINAL-vs-GLORYS comparison: known values, checked to 3dp so a future
+    # change to either source CSV is caught here before it silently drifts in the UI.
+    fin, glo = final_vs_glorys()
+    for k, v in {"rmse": 0.786, "mae": 0.511, "bias": 0.012, "corr": 0.926, "r2": 0.853}.items():
+        assert abs(fin[k] - v) < 5e-3, f"final_vs_glorys()[FINAL][{k}] drifted: {fin[k]:.4f}"
+    for k, v in {"rmse": 0.728, "mae": 0.442, "bias": 0.193, "corr": 0.947, "r2": 0.877}.items():
+        assert abs(glo[k] - v) < 5e-3, f"final_vs_glorys()[GLORYS][{k}] drifted: {glo[k]:.4f}"
+
     print(f"loader self-check OK -- {grid_shape[0]}x{grid_shape[1]} grid, "
           f"{len(depths())} depths, headline 100 m RMSE "
-          f"{float(tab[tab.depth_m == 100].rmse.iloc[0]):.3f} degC")
+          f"{float(tab[tab.depth_m == 100].rmse.iloc[0]):.3f} degC, "
+          f"blended FINAL {fin['rmse']:.3f} vs GLORYS {glo['rmse']:.3f}")

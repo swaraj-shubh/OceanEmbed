@@ -73,14 +73,16 @@ Two things carry over from B2 unchanged: **the thermocline is where the error li
 helps** — it moves the blended score 6.7% and cuts the 100 m bias from +1.016 to +0.422.
 
 **Blended MAE, Bias, Correlation and R² — GLORYS vs FINAL**, same `n`-weighted pooling as
-the RMSE above (weighted RMS for RMSE, weighted mean for the other four; not yet a function
-in `metrics.py` — computed once from the two `*_test_incois_b1.csv` files):
+the RMSE above (weighted RMS for RMSE, weighted mean for the other four). Computed by
+`metrics.blend_all()` — the same function the demo's Skill tab uses for the B2 comparison
+(`app/loader.final_vs_glorys()`), applied here to the two `*_test_incois_b1.csv` files
+instead; not wired into the demo UI, since B1 is out of scope for what the demo shows:
 
 | Metric | GLORYS | FINAL | Δ |
 |---|---|---|---|
 | RMSE | 1.437 | **1.232** | −0.205 |
 | MAE | 0.993 | **0.851** | −0.142 |
-| Bias | +0.622 | **+0.360** | −0.263 |
+| Bias | +0.622 | **+0.359** | −0.263 |
 | Corr | 0.678 | **0.700** | +0.022 |
 | R² | **−0.230** | **+0.070** | +0.299 |
 

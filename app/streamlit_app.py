@@ -595,4 +595,31 @@ with t_skill:
                                 for c in tab.columns if c != "Depth (m)"})
     st.caption(f"Test split, all {man['argo_profiles']:,} independent Argo casts across "
                f"the full 2023–24 test period.")
-               
+
+    with st.expander("Full metric comparison — FINAL vs the GLORYS reanalysis it learns from"):
+        fin, glo = L.final_vs_glorys()
+        # Verdict is a written judgement, not a number -- matches docs/11 sec.6, which this
+        # table reproduces live rather than restating by hand.
+        LABEL = {"rmse": "RMSE", "mae": "MAE", "bias": "Bias", "corr": "Corr", "r2": "R²"}
+        VERDICT = {
+            "rmse": "GLORYS lower (expected — it's the training target)",
+            "mae": "GLORYS lower",
+            "bias": "Model far better",
+            "corr": "GLORYS slightly higher",
+            "r2": "GLORYS slightly higher",
+        }
+        rows = pd.DataFrame([
+            {"Metric": LABEL[k], "GLORYS": glo[k], "FINAL (ens_mix6_bc)": fin[k],
+             "Δ": fin[k] - glo[k], "Verdict": VERDICT[k]}
+            for k in ("rmse", "mae", "bias", "corr", "r2")])
+        st.dataframe(rows, use_container_width=True, hide_index=True, column_config={
+            "GLORYS": st.column_config.NumberColumn(format="%.4f"),
+            "FINAL (ens_mix6_bc)": st.column_config.NumberColumn(format="%.4f"),
+            "Δ": st.column_config.NumberColumn(format="%+.4f"),
+        })
+        st.caption(
+            "Blended = n-weighted across all 15 depths, the same pooling the RMSE curve "
+            "above uses. RMSE/MAE/Corr/R² slightly favour GLORYS — expected, since the "
+            "model approximates its own training target. Bias is the exception: the "
+            "correction was fit against Argo, not GLORYS, and it shows here."
+        )
