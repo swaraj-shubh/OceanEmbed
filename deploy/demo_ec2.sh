@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Host the OceanEmbed Streamlit demo on a fresh Ubuntu 24.04 EC2 box. Run once:
-#   sudo bash demo_ec2.sh                 -> http://<public-ip>:8501
-#   sudo DOMAIN=demo.example.com bash demo_ec2.sh   -> https://demo.example.com
+# Host the OceanEmbed Streamlit demo on a fresh Ubuntu 24.04 EC2 box:
+#   sudo bash demo_ec2.sh
+# nginx serves HTTPS for every Let's Encrypt certificate under /etc/letsencrypt/live/,
+# and plain HTTP until one exists. To add a name: point DNS at the box, run the certbot
+# command in app/README.md, then re-run this -- there is nothing here to edit.
 # Idempotent: re-run to redeploy the latest main.
 set -euo pipefail
 
 REPO="${REPO:-https://github.com/swaraj-shubh/OceanEmbed.git}"
-DOMAIN="${DOMAIN:-}"
 APP_USER="${APP_USER:-ubuntu}"
 DIR="/home/$APP_USER/OceanEmbed"
 
@@ -63,83 +64,93 @@ UNIT
 systemctl daemon-reload
 systemctl enable --now oceanembed
 systemctl restart oceanembed
-if [ -n "$DOMAIN" ]; then
-  # Caddy, purely for the automatic Let's Encrypt certificate. A bare IP cannot have one,
-  # so this path needs a real domain; without a domain we serve plain HTTP over nginx.
-  apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https curl
-  curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key     | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-  curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt     > /etc/apt/sources.list.d/caddy-stable.list
-  apt-get update -qq && apt-get install -y -qq caddy
-  printf '%s {
-	reverse_proxy localhost:8501
-}
-' "$DOMAIN" > /etc/caddy/Caddyfile
-  systemctl restart caddy
-  echo "ready: https://$DOMAIN"
-else
-  apt-get install -y -qq nginx
-  IP="$(curl -s --max-time 5 ifconfig.me || echo '')"
-  CERTDIR="/etc/letsencrypt/live/$IP"
+apt-get install -y -qq nginx
+mkdir -p /var/www/html
+IP="$(curl -s --max-time 5 ifconfig.me || echo '')"
 
-  # Streamlit talks to the browser over a websocket; everything after the first paint
-  # rides on it. proxy_http_version/Upgrade/Connection are the three lines that matter --
-  # without them the page renders once and then ignores every click, which looks like a
-  # broken app rather than a broken proxy. proxy_read_timeout matters as much: nginx
-  # closes an idle connection after 60 s by default, so a demo parked on one slide comes
-  # back to "Connection lost".
-  cat > /tmp/oceanembed.proxy <<'PROXY'
-    location / {
-        proxy_pass http://127.0.0.1:8501;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 3600s;
-        proxy_send_timeout 3600s;
-    }
+# The proxy body lives in its own file and every TLS server block includes it, so the
+# websocket settings are written once instead of copied per certificate.
+#
+# Streamlit talks to the browser over a websocket; everything after the first paint rides
+# on it. proxy_http_version/Upgrade/Connection are the three lines that matter -- without
+# them the page renders once and then ignores every click, which looks like a broken app
+# rather than a broken proxy. proxy_read_timeout matters as much: nginx closes an idle
+# connection after 60 s by default, so a demo parked on one slide comes back to
+# "Connection lost".
+cat > /etc/nginx/oceanembed-proxy.conf <<'PROXY'
+location / {
+    proxy_pass http://127.0.0.1:8501;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+}
 PROXY
 
-  if [ -d "$CERTDIR" ]; then
-    # HTTPS on a bare IP. Let's Encrypt has issued IP certificates since Jan 2026, but
-    # only under the 6-day "shortlived" profile and only via a non-nginx authenticator --
-    # see the HTTPS notes in app/README.md for the one-time certbot command. The ACME
-    # challenge path stays on plain HTTP and is NOT redirected, or renewal breaks itself.
-    { echo 'server {'
-      echo '    listen 80 default_server;'
-      echo '    server_name _;'
-      echo '    location /.well-known/acme-challenge/ { root /var/www/html; }'
-      echo '    location / { return 301 https://$host$request_uri; }'
-      echo '}'
-      echo 'server {'
-      echo '    listen 443 ssl default_server;'
-      echo '    server_name _;'
-      echo "    ssl_certificate $CERTDIR/fullchain.pem;"
-      echo "    ssl_certificate_key $CERTDIR/privkey.pem;"
-      echo '    include /etc/letsencrypt/options-ssl-nginx.conf;'
-      echo '    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;'
-      cat /tmp/oceanembed.proxy
-      echo '}'
-    } > /etc/nginx/sites-available/oceanembed
-    READY="https://$IP"
-  else
-    { echo 'server {'
-      echo '    listen 80 default_server;'
-      echo '    server_name _;'
-      echo '    location /.well-known/acme-challenge/ { root /var/www/html; }'
-      cat /tmp/oceanembed.proxy
-      echo '}'
-    } > /etc/nginx/sites-available/oceanembed
-    READY="http://${IP:-<public-ip>}"
-  fi
+# One TLS server block per certificate actually held. Certificates are obtained out of
+# band (see the HTTPS notes in app/README.md) because issuance needs an email address and
+# a Terms of Service acceptance, which do not belong in an unattended script.
+tls_block () {          # $1 = server_name, $2 = /etc/letsencrypt/live dir, $3 = extra
+  cat <<TLS
+server {
+    listen 443 ssl $3;
+    server_name $1;
+    ssl_certificate $2/fullchain.pem;
+    ssl_certificate_key $2/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    include /etc/nginx/oceanembed-proxy.conf;
+}
+TLS
+}
 
-  mkdir -p /var/www/html
-  rm -f /tmp/oceanembed.proxy
-  ln -sf /etc/nginx/sites-available/oceanembed /etc/nginx/sites-enabled/oceanembed
-  rm -f /etc/nginx/sites-enabled/default        # its own default_server would win on :80
-  nginx -t
-  systemctl restart nginx
-  echo "ready: $READY"
-fi
+CONF=/etc/nginx/sites-available/oceanembed
+: > "$CONF"
+
+# Serve every certificate the box holds, rather than one configured name. certbot puts
+# each under /etc/letsencrypt/live/<name>/, so that directory listing IS the list of names
+# we can serve -- adding a domain is `certbot certonly` plus a re-run of this script, with
+# nothing here to edit.
+CERTS="$(find /etc/letsencrypt/live -mindepth 1 -maxdepth 1 -type d -printf '%f
+' 2>/dev/null | sort || true)"
+
+# Port 80 always serves the ACME challenge unredirected -- redirecting it breaks the
+# renewal that keeps the site up -- and otherwise redirects to HTTPS once any certificate
+# exists, or proxies directly while none does.
+{
+  echo 'server {'
+  echo '    listen 80 default_server;'
+  echo '    server_name _;'
+  echo '    location /.well-known/acme-challenge/ { root /var/www/html; }'
+  if [ -n "$CERTS" ]; then
+    echo '    location / { return 301 https://$host$request_uri; }'
+  else
+    echo '    include /etc/nginx/oceanembed-proxy.conf;'
+  fi
+  echo '}'
+} >> "$CONF"
+
+# The certificate whose name is the public IP is the default_server: it answers anything
+# arriving without a matching Host, including someone typing the raw address.
+READY=""
+for name in $CERTS; do
+  if [ "$name" = "$IP" ]; then
+    tls_block '_' "/etc/letsencrypt/live/$name" 'default_server' >> "$CONF"
+    [ -n "$READY" ] || READY="https://$IP"
+  else
+    tls_block "$name" "/etc/letsencrypt/live/$name" '' >> "$CONF"
+    READY="https://$name"
+  fi
+done
+[ -n "$READY" ] || READY="http://${IP:-<public-ip>}"
+
+ln -sf "$CONF" /etc/nginx/sites-enabled/oceanembed
+rm -f /etc/nginx/sites-enabled/default        # its own default_server would win on :80
+nginx -t
+systemctl restart nginx
+echo "ready: $READY"

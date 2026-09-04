@@ -11,7 +11,8 @@ Runs **fully offline**. No torch, no GPU, no network — predictions for the who
 split are precomputed into `app/demo_data/` (478 MB, committed), so a click is an array
 lookup.
 
-A hosted copy runs at **https://65.2.207.204** — see *Deployment* below.
+A hosted copy runs at **<https://oter.shubhh.xyz>** (also reachable at
+<https://65.2.207.204>) — see *Deployment* below.
 
 ## What the judge does
 
@@ -50,13 +51,13 @@ profile tracks the Argo float → tab ④ for the depth curve. Rehearse it.
 
 **EC2 (what is running now).** `deploy/demo_ec2.sh` on a fresh Ubuntu 24.04 box: shallow
 clone, venv from `app/requirements.txt`, a systemd unit (`oceanembed.service`) so the app
-survives a crash or a reboot, and optional Caddy for TLS when `DOMAIN` is set. Idempotent —
-re-run it to redeploy the tip of `main`.
+survives a crash or a reboot, and an nginx front end that serves HTTPS for whichever
+Let's Encrypt certificates exist. Idempotent — re-run it to redeploy the tip of `main`.
 
 ```bash
 scp -i key.pem deploy/demo_ec2.sh ubuntu@<ip>:
-ssh -i key.pem ubuntu@<ip> 'sudo bash demo_ec2.sh'          # http://<ip>, https if a cert exists
-ssh -i key.pem ubuntu@<ip> 'sudo DOMAIN=demo.example.com bash demo_ec2.sh'   # https
+ssh -i key.pem ubuntu@<ip> 'sudo bash demo_ec2.sh'                        # bare IP
+ssh -i key.pem ubuntu@<ip> 'sudo DOMAIN=demo.example.com bash demo_ec2.sh'  # + a domain
 ```
 
 Size it at **t3.medium** (4 GB): the ~1.1 GB steady state leaves a t3.small no room at
@@ -66,9 +67,12 @@ swapless box the OOM killer fired four times before that was in place. It picked
 self-check every time and the service survived (`NRestarts=0`), but it was under no
 obligation to.
 
-Streamlit binds `127.0.0.1` in both cases and a proxy fronts it, so port 8501 is never
-publicly exposed. nginx takes 80/443 for a bare IP; Caddy takes 443 when `DOMAIN` is set.
-Open 80 and 443 in the security group.
+Streamlit binds `127.0.0.1` and nginx fronts it, so port 8501 is never publicly exposed.
+Open 80 and 443 in the security group. The script emits one TLS server block per
+certificate it finds under `/etc/letsencrypt/live/`, so the bare IP and a domain can be
+served at once; the IP block is the `default_server` and answers anything arriving without
+a matching `Host`. Certificates are obtained out of band, because issuance needs an email
+address and a Terms of Service acceptance that do not belong in an unattended script.
 
 ### HTTPS on a bare IP
 
@@ -95,14 +99,28 @@ sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
 sudo certbot renew --dry-run          # must say "no renewal failures"
 ```
 
-Re-run `demo_ec2.sh` afterwards: it detects `/etc/letsencrypt/live/<ip>/` and writes the
-443 server block plus an 80→443 redirect, keeping `/.well-known/acme-challenge/` on plain
-HTTP and *unredirected* — redirecting it breaks the renewal that keeps the site up.
+Re-run `demo_ec2.sh` afterwards to pick the certificate up. `/.well-known/acme-challenge/`
+stays on plain HTTP and *unredirected* — redirecting it breaks the renewal that keeps the
+site up.
 
 **A 6-day certificate makes renewal load-bearing**, far more than the usual 90-day one.
 `snap.certbot.renew.timer` runs twice daily and the deploy hook reloads nginx; the dry run
 above is the check that this works. `http2 on;` is deliberately absent — that directive
 needs nginx ≥1.25 and Ubuntu 24.04 ships 1.24.
+
+### With a domain
+
+A domain is the better address if you have one: an **A record** pointing at the Elastic IP
+(a CNAME cannot hold an IP), then a normal **90-day** certificate, which takes renewal off
+the critical path:
+
+```bash
+sudo certbot certonly --webroot -w /var/www/html -d demo.example.com -n
+sudo DOMAIN=demo.example.com bash demo_ec2.sh
+```
+
+Behind Cloudflare, set the record to *DNS only* (grey cloud) before requesting: an
+orange-cloud proxy intercepts the ACME challenge and issuance fails.
 
 The nginx config is three lines of substance and two of them are easy to omit.
 `proxy_http_version 1.1` with the `Upgrade`/`Connection` headers is what lets Streamlit's
