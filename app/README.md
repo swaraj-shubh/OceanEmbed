@@ -7,8 +7,11 @@ python app/loader.py                    # self-check the bundle
 streamlit run app/streamlit_app.py
 ```
 
-Runs **fully offline**. No torch, no GPU, no network — predictions for the demo window are
-precomputed into `app/demo_data/` (~70 MB, committed), so a click is an array lookup.
+Runs **fully offline**. No torch, no GPU, no network — predictions for the whole test
+split are precomputed into `app/demo_data/` (478 MB, committed), so a click is an array
+lookup.
+
+A hosted copy runs at **http://13.203.97.121:8501** — see *Deployment* below.
 
 ## What the judge does
 
@@ -30,13 +33,39 @@ profile tracks the Argo float → tab ④ for the depth curve. Rehearse it.
 
 - The bundle covers the **full test split**, every day the model can predict:
   **2023-01-07 → 2024-12-31** (725 days), chunked into 8 calendar-quarter files so no single
-  tracked file exceeds GitHub's 100 MB limit -- `app/loader.py` loads only the quarter the
-  selected date falls in. The scripted path's date (5 Dec 2023, Cyclone Michaung) still
-  works unchanged; the window used to stop at 2023-12-31 and now simply keeps going.
+  tracked file exceeds GitHub's 100 MB limit -- `app/loader.py` loads the quarter the
+  selected date falls in and keeps **at most two** resident (`chunk_cache`,
+  `max_entries=2`). That bound matters: a quarter costs ~150 MB decoded, so an unbounded
+  cache reaches ~3.2 GB across all eight, past Streamlit Cloud's 2.7 GB ceiling. Measured
+  peak while browsing every quarter is **945 MB**. The scripted path's date (5 Dec 2023,
+  Cyclone Michaung) still works unchanged; the window used to stop at 2023-12-31 and now
+  simply keeps going.
 - Bundle values are int16-packed; round-trip error is ~0.0002 °C, versus the model's
   0.786 °C RMSE.
 - On-screen profile metrics use `src/argo_eval.interp_profile`, the same acceptance rule as
   every reported number — not a second implementation.
-- **Streamlit Cloud:** point the app at `app/streamlit_app.py` and set the dependency file
-  to `app/requirements.txt` in Advanced settings, or the root `requirements.txt` (torch,
-  cartopy, copernicusmarine) will be installed and the build will time out.
+
+## Deployment
+
+**EC2 (what is running now).** `deploy/demo_ec2.sh` on a fresh Ubuntu 24.04 box: shallow
+clone, venv from `app/requirements.txt`, a systemd unit (`oceanembed.service`) so the app
+survives a crash or a reboot, and optional Caddy for TLS when `DOMAIN` is set. Idempotent —
+re-run it to redeploy the tip of `main`.
+
+```bash
+scp -i key.pem deploy/demo_ec2.sh ubuntu@<ip>:
+ssh -i key.pem ubuntu@<ip> 'sudo bash demo_ec2.sh'          # http://<ip>:8501
+ssh -i key.pem ubuntu@<ip> 'sudo DOMAIN=demo.example.com bash demo_ec2.sh'   # https
+```
+
+Size it at **t3.medium** (4 GB): the 945 MB peak plus the venv leaves a t3.small with no
+room for a second concurrent viewer. Inbound TCP 8501 must be open in the security group
+(or 80/443 when Caddy fronts it). Attach an Elastic IP or the URL changes on every
+stop/start.
+
+**Streamlit Cloud** also fits (945 MB against its 2.7 GB cap). Point it at
+`app/streamlit_app.py`; there is no dependency-file setting to change — Community Cloud
+searches the entrypoint's directory before the repo root, so `app/requirements.txt` wins
+and the root one (torch, cartopy, copernicusmarine, which would time the build out) is
+ignored. Its one catch is that apps sleep after 12 h without traffic; a free uptime
+monitor pinging the URL keeps it awake for demo day.

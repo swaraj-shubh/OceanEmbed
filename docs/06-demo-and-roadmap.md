@@ -7,9 +7,10 @@ nav_order: 7
 
 ## 1. Streamlit demo (what the judge does)
 
-> **Built.** `streamlit run app/streamlit_app.py` — see [`app/README.md`](https://github.com/swaraj-shubh/OceanEmbed/blob/main/app/README.md)
-> for the 90-second demo path. The spec below is what was implemented, with two deliberate
-> deviations recorded in the implementation rules.
+> **Built and hosted.** Live at **<http://13.203.97.121:8501>** (EC2 t3.medium, ap-south-1),
+> or `streamlit run app/streamlit_app.py` locally — see [`app/README.md`](https://github.com/swaraj-shubh/OceanEmbed/blob/main/app/README.md)
+> for the 90-second demo path and the deployment recipe. The spec below is what was
+> implemented, with two deliberate deviations recorded in the implementation rules.
 
 ```mermaid
 flowchart LR
@@ -60,7 +61,8 @@ Parallelize: one member owns pipeline (doc 04), one owns model/training (docs 03
 | Kaggle GPU quota binds late | Medium | Checkpoint/resume everywhere; ₹5–10k RunPod/AWS-Spot escape hatch |
 | SMAP SSS gaps/coastal noise | Certain | Missing masks in loss; document as limitation, spin as "handling real observational sparsity" |
 | Team pipeline/model integration breaks late | Medium | Freeze the Zarr tensor contract week 2; integration test = one end-to-end train step in CI-style script |
-| Demo-day machine issues | Medium | Demo runs CPU-only from a `requirements.txt` + one `streamlit run` command; test on a second laptop; screen-record a backup video |
+| Demo-day machine issues | Medium | Three independent paths to the same app: the hosted EC2 URL, `streamlit run app/streamlit_app.py` on a laptop (fully offline, no network needed), and a screen-recorded backup video |
+| Hosted demo unreachable at the venue | Medium | The EC2 box carries an auto-assigned public IP, so the URL changes on stop/start — allocate an Elastic IP before demo day, and fall back to the local run, which needs no network at all |
 
 ## 4. Q&A ammunition (one-liners)
 
