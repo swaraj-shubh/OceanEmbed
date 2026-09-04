@@ -429,10 +429,11 @@ if logo_path.exists():
     )
 else:
     st.title("OTER - Ocean Thermal Embedding Reconstruction")
+_d0, _d1 = L.dates().min(), L.dates().max()
 st.caption(
     f"Seven satellite surface fields → temperature at 15 depths, 0–1000 m, over the "
-    f"Arabian Sea and Bay of Bengal. Showing **{man['window']['start']} to "
-    f"{man['window']['end']}** — inside the held-out test period the model never trained on."
+    f"Arabian Sea and Bay of Bengal. Showing **every day from {_d0:%d %b %Y} to "
+    f"{_d1:%d %b %Y}** — the full held-out test period the model never trained on."
 )
 
 with st.sidebar:
@@ -465,7 +466,7 @@ with t_inputs:
     st.subheader("What the satellite sees")
     st.caption("These seven surface fields are the model's only input. Everything in the "
                "next tabs is inferred from them.")
-    x = L.inputs().sel(time=date)
+    x = L.inputs(date)
     cols = st.columns(2)
     for i, ch in enumerate(man["channels"]):
         label, unit = L.CHANNEL_LABEL[ch]
@@ -592,6 +593,33 @@ with t_skill:
     st.dataframe(tab, use_container_width=True, hide_index=True,
                  column_config={c: st.column_config.NumberColumn(format="%.3f")
                                 for c in tab.columns if c != "Depth (m)"})
-    st.caption(f"Test split, {man['argo_profiles']} Argo casts inside this window "
-               f"(~6,000 over the full 2023–24 test period).")
-               
+    st.caption(f"Test split, all {man['argo_profiles']:,} independent Argo casts across "
+               f"the full 2023–24 test period.")
+
+    with st.expander("Full metric comparison — FINAL vs the GLORYS reanalysis it learns from"):
+        fin, glo = L.final_vs_glorys()
+        # Verdict is a written judgement, not a number -- matches docs/11 sec.6, which this
+        # table reproduces live rather than restating by hand.
+        LABEL = {"rmse": "RMSE", "mae": "MAE", "bias": "Bias", "corr": "Corr", "r2": "R²"}
+        VERDICT = {
+            "rmse": "GLORYS lower (expected — it's the training target)",
+            "mae": "GLORYS lower",
+            "bias": "Model far better",
+            "corr": "GLORYS slightly higher",
+            "r2": "GLORYS slightly higher",
+        }
+        rows = pd.DataFrame([
+            {"Metric": LABEL[k], "GLORYS": glo[k], "FINAL (ens_mix6_bc)": fin[k],
+             "Δ": fin[k] - glo[k], "Verdict": VERDICT[k]}
+            for k in ("rmse", "mae", "bias", "corr", "r2")])
+        st.dataframe(rows, use_container_width=True, hide_index=True, column_config={
+            "GLORYS": st.column_config.NumberColumn(format="%.4f"),
+            "FINAL (ens_mix6_bc)": st.column_config.NumberColumn(format="%.4f"),
+            "Δ": st.column_config.NumberColumn(format="%+.4f"),
+        })
+        st.caption(
+            "Blended = n-weighted across all 15 depths, the same pooling the RMSE curve "
+            "above uses. RMSE/MAE/Corr/R² slightly favour GLORYS — expected, since the "
+            "model approximates its own training target. Bias is the exception: the "
+            "correction was fit against Argo, not GLORYS, and it shows here."
+        )

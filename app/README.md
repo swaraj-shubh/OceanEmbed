@@ -28,8 +28,11 @@ profile tracks the Argo float → tab ④ for the depth curve. Rehearse it.
 
 ## Notes
 
-- The window is **2023-10-01 → 2023-12-31**, inside the test split the model never trained
-  on. It contains Cyclone Tej (Arabian Sea) and Cyclone Michaung (Bay of Bengal).
+- The bundle covers the **full test split**, every day the model can predict:
+  **2023-01-07 → 2024-12-31** (725 days), chunked into 8 calendar-quarter files so no single
+  tracked file exceeds GitHub's 100 MB limit -- `app/loader.py` loads only the quarter the
+  selected date falls in. The scripted path's date (5 Dec 2023, Cyclone Michaung) still
+  works unchanged; the window used to stop at 2023-12-31 and now simply keeps going.
 - Bundle values are int16-packed; round-trip error is ~0.0002 °C, versus the model's
   0.786 °C RMSE.
 - On-screen profile metrics use `src/argo_eval.interp_profile`, the same acceptance rule as

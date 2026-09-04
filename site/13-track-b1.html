@@ -241,8 +241,10 @@ identically:</p>
 (100 m is the worst level for every system, by a wide margin), and <strong>the correction
 helps</strong> — it moves the blended score 6.7% and cuts the 100 m bias from +1.016 to +0.422.</p>
 <p><strong>Blended MAE, Bias, Correlation and R² — GLORYS vs FINAL</strong>, same <code>n</code>-weighted pooling as
-the RMSE above (weighted RMS for RMSE, weighted mean for the other four; not yet a function
-in <code>metrics.py</code> — computed once from the two <code>*_test_incois_b1.csv</code> files):</p>
+the RMSE above (weighted RMS for RMSE, weighted mean for the other four). Computed by
+<code>metrics.blend_all()</code> — the same function the demo's Skill tab uses for the B2 comparison
+(<code>app/loader.final_vs_glorys()</code>), applied here to the two <code>*_test_incois_b1.csv</code> files
+instead; not wired into the demo UI, since B1 is out of scope for what the demo shows:</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -268,7 +270,7 @@ in <code>metrics.py</code> — computed once from the two <code>*_test_incois_b1
 <tr>
 <td>Bias</td>
 <td>+0.622</td>
-<td><strong>+0.360</strong></td>
+<td><strong>+0.359</strong></td>
 <td>−0.263</td>
 </tr>
 <tr>

@@ -674,10 +674,17 @@ are negative on M4 too. Do not revisit.</p>
 </table></div>
 <p>At 100 m, the hardest layer: R² goes 0.502 → <strong>0.653</strong>, bias +0.850 → <strong>+0.299</strong>.</p>
 <p><strong>Blended MAE/Bias/Corr/R² are <code>n</code>-weighted means over the 15 depths — the same weighting
-<code>summary()</code> uses for RMSE, applied to the other four columns.</strong> No code computes this yet;
-these four numbers were derived once from <code>results/ens_mix6_bc_test_argo.csv</code> and
-<code>results/GLORYS_target_test_argo.csv</code> and are not reproducible by a script. If a
-<code>blend_all()</code> is ever added to <code>metrics.py</code>, replace this note with the command.</p>
+<code>summary()</code> uses for RMSE, applied to the other four columns.</strong> Computed by
+<code>metrics.blend_all()</code>, exercised by the Skill tab's live "Full metric comparison" expander
+(<code>app/loader.final_vs_glorys()</code>):</p>
+<pre><code class="language-bash">python -c &quot;
+import sys; sys.path.append('src')
+from metrics import blend_all
+import pandas as pd
+print(blend_all(pd.read_csv('results/ens_mix6_bc_test_argo.csv')))
+print(blend_all(pd.read_csv('results/GLORYS_target_test_argo.csv')))
+&quot;
+</code></pre>
 <p><strong>FINAL vs GLORYS, every metric:</strong></p>
 <div class="tablewrap"><table>
 <thead>
@@ -792,14 +799,18 @@ nothing. Caught on the status check before committing.</p>
 <hr />
 <h2 id="9-what-is-left">9. What is left</h2>
 <p><strong>1. The Streamlit demo — built.</strong> <code>streamlit run app/streamlit_app.py</code>. Runs fully
-offline from a committed 60 MB bundle (<code>app/demo_data/</code>, built by
+offline from a committed ~490 MB bundle (<code>app/demo_data/</code>, built by
 <code>scripts/build_demo_bundle.py</code>): no torch, no GPU, no network, and no cartopy, so it also
-deploys to Streamlit Cloud. Window <strong>2023-10-01 to 2023-12-31</strong> — inside the test split,
-and it contains Cyclone Tej (Arabian Sea) and Cyclone Michaung (Bay of Bengal). Four tabs:
-the seven surface inputs, the reconstruction with a GLORYS side-by-side and a difference
-view, click-to-profile with the nearest independent Argo cast overlaid, and the depth-wise
-skill table. 999 Argo casts fall inside the window, so a click almost always finds a match.
-On-screen profile metrics import <code>src/argo_eval.interp_profile</code> rather than re-implementing
+deploys to Streamlit Cloud. Covers the <strong>full test split, every predictable day</strong> —
+2023-01-07 to 2024-12-31, 725 days — chunked into 8 calendar-quarter NetCDF files per
+variable so no single tracked file exceeds GitHub's 100 MB limit; <code>app/loader.py</code> loads
+only the quarter a given date falls in. That range contains Cyclone Tej (Arabian Sea, Oct
+2023) and Cyclone Michaung (Bay of Bengal, Dec 2023) alongside the rest of both years. Four
+tabs: the seven surface inputs, the reconstruction with a GLORYS side-by-side and a
+difference view, click-to-profile with the nearest independent Argo cast overlaid, and the
+depth-wise skill table. All 6,448 test-split Argo casts are in the bundle, so a click
+almost always finds a match. On-screen profile metrics import <code>src/argo_eval.interp_profile</code>
+rather than re-implementing
 the matching rule, so the numbers a judge sees are the same measurement as the published
 ones.</p>
 <p><strong>2. Track B1 — INCOIS LAS Gridded ARGO.</strong> PS-named, lower value: raw Argo (B2) is the

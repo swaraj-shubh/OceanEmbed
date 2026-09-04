@@ -66,6 +66,19 @@ def summary(df):
     return float(np.sqrt(np.nansum(w * df["rmse"] ** 2) / w.sum()))
 
 
+def blend_all(df):
+    """Blend every column of a depth-wise table the same way summary() blends RMSE:
+    n-weighted, so a depth with more matched casts counts for more. RMSE stays a weighted
+    RMS (it is built from squared error, same as summary()); MAE/bias/corr/r2 are plain
+    weighted means. Returns a dict -- this is one row, not a table."""
+    w = df["n"].to_numpy(float)
+    out = {"rmse": summary(df)}
+    for col in ("mae", "bias", "corr", "r2"):
+        if col in df:
+            out[col] = float(np.nansum(w * df[col]) / w.sum())
+    return out
+
+
 if __name__ == "__main__":
     rng = np.random.default_rng(0)
     true = rng.normal(size=(len(DEPTHS), 20, 20))
@@ -89,4 +102,18 @@ if __name__ == "__main__":
 
     off = rng.normal(size=true.shape)                      # corr against an independent field
     assert abs(float(depthwise(off, true)["corr"].mean())) < 0.2
+
+    # blend_all must agree with summary() on rmse, and give the right weighted mean for
+    # the rest -- built from two depths with DIFFERENT n and DIFFERENT values, so an
+    # unweighted mean would give a different (wrong) answer than the n-weighted one.
+    two = pd.DataFrame({"depth_m": [0, 100], "n": [100.0, 300.0],
+                        "rmse": [1.0, 2.0], "mae": [1.0, 2.0],
+                        "bias": [1.0, -1.0], "corr": [1.0, 0.5], "r2": [1.0, 0.0]})
+    ba = blend_all(two)
+    assert np.isclose(ba["rmse"], summary(two)), "blend_all rmse must match summary()"
+    assert np.isclose(ba["mae"], (100 * 1.0 + 300 * 2.0) / 400), "mae not n-weighted"
+    assert np.isclose(ba["bias"], (100 * 1.0 + 300 * -1.0) / 400), "bias not n-weighted"
+    unweighted_mae = (1.0 + 2.0) / 2
+    assert not np.isclose(ba["mae"], unweighted_mae), \
+        "blend_all matches a plain average -- the n-weighting is not doing anything"
     print("metrics self-check OK\n", df.head(3).to_string(index=False))

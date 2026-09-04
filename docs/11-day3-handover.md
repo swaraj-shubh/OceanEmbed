@@ -238,10 +238,19 @@ are negative on M4 too. Do not revisit.
 At 100 m, the hardest layer: R² goes 0.502 → **0.653**, bias +0.850 → **+0.299**.
 
 **Blended MAE/Bias/Corr/R² are `n`-weighted means over the 15 depths — the same weighting
-`summary()` uses for RMSE, applied to the other four columns.** No code computes this yet;
-these four numbers were derived once from `results/ens_mix6_bc_test_argo.csv` and
-`results/GLORYS_target_test_argo.csv` and are not reproducible by a script. If a
-`blend_all()` is ever added to `metrics.py`, replace this note with the command.
+`summary()` uses for RMSE, applied to the other four columns.** Computed by
+`metrics.blend_all()`, exercised by the Skill tab's live "Full metric comparison" expander
+(`app/loader.final_vs_glorys()`):
+
+```bash
+python -c "
+import sys; sys.path.append('src')
+from metrics import blend_all
+import pandas as pd
+print(blend_all(pd.read_csv('results/ens_mix6_bc_test_argo.csv')))
+print(blend_all(pd.read_csv('results/GLORYS_target_test_argo.csv')))
+"
+```
 
 **FINAL vs GLORYS, every metric:**
 
@@ -310,14 +319,18 @@ nothing. Caught on the status check before committing.
 ## 9. What is left
 
 **1. The Streamlit demo — built.** `streamlit run app/streamlit_app.py`. Runs fully
-offline from a committed 60 MB bundle (`app/demo_data/`, built by
+offline from a committed ~490 MB bundle (`app/demo_data/`, built by
 `scripts/build_demo_bundle.py`): no torch, no GPU, no network, and no cartopy, so it also
-deploys to Streamlit Cloud. Window **2023-10-01 to 2023-12-31** — inside the test split,
-and it contains Cyclone Tej (Arabian Sea) and Cyclone Michaung (Bay of Bengal). Four tabs:
-the seven surface inputs, the reconstruction with a GLORYS side-by-side and a difference
-view, click-to-profile with the nearest independent Argo cast overlaid, and the depth-wise
-skill table. 999 Argo casts fall inside the window, so a click almost always finds a match.
-On-screen profile metrics import `src/argo_eval.interp_profile` rather than re-implementing
+deploys to Streamlit Cloud. Covers the **full test split, every predictable day** —
+2023-01-07 to 2024-12-31, 725 days — chunked into 8 calendar-quarter NetCDF files per
+variable so no single tracked file exceeds GitHub's 100 MB limit; `app/loader.py` loads
+only the quarter a given date falls in. That range contains Cyclone Tej (Arabian Sea, Oct
+2023) and Cyclone Michaung (Bay of Bengal, Dec 2023) alongside the rest of both years. Four
+tabs: the seven surface inputs, the reconstruction with a GLORYS side-by-side and a
+difference view, click-to-profile with the nearest independent Argo cast overlaid, and the
+depth-wise skill table. All 6,448 test-split Argo casts are in the bundle, so a click
+almost always finds a match. On-screen profile metrics import `src/argo_eval.interp_profile`
+rather than re-implementing
 the matching rule, so the numbers a judge sees are the same measurement as the published
 ones.
 
