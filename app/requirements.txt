@@ -9,3 +9,4 @@ netCDF4>=1.6           # the bundle is int16-packed NetCDF
 pandas>=2.0
 numpy>=1.26
 pyarrow>=14.0          # argo.parquet
+pillow>=10.0           # app/pages/*.py import PIL directly; Streamlit ships it, pin anyway

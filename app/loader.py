@@ -34,9 +34,16 @@ from metrics import blend_all  # noqa: E402
 try:
     import streamlit as st
     cache = st.cache_data(show_spinner=False)
+    # Quarter chunks are ~150 MB each decoded; eight of them would be 3.2 GB, past every
+    # free host's ceiling. Bound the chunk caches to the current quarter plus the previous
+    # one, so scrubbing back and forth over a boundary does not reload on every step.
+    chunk_cache = st.cache_data(show_spinner=False, max_entries=2)
 except ModuleNotFoundError:                                   # pragma: no cover
     def cache(fn):
         return lru_cache(maxsize=None)(fn)
+
+    def chunk_cache(fn):
+        return lru_cache(maxsize=2)(fn)
 
 CHANNEL_LABEL = {
     "sst": ("Sea surface temperature", "°C"),
@@ -78,19 +85,19 @@ def _quarter(date):
     return str(pd.Period(pd.Timestamp(date), freq="Q"))
 
 
-@cache
+@chunk_cache
 def _inputs_q(q):
     """7 surface fields for one quarter, (time, lat, lon) each. int16 on disk."""
     return xr.open_dataset(_need(DATA / f"inputs_{q}.nc")).load()
 
 
-@cache
+@chunk_cache
 def _prediction_q(q):
     """The frozen bias-corrected ensemble for one quarter: (time, depth, lat, lon) degC."""
     return xr.open_dataset(_need(DATA / f"pred_{q}.nc")).thetao.load()
 
 
-@cache
+@chunk_cache
 def _truth_q(q):
     """GLORYS12V1 for one quarter, for the side-by-side toggle. NOT ground truth -- it
     carries a +0.72 degC warm bias at 100 m, which is the whole point of docs/09 sec.4."""
@@ -99,7 +106,7 @@ def _truth_q(q):
 
 def inputs(date):
     """7 surface fields at one date, (lat, lon) each. Loads (and caches) only the quarter
-    that date falls in -- the app never has more than one quarter's worth in memory."""
+    that date falls in; chunk_cache keeps at most two quarters resident."""
     return _inputs_q(_quarter(date)).sel(time=date)
 
 
