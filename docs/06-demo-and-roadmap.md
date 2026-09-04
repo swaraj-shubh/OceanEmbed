@@ -7,7 +7,7 @@ nav_order: 7
 
 ## 1. Streamlit demo (what the judge does)
 
-> **Built and hosted.** Live at **<https://65.2.207.204>** (EC2 t3.medium, ap-south-1, nginx + a Let's Encrypt IP certificate),
+> **Built and hosted.** Live at **<https://oter.shubhh.xyz>** (EC2 t3.medium, ap-south-1, nginx + Let's Encrypt; the bare IP <https://65.2.207.204> also works),
 > or `streamlit run app/streamlit_app.py` locally — see [`app/README.md`](https://github.com/swaraj-shubh/OceanEmbed/blob/main/app/README.md)
 > for the 90-second demo path and the deployment recipe. The spec below is what was
 > implemented, with two deliberate deviations recorded in the implementation rules.
