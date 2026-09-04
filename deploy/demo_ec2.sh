@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
 # Host the OceanEmbed Streamlit demo on a fresh Ubuntu 24.04 EC2 box:
-#   sudo bash demo_ec2.sh                            -> http(s)://<public-ip>
-#   sudo DOMAIN=demo.example.com bash demo_ec2.sh    -> also https://demo.example.com
-# nginx serves HTTPS for whichever Let's Encrypt certificates exist under
-# /etc/letsencrypt/live/, and plain HTTP until one does; app/README.md has the one-time
-# certbot commands for both a bare IP and a domain.
+#   sudo bash demo_ec2.sh
+# nginx serves HTTPS for every Let's Encrypt certificate under /etc/letsencrypt/live/,
+# and plain HTTP until one exists. To add a name: point DNS at the box, run the certbot
+# command in app/README.md, then re-run this -- there is nothing here to edit.
 # Idempotent: re-run to redeploy the latest main.
 set -euo pipefail
 
 REPO="${REPO:-https://github.com/swaraj-shubh/OceanEmbed.git}"
-DOMAIN="${DOMAIN:-}"
 APP_USER="${APP_USER:-ubuntu}"
 DIR="/home/$APP_USER/OceanEmbed"
 
@@ -113,19 +111,23 @@ TLS
 
 CONF=/etc/nginx/sites-available/oceanembed
 : > "$CONF"
-HAVE_TLS=""
-[ -n "$IP" ] && [ -d "/etc/letsencrypt/live/$IP" ] && HAVE_TLS=1
-[ -n "$DOMAIN" ] && [ -d "/etc/letsencrypt/live/$DOMAIN" ] && HAVE_TLS=1
+
+# Serve every certificate the box holds, rather than one configured name. certbot puts
+# each under /etc/letsencrypt/live/<name>/, so that directory listing IS the list of names
+# we can serve -- adding a domain is `certbot certonly` plus a re-run of this script, with
+# nothing here to edit.
+CERTS="$(find /etc/letsencrypt/live -mindepth 1 -maxdepth 1 -type d -printf '%f
+' 2>/dev/null | sort || true)"
 
 # Port 80 always serves the ACME challenge unredirected -- redirecting it breaks the
-# renewal that keeps the site up -- and otherwise redirects to HTTPS once a certificate
-# exists, or proxies directly while one does not.
+# renewal that keeps the site up -- and otherwise redirects to HTTPS once any certificate
+# exists, or proxies directly while none does.
 {
   echo 'server {'
   echo '    listen 80 default_server;'
   echo '    server_name _;'
   echo '    location /.well-known/acme-challenge/ { root /var/www/html; }'
-  if [ -n "$HAVE_TLS" ]; then
+  if [ -n "$CERTS" ]; then
     echo '    location / { return 301 https://$host$request_uri; }'
   else
     echo '    include /etc/nginx/oceanembed-proxy.conf;'
@@ -133,17 +135,19 @@ HAVE_TLS=""
   echo '}'
 } >> "$CONF"
 
-# The IP block is the default_server: it answers anything that arrives without a matching
-# Host, including someone typing the raw address.
-if [ -n "$IP" ] && [ -d "/etc/letsencrypt/live/$IP" ]; then
-  tls_block '_' "/etc/letsencrypt/live/$IP" 'default_server' >> "$CONF"
-  READY="https://$IP"
-fi
-if [ -n "$DOMAIN" ] && [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
-  tls_block "$DOMAIN" "/etc/letsencrypt/live/$DOMAIN" '' >> "$CONF"
-  READY="https://$DOMAIN"
-fi
-[ -n "$HAVE_TLS" ] || READY="http://${IP:-<public-ip>}"
+# The certificate whose name is the public IP is the default_server: it answers anything
+# arriving without a matching Host, including someone typing the raw address.
+READY=""
+for name in $CERTS; do
+  if [ "$name" = "$IP" ]; then
+    tls_block '_' "/etc/letsencrypt/live/$name" 'default_server' >> "$CONF"
+    [ -n "$READY" ] || READY="https://$IP"
+  else
+    tls_block "$name" "/etc/letsencrypt/live/$name" '' >> "$CONF"
+    READY="https://$name"
+  fi
+done
+[ -n "$READY" ] || READY="http://${IP:-<public-ip>}"
 
 ln -sf "$CONF" /etc/nginx/sites-enabled/oceanembed
 rm -f /etc/nginx/sites-enabled/default        # its own default_server would win on :80
