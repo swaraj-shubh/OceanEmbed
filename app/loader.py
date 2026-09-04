@@ -71,23 +71,35 @@ def manifest():
     return json.loads(_need(DATA / "manifest.json").read_text())
 
 
-@cache
-def inputs():
-    """7 surface fields, (time, lat, lon) each. int16 on disk, float32 after decoding."""
-    return xr.open_dataset(_need(DATA / "inputs.nc")).load()
+def _quarter(date):
+    """'2023Q1' etc -- which chunk a date lives in. One calendar day is always in exactly
+    one quarter, so callers never need more than one chunk for a single-date lookup."""
+    return str(pd.Period(pd.Timestamp(date), freq="Q"))
 
 
 @cache
-def prediction():
-    """The frozen bias-corrected ensemble: (time, depth, lat, lon) in degC."""
-    return xr.open_dataset(_need(DATA / "pred.nc")).thetao.load()
+def _inputs_q(q):
+    """7 surface fields for one quarter, (time, lat, lon) each. int16 on disk."""
+    return xr.open_dataset(_need(DATA / f"inputs_{q}.nc")).load()
 
 
 @cache
-def truth():
-    """GLORYS12V1, the training target, for the side-by-side toggle. NOT ground truth --
-    it carries a +0.72 degC warm bias at 100 m, which is the whole point of docs/09 sec.4."""
-    return xr.open_dataset(_need(DATA / "truth.nc")).thetao.load()
+def _prediction_q(q):
+    """The frozen bias-corrected ensemble for one quarter: (time, depth, lat, lon) degC."""
+    return xr.open_dataset(_need(DATA / f"pred_{q}.nc")).thetao.load()
+
+
+@cache
+def _truth_q(q):
+    """GLORYS12V1 for one quarter, for the side-by-side toggle. NOT ground truth -- it
+    carries a +0.72 degC warm bias at 100 m, which is the whole point of docs/09 sec.4."""
+    return xr.open_dataset(_need(DATA / f"truth_{q}.nc")).thetao.load()
+
+
+def inputs(date):
+    """7 surface fields at one date, (lat, lon) each. Loads (and caches) only the quarter
+    that date falls in -- the app never has more than one quarter's worth in memory."""
+    return _inputs_q(_quarter(date)).sel(time=date)
 
 
 @cache
@@ -105,25 +117,29 @@ def metrics(name):
 
 
 def dates():
-    return pd.DatetimeIndex(prediction().time.values)
+    """Full test-split date list, straight from the manifest -- reading it back off the
+    NetCDFs would mean opening all 8 quarter files just to populate the slider."""
+    return pd.DatetimeIndex(manifest()["dates"])
 
 
 def depths():
-    return [int(d) for d in prediction().depth.values]
+    return [int(d) for d in manifest()["depths_m"]]
 
 
 def field(date, depth, source="prediction"):
     """One 2-D map: (lat, lon) at `depth` on `date`. source: prediction | truth | error."""
-    p = prediction().sel(time=date, depth=depth)
+    q = _quarter(date)
+    p = _prediction_q(q).sel(time=date, depth=depth)
     if source == "prediction":
         return p
-    t = truth().sel(time=date, depth=depth)
+    t = _truth_q(q).sel(time=date, depth=depth)
     return t if source == "truth" else (p - t)
 
 
 def profile(date, lat, lon, source="prediction"):
     """Full 0-1000 m column at the nearest grid cell. Returns (depths, values)."""
-    da = (prediction() if source == "prediction" else truth())
+    q = _quarter(date)
+    da = (_prediction_q(q) if source == "prediction" else _truth_q(q))
     col = da.sel(time=date).sel(lat=lat, lon=lon, method="nearest")
     return np.asarray(col.depth.values, float), np.asarray(col.values, float)
 
@@ -178,53 +194,77 @@ def argo_comparison(date, lat, lon, max_days=3, max_deg=1.5):
 def land_mask():
     """True where the model was never supervised. Prediction cubes carry NaN there, which
     is what docs/09 sec.2 fixed -- scoring against unconstrained output moved 500 m RMSE
-    from 0.30 to 0.94 for the anomaly model."""
-    return np.isnan(prediction().isel(time=0, depth=0).values)
+    from 0.30 to 0.94 for the anomaly model. Land is static, so any single day answers this
+    -- the first day of the first quarter costs one file load, not all eight."""
+    q0 = manifest()["quarters"][0]
+    return np.isnan(_prediction_q(q0).isel(time=0, depth=0).values)
 
 
 if __name__ == "__main__":
     m = manifest()
-    print(f"bundle: {m['window']['days']} days {m['window']['start']}..{m['window']['end']}"
-          f"  |  {m['argo_profiles']} Argo casts  |  git {m['git_sha']}")
+    all_dates = dates()
+    print(f"bundle: {len(all_dates)} days {str(all_dates.min().date())}.."
+          f"{str(all_dates.max().date())}  |  {len(m['quarters'])} quarters "
+          f"{m['quarters']}  |  {m['argo_profiles']} Argo casts  |  git {m['git_sha']}")
 
-    p, t, x = prediction(), truth(), inputs()
-    assert p.dims == ("time", "depth", "lat", "lon"), p.dims
-    assert p.shape == t.shape, (p.shape, t.shape)
     assert depths() == m["depths_m"], "depth axis does not match the manifest"
-    assert list(x.data_vars) == m["channels"], "input channels do not match the manifest"
-    assert x.sizes["time"] == p.sizes["time"], "inputs and prediction cover different days"
-    assert len(dates()) == m["window"]["days"]
-
     # The demo must only ever show the held-out period. If this fires, the bundle is
     # showing a judge dates the model trained on.
-    assert str(dates().min().date()) >= "2023-01-01", "bundle escapes the test split"
+    assert str(all_dates.min().date()) >= "2023-01-01", "bundle escapes the test split"
 
-    # int16 packing must be transparent: physical values, not counts.
-    v = p.sel(depth=0).values
-    assert np.nanmin(v) > -5 and np.nanmax(v) < 40, f"0 m looks unscaled: {np.nanmin(v)}..{np.nanmax(v)}"
-    assert np.isnan(v).any(), "no land in the prediction -- masking was lost"
+    # Every quarter file must exist, cover the days the manifest claims, and share one grid
+    # -- checked for ALL of them, not just one, since a chunked bundle can go stale one file
+    # at a time (e.g. a rebuild that only reran the last quarter).
+    expected_by_q = {}
+    for d in all_dates:
+        expected_by_q.setdefault(_quarter(d), 0)
+        expected_by_q[_quarter(d)] += 1
+    assert sorted(expected_by_q) == sorted(m["quarters"]), \
+        "manifest date list and quarter list disagree"
+
+    grid_shape = None
+    for q in m["quarters"]:
+        p, t, x = _prediction_q(q), _truth_q(q), _inputs_q(q)
+        assert p.dims == ("time", "depth", "lat", "lon"), (q, p.dims)
+        assert p.shape == t.shape, (q, p.shape, t.shape)
+        assert list(x.data_vars) == m["channels"], (q, "input channels do not match")
+        assert x.sizes["time"] == p.sizes["time"] == expected_by_q[q], \
+            (q, "day count does not match the manifest")
+        shape = (p.sizes["lat"], p.sizes["lon"])
+        grid_shape = grid_shape or shape
+        assert shape == grid_shape, (q, "grid shape differs from an earlier quarter")
+        # int16 packing must be transparent: physical values, not counts.
+        v = p.sel(depth=0).values
+        assert np.nanmin(v) > -5 and np.nanmax(v) < 40, \
+            (q, f"0 m looks unscaled: {np.nanmin(v)}..{np.nanmax(v)}")
+        assert np.isnan(v).any(), (q, "no land in the prediction -- masking was lost")
+    print(f"all {len(m['quarters'])} quarters verified individually "
+          f"({sum(expected_by_q.values())} days total)")
+
     assert land_mask().mean() > 0.1, "land mask covers implausibly little of the grid"
 
-    d0 = dates()[len(dates()) // 2]
-    zz, vv = profile(d0, 15.0, 88.0)          # Bay of Bengal, open water
-    assert len(zz) == 15 and np.isfinite(vv).all(), "profile has gaps in open water"
-    assert vv[0] > vv[-1], "profile is not warmer at the surface than at 1000 m"
-
-    err = field(d0, 100, "error")
-    assert err.shape == field(d0, 100).shape
+    # Exercise the quarter boundary explicitly: the first and last day of the bundle, plus
+    # the middle, must each resolve through _quarter() to a file that actually has that day
+    # -- a boundary off-by-one would only show up at the edges, never in the middle.
+    for d0 in (all_dates[0], all_dates[len(all_dates) // 2], all_dates[-1]):
+        zz, vv = profile(d0, 15.0, 88.0)      # Bay of Bengal, open water
+        assert len(zz) == 15 and np.isfinite(vv).all(), (d0, "profile has gaps in open water")
+        assert vv[0] > vv[-1], (d0, "profile is not warmer at the surface than at 1000 m")
+        err = field(d0, 100, "error")
+        assert err.shape == field(d0, 100).shape
 
     hit = None
-    for d in dates():                          # find any day with a cast to prove matching
+    for d in all_dates:                        # find any day with a cast to prove matching
         hit = nearest_argo(d, 15.0, 88.0)
         if hit:
             break
-    assert hit is not None, "no Argo cast matched anywhere in the window"
+    assert hit is not None, "no Argo cast matched anywhere in the full test split"
     assert hit["pres"].min() < 50 and len(hit["pres"]) > 5
     print(f"nearest Argo demo: {hit['profile']} at {hit['distance_deg']:.2f} deg, "
           f"{len(hit['pres'])} levels")
 
     tab = metrics("ens_mix6_bc_test_argo.csv")
     assert {"depth_m", "rmse", "bias", "corr"} <= set(tab.columns)
-    print(f"loader self-check OK -- {p.sizes['lat']}x{p.sizes['lon']} grid, "
+    print(f"loader self-check OK -- {grid_shape[0]}x{grid_shape[1]} grid, "
           f"{len(depths())} depths, headline 100 m RMSE "
           f"{float(tab[tab.depth_m == 100].rmse.iloc[0]):.3f} degC")

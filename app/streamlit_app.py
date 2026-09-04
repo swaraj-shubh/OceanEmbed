@@ -429,10 +429,11 @@ if logo_path.exists():
     )
 else:
     st.title("OTER - Ocean Thermal Embedding Reconstruction")
+_d0, _d1 = L.dates().min(), L.dates().max()
 st.caption(
     f"Seven satellite surface fields → temperature at 15 depths, 0–1000 m, over the "
-    f"Arabian Sea and Bay of Bengal. Showing **{man['window']['start']} to "
-    f"{man['window']['end']}** — inside the held-out test period the model never trained on."
+    f"Arabian Sea and Bay of Bengal. Showing **every day from {_d0:%d %b %Y} to "
+    f"{_d1:%d %b %Y}** — the full held-out test period the model never trained on."
 )
 
 with st.sidebar:
@@ -465,7 +466,7 @@ with t_inputs:
     st.subheader("What the satellite sees")
     st.caption("These seven surface fields are the model's only input. Everything in the "
                "next tabs is inferred from them.")
-    x = L.inputs().sel(time=date)
+    x = L.inputs(date)
     cols = st.columns(2)
     for i, ch in enumerate(man["channels"]):
         label, unit = L.CHANNEL_LABEL[ch]
@@ -592,6 +593,6 @@ with t_skill:
     st.dataframe(tab, use_container_width=True, hide_index=True,
                  column_config={c: st.column_config.NumberColumn(format="%.3f")
                                 for c in tab.columns if c != "Depth (m)"})
-    st.caption(f"Test split, {man['argo_profiles']} Argo casts inside this window "
-               f"(~6,000 over the full 2023–24 test period).")
+    st.caption(f"Test split, all {man['argo_profiles']:,} independent Argo casts across "
+               f"the full 2023–24 test period.")
                
