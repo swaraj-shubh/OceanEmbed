@@ -11,7 +11,7 @@ Runs **fully offline**. No torch, no GPU, no network — predictions for the who
 split are precomputed into `app/demo_data/` (478 MB, committed), so a click is an array
 lookup.
 
-A hosted copy runs at **http://13.203.97.121:8501** — see *Deployment* below.
+A hosted copy runs at **http://65.2.207.204:8501** — see *Deployment* below.
 
 ## What the judge does
 
@@ -66,8 +66,11 @@ swapless box the OOM killer fired four times before that was in place. It picked
 self-check every time and the service survived (`NRestarts=0`), but it was under no
 obligation to.
 
-Inbound TCP 8501 must be open in the security group (or 80/443 when Caddy fronts it).
-Attach an Elastic IP or the URL changes on every stop/start.
+Inbound TCP 8501 must be open in the security group (or 80/443 when Caddy fronts it). The
+address is an **Elastic IP** (`eipalloc-048b0502fbb0f9f5d`), so it survives a stop/start --
+an auto-assigned one does not, and every link in these docs would rot the first time the
+box is stopped to save money. Release the allocation if the demo is ever torn down: an
+Elastic IP keeps billing while it sits unassociated.
 
 **Streamlit Cloud** also fits (~1.1 GB against its 2.7 GB cap). Point it at
 `app/streamlit_app.py`; there is no dependency-file setting to change — Community Cloud
