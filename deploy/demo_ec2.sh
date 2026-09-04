@@ -39,8 +39,9 @@ sudo -u "$APP_USER" python3 -m venv "$DIR/.venv"
 sudo -u "$APP_USER" "$DIR/.venv/bin/pip" install -q --upgrade pip
 sudo -u "$APP_USER" "$DIR/.venv/bin/pip" install -q -r "$DIR/app/requirements.txt"
 
-# Bind to localhost only when Caddy fronts it, so 8501 is not separately reachable.
-BIND=$([ -n "$DOMAIN" ] && echo 127.0.0.1 || echo 0.0.0.0)
+# A proxy always fronts the app, so Streamlit itself never listens on a public
+# interface: port 8501 is reachable only from the box.
+BIND=127.0.0.1
 
 cat > /etc/systemd/system/oceanembed.service <<UNIT
 [Unit]
@@ -62,20 +63,49 @@ UNIT
 systemctl daemon-reload
 systemctl enable --now oceanembed
 systemctl restart oceanembed
-
 if [ -n "$DOMAIN" ]; then
-  # Caddy for automatic Let's Encrypt TLS. It proxies websockets untouched, which
-  # Streamlit needs -- an nginx config that forgets Upgrade/Connection headers gives a
-  # page that loads and then never updates.
+  # Caddy, purely for the automatic Let's Encrypt certificate. A bare IP cannot have one,
+  # so this path needs a real domain; without a domain we serve plain HTTP over nginx.
   apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https curl
-  curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key \
-    | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-  curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt \
-    > /etc/apt/sources.list.d/caddy-stable.list
+  curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key     | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt     > /etc/apt/sources.list.d/caddy-stable.list
   apt-get update -qq && apt-get install -y -qq caddy
-  printf '%s {\n\treverse_proxy localhost:8501\n}\n' "$DOMAIN" > /etc/caddy/Caddyfile
+  printf '%s {
+	reverse_proxy localhost:8501
+}
+' "$DOMAIN" > /etc/caddy/Caddyfile
   systemctl restart caddy
   echo "ready: https://$DOMAIN"
 else
-  echo "ready: http://$(curl -s --max-time 5 ifconfig.me || echo '<public-ip>'):8501"
+  apt-get install -y -qq nginx
+  # Streamlit talks to the browser over a websocket; everything after the first paint
+  # rides on it. proxy_http_version/Upgrade/Connection are the three lines that matter --
+  # without them the page renders once and then ignores every click, which looks like a
+  # broken app rather than a broken proxy. proxy_read_timeout matters as much: nginx
+  # closes an idle connection after 60 s by default, so a demo parked on one slide comes
+  # back to "Connection lost".
+  cat > /etc/nginx/sites-available/oceanembed <<'NGINX'
+server {
+    listen 80 default_server;
+    server_name _;
+
+    location / {
+        proxy_pass http://127.0.0.1:8501;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+}
+NGINX
+  ln -sf /etc/nginx/sites-available/oceanembed /etc/nginx/sites-enabled/oceanembed
+  rm -f /etc/nginx/sites-enabled/default        # its own default_server would win on :80
+  nginx -t
+  systemctl restart nginx
+  echo "ready: http://$(curl -s --max-time 5 ifconfig.me || echo '<public-ip>')"
 fi

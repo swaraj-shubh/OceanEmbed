@@ -11,7 +11,7 @@ Runs **fully offline**. No torch, no GPU, no network — predictions for the who
 split are precomputed into `app/demo_data/` (478 MB, committed), so a click is an array
 lookup.
 
-A hosted copy runs at **http://65.2.207.204:8501** — see *Deployment* below.
+A hosted copy runs at **http://65.2.207.204** — see *Deployment* below.
 
 ## What the judge does
 
@@ -55,7 +55,7 @@ re-run it to redeploy the tip of `main`.
 
 ```bash
 scp -i key.pem deploy/demo_ec2.sh ubuntu@<ip>:
-ssh -i key.pem ubuntu@<ip> 'sudo bash demo_ec2.sh'          # http://<ip>:8501
+ssh -i key.pem ubuntu@<ip> 'sudo bash demo_ec2.sh'          # http://<ip>
 ssh -i key.pem ubuntu@<ip> 'sudo DOMAIN=demo.example.com bash demo_ec2.sh'   # https
 ```
 
@@ -66,7 +66,22 @@ swapless box the OOM killer fired four times before that was in place. It picked
 self-check every time and the service survived (`NRestarts=0`), but it was under no
 obligation to.
 
-Inbound TCP 8501 must be open in the security group (or 80/443 when Caddy fronts it). The
+Streamlit binds `127.0.0.1` in both cases and a proxy fronts it, so port 8501 is never
+publicly exposed: nginx serves plain HTTP on **80** for a bare IP, and Caddy serves HTTPS
+on **443** when `DOMAIN` is set (a bare IP cannot have a certificate, which is the whole
+reason there are two paths). Open 80, or 443, in the security group accordingly.
+
+The nginx config is three lines of substance and two of them are easy to omit.
+`proxy_http_version 1.1` with the `Upgrade`/`Connection` headers is what lets Streamlit's
+websocket through -- without it the page paints once, returns a healthy 200, and then
+ignores every click, which reads as a broken app rather than a broken proxy. And
+`proxy_read_timeout 3600s` overrides nginx's 60 s default, which would otherwise drop the
+idle socket while you talk over a slide and leave the judge looking at "Connection lost".
+Verify with `curl -i -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H
+'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ=='
+http://<ip>/_stcore/stream` -- it must answer **101 Switching Protocols**, not 200.
+
+The
 address is an **Elastic IP** (`eipalloc-048b0502fbb0f9f5d`), so it survives a stop/start --
 an auto-assigned one does not, and every link in these docs would rot the first time the
 box is stopped to save money. Release the allocation if the demo is ever torn down: an

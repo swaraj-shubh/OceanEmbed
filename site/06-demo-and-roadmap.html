@@ -127,7 +127,7 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
   <article><h1 id="06-demo-spec-roadmap-risks">06 — Demo Spec, Roadmap, Risks</h1>
 <h2 id="1-streamlit-demo-what-the-judge-does">1. Streamlit demo (what the judge does)</h2>
 <blockquote>
-<p><strong>Built and hosted.</strong> Live at <strong><a href="http://65.2.207.204:8501">http://65.2.207.204:8501</a></strong> (EC2 t3.medium, ap-south-1),
+<p><strong>Built and hosted.</strong> Live at <strong><a href="http://65.2.207.204">http://65.2.207.204</a></strong> (EC2 t3.medium, ap-south-1, nginx on :80),
 or <code>streamlit run app/streamlit_app.py</code> locally — see <a href="https://github.com/swaraj-shubh/OceanEmbed/blob/main/app/README.md"><code>app/README.md</code></a>
 for the 90-second demo path and the deployment recipe. The spec below is what was
 implemented, with two deliberate deviations recorded in the implementation rules.</p>
@@ -250,7 +250,7 @@ implemented, with two deliberate deviations recorded in the implementation rules
 <tr>
 <td>Hosted demo unreachable at the venue</td>
 <td>Medium</td>
-<td>The box has an Elastic IP, so the URL survives a stop/start and can be printed on a slide; if the venue network blocks port 8501 anyway, fall back to <code>streamlit run app/streamlit_app.py</code> on a laptop, which needs no network at all</td>
+<td>The box has an Elastic IP, so the URL survives a stop/start and can be printed on a slide; if the venue network blocks the box anyway, fall back to <code>streamlit run app/streamlit_app.py</code> on a laptop, which needs no network at all</td>
 </tr>
 </tbody>
 </table></div>

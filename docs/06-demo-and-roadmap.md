@@ -7,7 +7,7 @@ nav_order: 7
 
 ## 1. Streamlit demo (what the judge does)
 
-> **Built and hosted.** Live at **<http://65.2.207.204:8501>** (EC2 t3.medium, ap-south-1),
+> **Built and hosted.** Live at **<http://65.2.207.204>** (EC2 t3.medium, ap-south-1, nginx on :80),
 > or `streamlit run app/streamlit_app.py` locally — see [`app/README.md`](https://github.com/swaraj-shubh/OceanEmbed/blob/main/app/README.md)
 > for the 90-second demo path and the deployment recipe. The spec below is what was
 > implemented, with two deliberate deviations recorded in the implementation rules.
@@ -62,7 +62,7 @@ Parallelize: one member owns pipeline (doc 04), one owns model/training (docs 03
 | SMAP SSS gaps/coastal noise | Certain | Missing masks in loss; document as limitation, spin as "handling real observational sparsity" |
 | Team pipeline/model integration breaks late | Medium | Freeze the Zarr tensor contract week 2; integration test = one end-to-end train step in CI-style script |
 | Demo-day machine issues | Medium | Three independent paths to the same app: the hosted EC2 URL, `streamlit run app/streamlit_app.py` on a laptop (fully offline, no network needed), and a screen-recorded backup video |
-| Hosted demo unreachable at the venue | Medium | The box has an Elastic IP, so the URL survives a stop/start and can be printed on a slide; if the venue network blocks port 8501 anyway, fall back to `streamlit run app/streamlit_app.py` on a laptop, which needs no network at all |
+| Hosted demo unreachable at the venue | Medium | The box has an Elastic IP, so the URL survives a stop/start and can be printed on a slide; if the venue network blocks the box anyway, fall back to `streamlit run app/streamlit_app.py` on a laptop, which needs no network at all |
 
 ## 4. Q&A ammunition (one-liners)
 
