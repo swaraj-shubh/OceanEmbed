@@ -37,7 +37,8 @@ profile tracks the Argo float → tab ④ for the depth curve. Rehearse it.
   selected date falls in and keeps **at most two** resident (`chunk_cache`,
   `max_entries=2`). That bound matters: a quarter costs ~150 MB decoded, so an unbounded
   cache reaches ~3.2 GB across all eight, past Streamlit Cloud's 2.7 GB ceiling. Measured
-  peak while browsing every quarter is **945 MB**. The scripted path's date (5 Dec 2023,
+  on the deployed Linux box, resident memory rises to **~1.1 GB** and then plateaus there
+  no matter how many quarters are browsed. The scripted path's date (5 Dec 2023,
   Cyclone Michaung) still works unchanged; the window used to stop at 2023-12-31 and now
   simply keeps going.
 - Bundle values are int16-packed; round-trip error is ~0.0002 °C, versus the model's
@@ -58,12 +59,17 @@ ssh -i key.pem ubuntu@<ip> 'sudo bash demo_ec2.sh'          # http://<ip>:8501
 ssh -i key.pem ubuntu@<ip> 'sudo DOMAIN=demo.example.com bash demo_ec2.sh'   # https
 ```
 
-Size it at **t3.medium** (4 GB): the 945 MB peak plus the venv leaves a t3.small with no
-room for a second concurrent viewer. Inbound TCP 8501 must be open in the security group
-(or 80/443 when Caddy fronts it). Attach an Elastic IP or the URL changes on every
-stop/start.
+Size it at **t3.medium** (4 GB): the ~1.1 GB steady state leaves a t3.small no room at
+all. The script also adds a 2 GB swapfile, which is not decoration -- running
+`app/loader.py`'s self-check next to the live app briefly needs ~2.3 GB, and on the
+swapless box the OOM killer fired four times before that was in place. It picked the
+self-check every time and the service survived (`NRestarts=0`), but it was under no
+obligation to.
 
-**Streamlit Cloud** also fits (945 MB against its 2.7 GB cap). Point it at
+Inbound TCP 8501 must be open in the security group (or 80/443 when Caddy fronts it).
+Attach an Elastic IP or the URL changes on every stop/start.
+
+**Streamlit Cloud** also fits (~1.1 GB against its 2.7 GB cap). Point it at
 `app/streamlit_app.py`; there is no dependency-file setting to change — Community Cloud
 searches the entrypoint's directory before the repo root, so `app/requirements.txt` wins
 and the root one (torch, cartopy, copernicusmarine, which would time the build out) is

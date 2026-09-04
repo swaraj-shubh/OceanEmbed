@@ -13,6 +13,18 @@ DIR="/home/$APP_USER/OceanEmbed"
 apt-get update -qq
 apt-get install -y -qq git python3-venv
 
+# The app sits at ~1.1 GB once a viewer has browsed every quarter. That fits 4 GB alone,
+# but a second Python process -- app/loader.py's self-check, say -- pushes past it, and
+# with no swap the OOM killer gets to choose a victim. It should never get to choose the
+# demo. 2 GB of disk is cheaper than a larger instance.
+if ! swapon --show | grep -q .; then
+  fallocate -l 2G /swapfile
+  chmod 600 /swapfile
+  mkswap -q /swapfile
+  swapon /swapfile
+  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
 # Shallow clone: the demo needs the tip of main, not 60 MB of history.
 if [ -d "$DIR/.git" ]; then
   sudo -u "$APP_USER" git -C "$DIR" fetch --depth 1 origin main
