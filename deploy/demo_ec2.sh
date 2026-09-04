@@ -78,17 +78,16 @@ if [ -n "$DOMAIN" ]; then
   echo "ready: https://$DOMAIN"
 else
   apt-get install -y -qq nginx
+  IP="$(curl -s --max-time 5 ifconfig.me || echo '')"
+  CERTDIR="/etc/letsencrypt/live/$IP"
+
   # Streamlit talks to the browser over a websocket; everything after the first paint
   # rides on it. proxy_http_version/Upgrade/Connection are the three lines that matter --
   # without them the page renders once and then ignores every click, which looks like a
   # broken app rather than a broken proxy. proxy_read_timeout matters as much: nginx
   # closes an idle connection after 60 s by default, so a demo parked on one slide comes
   # back to "Connection lost".
-  cat > /etc/nginx/sites-available/oceanembed <<'NGINX'
-server {
-    listen 80 default_server;
-    server_name _;
-
+  cat > /tmp/oceanembed.proxy <<'PROXY'
     location / {
         proxy_pass http://127.0.0.1:8501;
         proxy_http_version 1.1;
@@ -101,11 +100,46 @@ server {
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
     }
-}
-NGINX
+PROXY
+
+  if [ -d "$CERTDIR" ]; then
+    # HTTPS on a bare IP. Let's Encrypt has issued IP certificates since Jan 2026, but
+    # only under the 6-day "shortlived" profile and only via a non-nginx authenticator --
+    # see the HTTPS notes in app/README.md for the one-time certbot command. The ACME
+    # challenge path stays on plain HTTP and is NOT redirected, or renewal breaks itself.
+    { echo 'server {'
+      echo '    listen 80 default_server;'
+      echo '    server_name _;'
+      echo '    location /.well-known/acme-challenge/ { root /var/www/html; }'
+      echo '    location / { return 301 https://$host$request_uri; }'
+      echo '}'
+      echo 'server {'
+      echo '    listen 443 ssl default_server;'
+      echo '    server_name _;'
+      echo "    ssl_certificate $CERTDIR/fullchain.pem;"
+      echo "    ssl_certificate_key $CERTDIR/privkey.pem;"
+      echo '    include /etc/letsencrypt/options-ssl-nginx.conf;'
+      echo '    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;'
+      cat /tmp/oceanembed.proxy
+      echo '}'
+    } > /etc/nginx/sites-available/oceanembed
+    READY="https://$IP"
+  else
+    { echo 'server {'
+      echo '    listen 80 default_server;'
+      echo '    server_name _;'
+      echo '    location /.well-known/acme-challenge/ { root /var/www/html; }'
+      cat /tmp/oceanembed.proxy
+      echo '}'
+    } > /etc/nginx/sites-available/oceanembed
+    READY="http://${IP:-<public-ip>}"
+  fi
+
+  mkdir -p /var/www/html
+  rm -f /tmp/oceanembed.proxy
   ln -sf /etc/nginx/sites-available/oceanembed /etc/nginx/sites-enabled/oceanembed
   rm -f /etc/nginx/sites-enabled/default        # its own default_server would win on :80
   nginx -t
   systemctl restart nginx
-  echo "ready: http://$(curl -s --max-time 5 ifconfig.me || echo '<public-ip>')"
+  echo "ready: $READY"
 fi
