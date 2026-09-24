@@ -17,8 +17,10 @@ from pathlib import Path
 from PIL import Image
 import numpy as np
 import pandas as pd
+import plotly.figure_factory as ff
 import plotly.graph_objects as go
 import streamlit as st
+from streamlit import config as st_config
 
 sys.path.append(str(Path(__file__).resolve().parent))
 import loader as L
@@ -80,6 +82,9 @@ html, body, [class*="css"] {
     --alert-bg: rgba(20, 20, 20, 0.7);
     --alert-border: rgba(255, 255, 255, 0.08);
     --sidebar-bg: rgba(10, 10, 10, 0.8);
+    --table-head: rgba(255, 255, 255, 0.08);
+    --table-rule: rgba(255, 255, 255, 0.06);
+    --table-hover: rgba(255, 255, 255, 0.04);
     --sidebar-border: rgba(255, 255, 255, 0.05);
 }
 
@@ -167,8 +172,10 @@ code {
                                  a plain color override doesn't cancel */
 }
 [data-testid="stMetricDelta"], [data-testid="stMetricDelta"] * {
-    color: var(--metric-delta) !important;
-    fill: var(--metric-delta) !important;   /* the up/down arrow is an inline SVG */
+    color: var(--metric-delta) !important;   /* the arrow SVG is fill="currentColor", so
+                                                 this colours it too. No fill: override --
+                                                 it also filled the icon's invisible 24x24
+                                                 bounding-box path, drawing a solid square */
     font-weight: 600 !important;
 }
 [data-testid="stAlert"] {
@@ -195,7 +202,7 @@ code {
     padding-bottom: 0 !important;
 }
 /* ----- fixed heading ----- */
-div[data-testid="stVerticalBlock"] > div:has(#fixed-header) {
+.st-key-topbar {
     position: sticky;
     top: 12px;
     z-index: 1000;
@@ -332,6 +339,9 @@ div[data-testid="stVerticalBlock"] > div:has(#fixed-header) {
     transform: scale(0.95);
 }
 
+/* the theme toggle sits in a narrow column; the global pill padding would truncate it */
+.st-key-mode_btn button { padding: 0.5rem 0.9rem; white-space: nowrap; }
+
 /* ----- divider ----- */
 hr {
     border: none;
@@ -346,7 +356,7 @@ hr {
    alignment is exposed, via column_config. A real <table> is CSS-reachable end to end. */
 .oter-table { width: 100%; border-collapse: collapse; margin: 6px 0 4px; font-size: 14px; }
 .oter-table th {
-    background: rgba(255, 255, 255, 0.08);   /* greyish, on the dark glass */
+    background: var(--table-head);
     color: var(--body-color);
     text-align: center;
     padding: 10px 12px;
@@ -357,12 +367,66 @@ hr {
     text-align: center;
     padding: 8px 12px;
     color: var(--body-color);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--table-rule);
 }
 .oter-table tr:last-child td { border-bottom: none; }
-.oter-table tbody tr:hover td { background: rgba(255, 255, 255, 0.04); }
+.oter-table tbody tr:hover td { background: var(--table-hover); }
 </style>
 """, unsafe_allow_html=True)
+
+# --- light / dark ----------------------------------------------------------------------
+# One switch drives three layers: the CSS variables above (page), Streamlit's own chrome
+# (dataframe grid, popovers -- reachable only through theme config) and ui() (charts).
+THEMES = {
+    "dark": {"base": "dark", "backgroundColor": "#0a0a0a",
+             "secondaryBackgroundColor": "#141414", "textColor": "#ffffff"},
+    "light": {"base": "light", "backgroundColor": "#e8eaec",
+              "secondaryBackgroundColor": "#dfe2e6", "textColor": "#1a1a1a"},
+}
+st.session_state.setdefault("mode", "dark")
+mode = st.session_state["mode"]
+if st.get_option("theme.base") != mode:
+    # The theme ships to the browser at the start of each run, so set it and rerun once.
+    # ponytail: theme config is process-wide -- every open session follows the last toggle.
+    # Fine for a one-laptop demo; per-session native theming needs Streamlit support.
+    for k, v in THEMES[mode].items():
+        st_config.set_option(f"theme.{k}", v)
+    st.rerun()
+
+if mode == "light":
+    st.markdown("""
+<style>
+:root {
+    --app-bg: linear-gradient(145deg, #eef0f2 0%, #dde1e5 100%);
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-border-hover: rgba(0, 0, 0, 0.08);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    --heading-color: #111418;
+    --body-color: #1f2328;
+    --caption-color: #3d444b;
+    --accent: #4a5563;
+    --accent-text: #111418;
+    --accent-tint: rgba(0, 0, 0, 0.06);
+    --control-hover: rgba(0, 0, 0, 0.05);
+    --metric-bg: rgba(255, 255, 255, 0.72);
+    --metric-text: #111418;
+    --metric-label: #2b3137;
+    --metric-delta: #16803c;
+    --table-head: rgba(0, 0, 0, 0.05);
+    --table-rule: rgba(0, 0, 0, 0.06);
+    --table-hover: rgba(0, 0, 0, 0.03);
+    --alert-bg: rgba(255, 255, 255, 0.72);
+    --alert-border: rgba(0, 0, 0, 0.08);
+    --sidebar-bg: rgba(245, 246, 247, 0.85);
+    --sidebar-border: rgba(0, 0, 0, 0.06);
+}
+code { background: rgba(0, 0, 0, 0.08) !important; color: #111418 !important; }
+</style>
+""", unsafe_allow_html=True)
+
+
+def flip_mode():
+    st.session_state["mode"] = "light" if st.session_state["mode"] == "dark" else "dark"
 
 # --- palette (validated with the dataviz validator; do not substitute by eye) ----------
 # Categorical slots in FIXED order, never cycled. Light / dark pairs.
@@ -373,7 +437,10 @@ SEQ_TEMP = "Oranges"
 # A difference is polarity -> two hues either side of a neutral grey midpoint. Never a
 # rainbow, and never a hue at the midpoint.
 DIVERGING = [[0.0, "#2a78d6"], [0.5, "#f0efec"], [1.0, "#e34948"]]
-GRID = "rgba(128,128,128,0.22)"
+# Speed is magnitude, but arrows are drawn on top: the ramp stops at mid-blue so dark
+# arrows stay readable over the fastest water.
+SPEED = [[0.0, "#e3eef8"], [1.0, "#4a90c9"]]
+ARROW = "#1a1a1a"
 
 # Which surface channels carry POLARITY rather than magnitude. A sea level *anomaly* and
 # the signed components of a vector are meaningless without a zero: on a light-to-dark ramp
@@ -381,9 +448,25 @@ GRID = "rgba(128,128,128,0.22)"
 # diverging scale, centred on zero. Temperature and salinity are magnitudes and do not.
 SIGNED = {"sla", "cur_u", "cur_v", "wind_u", "wind_v"}
 
+# Depth axes are log(z + DZ): 0-200 m, where the thermocline and 62% of the error live
+# (docs/12 sec.3), gets about two thirds of the axis instead of a linear fifth.
+DZ = 10
+HOVER = dict(bgcolor="rgba(15,15,15,0.95)", bordercolor="rgba(255,255,255,0.35)",
+             font=dict(color="#ffffff", size=14))
+DEPTH_TICKS = [0, 10, 20, 50, 100, 200, 500, 1000]
+
 
 def theme():
-    return "dark" if st.get_option("theme.base") == "dark" else "light"
+    return st.session_state.get("mode", "dark")
+
+
+def ui():
+    """Chart colours for the active theme, so charts and page chrome never disagree."""
+    if theme() == "dark":
+        return dict(template="plotly_dark", fg="#ffffff", grid="rgba(255,255,255,0.1)",
+                    land="#4a4f56", shelf="#2c3036", edge="#000000")
+    return dict(template="plotly_white", fg="#1a1a1a", grid="rgba(0,0,0,0.08)",
+                land="#c8c8c8", shelf="#e6e6e6", edge="#ffffff")
 
 
 def series(i):
@@ -391,59 +474,192 @@ def series(i):
 
 
 def base_layout(fig, height=420, **kw):
+    c = ui()
     fig.update_layout(
-        template="plotly_dark",
+        template=c["template"],
         height=height, margin=dict(l=12, r=12, t=36, b=36),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(size=13, family="Poppins, system-ui, sans-serif", color="#ffffff"),
+        font=dict(size=13, family="Poppins, system-ui, sans-serif", color=c["fg"]),
         # Plotly heatmaps default the hover box's background to the hovered cell's OWN
         # colour when bgcolor is left unset -- white text on a light cell (the pale end of
         # "Oranges", or the midpoint of the diverging scale) then reads as white-on-white.
-        # A fixed dark background makes every hover legible regardless of what's under it.
+        # A fixed dark background makes every hover legible regardless of what's under it,
+        # in either page theme.
         hoverlabel=dict(font_size=14, font_family="Poppins, system-ui, sans-serif",
                         font_color="#ffffff", bgcolor="rgba(15,15,15,0.95)",
                         bordercolor="rgba(255,255,255,0.35)"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0,
-                    bgcolor="rgba(0,0,0,0)", font=dict(size=14, color="#ffffff")),
+                    bgcolor="rgba(0,0,0,0)", font=dict(size=14, color=c["fg"])),
         **kw)
-    fig.update_xaxes(showgrid=True, gridcolor="rgba(255,255,255,0.1)", zeroline=False)
-    fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.1)", zeroline=False)
+    fig.update_xaxes(showgrid=True, gridcolor=c["grid"], zeroline=False)
+    fig.update_yaxes(showgrid=True, gridcolor=c["grid"], zeroline=False)
     return fig
 
 
-def heatmap(da, title, colorscale=SEQ_TEMP, unit="°C", diverging=False, height=430,
-            key=None):
-    """One field on the model grid. NaN (land, unsupervised cells) renders as a gap --
+def depth_axis(fig):
+    """Reversed log depth axis; traces must be plotted at y = depth + DZ."""
+    fig.update_yaxes(type="log", range=[np.log10(1000 + DZ), np.log10(DZ)],
+                     tickvals=[d + DZ for d in DEPTH_TICKS],
+                     ticktext=[str(d) for d in DEPTH_TICKS], title="Depth (m)")
+    return fig
+
+
+# --- fixed colour ranges: one per depth / channel across the whole test period, so moving the
+# date slider changes colour only where the ocean changed ------------------------------
+# Ranges span the whole test period. They are computed once, exactly, when the bundle is
+# built (scripts/build_demo_bundle.py::colour_ranges) and read from the manifest here --
+# deriving them at app time means decoding every quarter file.
+def temp_range(depth):
+    """Shared by our map and GLORYS so the two views are directly comparable."""
+    return tuple(L.manifest()["colour_ranges"]["temp"][str(depth)])
+
+
+def diff_range(depth):
+    """Symmetric, clipped at the 98th percentile: one bad cell must not grey out the map."""
+    m = L.manifest()["colour_ranges"]["diff"][str(depth)]
+    return -m, m
+
+
+def input_range(ch):
+    return tuple(L.manifest()["colour_ranges"]["inputs"][ch])
+
+
+def speed_top(prefix):
+    return L.manifest()["colour_ranges"]["speed"][prefix]
+
+
+@st.cache_resource(show_spinner=False)
+def _dry():
+    """(depth, lat, lon) True where there is no water, read once: land and seafloor are
+    static, so the first day of the first quarter stands for every day."""
+    ds = next(L.each_quarter("pred"))
+    return ds.thetao.isel(time=0).load().isnull()
+
+
+def masks(depth):
+    """(land, shelf) as lat/lon DataArrays. Land is dry at the surface; shelf is ocean whose
+    floor is shallower than `depth`, so there is no water there to predict."""
+    dry = _dry()
+    land = dry.sel(depth=0)
+    return land, dry.sel(depth=depth) & ~land
+
+
+@st.cache_data(show_spinner=False)
+def floats_near(date, days=3):
+    """One row per Argo cast within +/-days of `date` -- the same window argo_comparison
+    matches in, so every marker on the map is one a click can actually compare against."""
+    a = L.argo()
+    a = a[(a.time - pd.Timestamp(date)).abs() <= pd.Timedelta(days=days)]
+    return a.groupby("profile")[["lat", "lon"]].first()
+
+
+def ground(da, depth):
+    """Grey land and a lighter 'seafloor above this depth' layer, drawn under the data so
+    a gap is never mistaken for a missing value."""
+    c = ui()
+    land, shelf = (m.sel(lat=da.lat, lon=da.lon, method="nearest").values
+                   for m in masks(depth))
+    g = np.where(land, 0.0, np.where(shelf, 1.0, np.nan))
+    text = np.where(land, "Land", np.where(shelf, f"Seafloor shallower than {depth} m", ""))
+    return go.Heatmap(z=g, x=np.asarray(da.lon.values, float),
+                      y=np.asarray(da.lat.values, float), zmin=0, zmax=1,
+                      colorscale=[[0, c["land"]], [1, c["shelf"]]], showscale=False,
+                      text=text, hovertemplate="%{text}<extra></extra>", hoverongaps=False,
+                      hoverlabel=HOVER)
+
+
+def isotherms(z, lon, lat, zrange):
+    """Contour lines at a step giving ~6-12 lines over the depth's fixed range, so levels
+    stay put as the date changes."""
+    lo, hi = zrange
+    step = next((s for s in (0.25, 0.5, 1, 2) if (hi - lo) / s <= 12), 5)
+    return go.Contour(
+        z=z, x=lon, y=lat, showscale=False, hoverinfo="skip",
+        contours=dict(coloring="none", start=np.ceil(lo / step) * step, end=hi, size=step,
+                      showlabels=True, labelfont=dict(size=10, color="rgba(0,0,0,0.75)")),
+        line=dict(width=0.8, color="rgba(0,0,0,0.45)"))
+
+
+def heatmap(da, title, colorscale=SEQ_TEMP, unit="°C", zrange=None, depth=0,
+            contours=False, height=430):
+    """One field on the model grid, over grey land. NaN over ocean renders as a gap --
     the model is never scored there and must never be shown as if it were."""
     z = np.asarray(da.values, float)
-    kw = {}
-    if diverging:                      # symmetric about zero or the midpoint lies
-        m = float(np.nanmax(np.abs(z))) or 1.0
-        kw = dict(zmin=-m, zmax=m, zmid=0)
-    fig = go.Figure(go.Heatmap(
-        z=z, x=np.asarray(da.lon.values, float), y=np.asarray(da.lat.values, float),
-        colorscale=colorscale, hoverongaps=False,
+    lon, lat = np.asarray(da.lon.values, float), np.asarray(da.lat.values, float)
+    kw = {} if zrange is None else dict(zmin=zrange[0], zmax=zrange[1])
+    fig = go.Figure([ground(da, depth), go.Heatmap(
+        z=z, x=lon, y=lat, colorscale=colorscale, hoverongaps=False,
         colorbar=dict(title=dict(text=unit, side="right"), thickness=12, outlinewidth=0),
         hovertemplate="%{y:.2f}°N  %{x:.2f}°E<br><b>%{z:.2f} " + unit + "</b><extra></extra>",
         # Set again at the trace level, not just in base_layout: heatmap hover boxes can
         # ignore the layout-level default and fall back to colouring themselves from the
         # cell underneath, so the fix has to hold here too.
-        hoverlabel=dict(bgcolor="rgba(15,15,15,0.95)", bordercolor="rgba(255,255,255,0.35)",
-                        font=dict(color="#ffffff", size=14)),
-        **kw))
-    base_layout(fig, height=height, title=dict(text=title, x=0, font=dict(size=14, color="#ffffff")))
+        hoverlabel=HOVER, **kw)])
+    if contours and zrange is not None:
+        fig.add_trace(isotherms(z, lon, lat, zrange))
+    base_layout(fig, height=height, title=dict(text=title, x=0, font=dict(size=14)))
     # Pin both axes to the data. An equal-aspect lock (scaleanchor) is geographically
     # purer, but the region is 45 deg wide and 25 deg tall inside a panel that is roughly
     # square, so plotly satisfies the lock by padding latitude out to -5..42 and the map
     # collapses into a strip. Filling the panel costs a little aspect fidelity; every axis
     # is labelled in degrees and the coastline is still unmistakably India.
-    fig.update_yaxes(title=None, range=[float(da.lat.min()), float(da.lat.max())])
-    fig.update_xaxes(title=None, range=[float(da.lon.min()), float(da.lon.max())])
+    fig.update_yaxes(title=None, range=[float(lat.min()), float(lat.max())])
+    fig.update_xaxes(title=None, range=[float(lon.min()), float(lon.max())])
+    return fig
+
+
+def vector_map(x, prefix, label, height=300):
+    """Speed as colour, direction as arrows: one readable panel instead of two signed U/V
+    maps a judge has to combine in their head."""
+    u, v = sub(x[f"{prefix}_u"]), sub(x[f"{prefix}_v"])
+    top = speed_top(prefix)
+    fig = heatmap(np.hypot(u, v), f"{label} — speed and direction (m/s)", colorscale=SPEED,
+                  unit="m/s", zrange=(0, top), height=height)
+    s = 6                                            # every 6th cell (1.5 deg) or it's a hairball
+    uu, vv = u.values[::s, ::s], v.values[::s, ::s]
+    X, Y = np.meshgrid(u.lon.values[::s], u.lat.values[::s])
+    ok = np.isfinite(uu) & np.isfinite(vv)
+    if ok.any():
+        q = ff.create_quiver(X[ok], Y[ok], uu[ok], vv[ok], scale=1.2 / top, arrow_scale=0.3,
+                             line=dict(color=ARROW, width=1), hoverinfo="skip",
+                             showlegend=False)
+        fig.add_traces(q.data)
+    return fig
+
+
+def timelapse(date, src, depth, view):
+    """Every day of `date`'s quarter at one depth, as plotly frames -- the chunk already in
+    memory, so it costs no extra load. Uses the same fixed range as the still map, so the
+    animation shows the ocean changing, not the colour scale."""
+    field = sub(L.quarter_field(date, depth, src))
+    diverging = src == "error"
+    days = [pd.Timestamp(t) for t in field.time.values]
+    title = lambda d: f"{view} — {depth} m, {d:%d %b %Y}"  # noqa: E731
+    fig = heatmap(field.isel(time=0), title(days[0]),
+                  colorscale=DIVERGING if diverging else SEQ_TEMP,
+                  zrange=diff_range(depth) if diverging else temp_range(depth),
+                  depth=depth, height=560)
+    fig.frames = [go.Frame(data=[go.Heatmap(z=field.isel(time=i).values.astype("float32"))],
+                           traces=[1], name=f"{d:%Y-%m-%d}",
+                           layout=dict(title=dict(text=title(d))))
+                  for i, d in enumerate(days)]
+    play = dict(frame=dict(duration=150, redraw=True), fromcurrent=True, transition=dict(duration=0))
+    stop = dict(frame=dict(duration=0, redraw=False), mode="immediate")
+    fig.update_layout(
+        margin=dict(b=90),
+        updatemenus=[dict(type="buttons", direction="left", x=0, y=-0.08, xanchor="left",
+                          yanchor="top", showactive=False,
+                          buttons=[dict(label="▶ Play", method="animate", args=[None, play]),
+                                   dict(label="❚❚ Pause", method="animate",
+                                        args=[[None], stop])])],
+        sliders=[dict(x=0.2, y=-0.08, len=0.8, yanchor="top", currentvalue=dict(visible=False),
+                      steps=[dict(method="animate", label=f"{d:%d %b}",
+                                  args=[[f"{d:%Y-%m-%d}"], stop]) for d in days])])
     return fig
 
 
 def html_table(df, formats=None):
-    """A benchmark table as plain HTML (see .oter-table CSS): centred, grey header, dark
+    """A benchmark table as plain HTML (see .oter-table CSS): centred, grey header, glass
     body. st.dataframe's grid can't take a header colour or reliable header alignment from
     CSS at all -- it's canvas-drawn -- so for a table this heavily styled, real HTML is the
     native fit, not a workaround."""
@@ -481,20 +697,29 @@ def skill_table():
 # ======================================================================================
 man = L.manifest()
 logo_path = Path(__file__).parent / "logo.png"
-if logo_path.exists():
-    import base64
-    logo_b64 = base64.b64encode(logo_path.read_bytes()).decode()
-    st.markdown(
-        f"""
-        <div id="fixed-header" style="display: flex; align-items: center; gap: 16px;">
-            <img src="data:image/png;base64,{logo_b64}" width="48" style="background-color: white; border-radius: 50%; padding: 2px; box-shadow: var(--glass-shadow);" />
-            <h1 style="margin: 0; padding: 0; padding-bottom: 4px;">OTER - Ocean Thermal Embedding Reconstruction</h1>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-else:
-    st.title("OTER - Ocean Thermal Embedding Reconstruction")
+with st.container(key="topbar"):
+    h1, h2 = st.columns([5, 1], vertical_alignment="center")
+    with h1:
+        if logo_path.exists():
+            import base64
+            logo_b64 = base64.b64encode(logo_path.read_bytes()).decode()
+            st.markdown(
+                f"""
+                <div id="fixed-header" style="display: flex; align-items: center; gap: 16px;">
+                    <img src="data:image/png;base64,{logo_b64}" width="48" style="background-color: white; border-radius: 50%; padding: 2px; box-shadow: var(--glass-shadow);" />
+                    <h1 style="margin: 0; padding: 0; padding-bottom: 4px;">OTER - Ocean Thermal Embedding Reconstruction</h1>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        else:
+            st.title("OTER - Ocean Thermal Embedding Reconstruction")
+    with h2:
+        dark = mode == "dark"
+        st.button("Light" if dark else "Dark", on_click=flip_mode, width="content",
+                  help="Switch to light mode" if dark else "Switch to dark mode",
+                  icon=":material/light_mode:" if dark else ":material/dark_mode:",
+                  key="mode_btn")
 _d0, _d1 = L.dates().min(), L.dates().max()
 st.caption(
     f"Seven satellite surface fields → temperature at 15 depths, 0–1000 m, over the "
@@ -522,7 +747,7 @@ with st.sidebar:
     st.caption(f"Model: 6-member ensemble + Argo bias correction · build `{man['git_sha']}`")
 
 lon0, lon1 = L.REGIONS[region]
-sub = lambda da: da.sel(lon=slice(lon0, lon1))
+sub = lambda da: da.sel(lon=slice(lon0, lon1))  # noqa: E731
 
 t_inputs, t_map, t_profile, t_skill = st.tabs(
     ["Surface inputs", "Reconstruction", "Profile", "Benchmarks"])
@@ -531,19 +756,31 @@ t_inputs, t_map, t_profile, t_skill = st.tabs(
 with t_inputs:
     st.subheader("What the satellite sees")
     st.caption("These seven surface fields are the model's only input. Everything in the "
-               "next tabs is inferred from them.")
+               "next tabs is inferred from them. Currents and winds are drawn as one "
+               "speed-and-direction map each; their U/V channels are in the panel below.")
     x = L.inputs(date)
+    panels = [("sst", SEQ_TEMP), ("sss", "Blues"), ("sla", DIVERGING), ("cur", None),
+              ("wind", None)]
     cols = st.columns(2)
-    for i, ch in enumerate(man["channels"]):
-        label, unit = L.CHANNEL_LABEL[ch]
-        signed = ch in SIGNED
+    for i, (ch, cs) in enumerate(panels):
         with cols[i % 2]:
-            st.plotly_chart(
-                heatmap(sub(x[ch]), f"{label}  ({unit})",
-                        colorscale=(DIVERGING if signed else
-                                    SEQ_TEMP if ch == "sst" else "Blues"),
-                        diverging=signed, unit=unit, height=300),
-                use_container_width=True, key=f"in_{ch}")
+            if cs is None:
+                fig = vector_map(x, ch, "Surface current" if ch == "cur" else "Surface wind")
+            else:
+                label, unit = L.CHANNEL_LABEL[ch]
+                fig = heatmap(sub(x[ch]), f"{label}  ({unit})", colorscale=cs, unit=unit,
+                              zrange=input_range(ch), height=300)
+            st.plotly_chart(fig, width="stretch", key=f"in_{ch}")
+
+    with st.expander("Raw U / V components — the four vector channels as the model sees them"):
+        cols = st.columns(2)
+        for i, ch in enumerate(["cur_u", "cur_v", "wind_u", "wind_v"]):
+            label, unit = L.CHANNEL_LABEL[ch]
+            with cols[i % 2]:
+                st.plotly_chart(
+                    heatmap(sub(x[ch]), f"{label}  ({unit})", colorscale=DIVERGING,
+                            unit=unit, zrange=input_range(ch), height=300),
+                    width="stretch", key=f"raw_{ch}")
 
 # --- ② the reconstruction -------------------------------------------------------------
 with t_map:
@@ -551,8 +788,7 @@ with t_map:
     with c2:
         with st.container(border=True):
             st.markdown("#### Display Mode")
-            view = st.radio("Show", ["OTER", "GLORYS reanalysis",
-                                     "Difference (OTER − GLORYS)"],
+            view = st.radio("Show", ["OTER vs GLORYS", "Difference (OTER − GLORYS)"],
                             label_visibility="collapsed")
             st.divider()
             st.caption(
@@ -560,54 +796,122 @@ with t_map:
                 "runs about **+0.72 °C too warm at 100 m** against Argo floats in this basin. "
                 "Measuring that is what let us correct it."
             )
-    src = {"OTER": "prediction", "GLORYS reanalysis": "truth",
-           "Difference (OTER − GLORYS)": "error"}[view]
-    da = sub(L.field(date, depth, src))
+            st.caption("Lines are isotherms. Colours are fixed per depth across the whole "
+                       "test period, so changing the date only recolours what actually changed.")
+    diff = view.startswith("Difference")
+    when = f"{depth} m, {pd.Timestamp(date):%d %b %Y}"
     with c1:
-        st.plotly_chart(
-            heatmap(da, f"{view} — {depth} m, {pd.Timestamp(date):%d %b %Y}",
-                    colorscale=DIVERGING if src == "error" else SEQ_TEMP,
-                    diverging=(src == "error"), height=560),
-            use_container_width=True, key="recon")
+        if diff:
+            st.plotly_chart(
+                heatmap(sub(L.field(date, depth, "error")), f"{view} — {when}",
+                        colorscale=DIVERGING, zrange=diff_range(depth), depth=depth,
+                        height=560),
+                width="stretch", key="recon")
+        else:
+            # Stacked on one fixed colour scale (temp_range is shared), so the same colour
+            # means the same temperature in both maps.
+            for src, name, key in (("prediction", "OTER", "recon"),
+                                   ("truth", "GLORYS reanalysis", "recon_glorys")):
+                st.plotly_chart(
+                    heatmap(sub(L.field(date, depth, src)), f"{name} — {when}",
+                            zrange=temp_range(depth), depth=depth, contours=True,
+                            height=430),
+                    width="stretch", key=key)
+
+    if st.toggle("▶ Timelapse — every day of this quarter at this depth",
+                 help="Early December 2023 shows Cyclone Michaung crossing the Bay of Bengal."):
+        with st.spinner("Building frames…"):
+            st.plotly_chart(timelapse(date, "error" if diff else "prediction", depth,
+                                      view if diff else "OTER"),
+                            width="stretch", key="timelapse")
 
 # --- ③ click a point, get the column --------------------------------------------------
 with t_profile:
     st.caption("**Click anywhere on the map** to pull the full 0–1000 m column at that "
-               "point, with the nearest independent Argo float profile overlaid.")
+               "point. Diamonds are Argo floats within 3 days — click one for a direct "
+               "comparison against an independent observation.")
+    # The clickable map must not depend on the click: Streamlit derives the chart's widget
+    # id from the figure spec, so a marker drawn from `pick` would make every click a new
+    # widget. The ring on the picked cell is plotly's client-side selection style instead.
+    prev = st.session_state.get("clickmap") or {}
+    pts = (prev.get("selection") or {}).get("points", [])
+    if pts:
+        st.session_state["pick"] = (float(pts[0]["y"]), float(pts[0]["x"]))
+    lat_s, lon_s = st.session_state.get("pick", (15.0, 88.0))
+
+    c = ui()
     c1, c2 = st.columns([1, 1])
     with c1:
-        ev = st.plotly_chart(
-            heatmap(sub(L.field(date, depth, "prediction")),
-                    f"Reconstruction — {depth} m (click to sample)", height=470),
-            use_container_width=True, on_select="rerun", selection_mode="points",
-            key="clickmap")
-        pts = (ev.get("selection", {}) or {}).get("points", []) if ev else []
-        if pts:
-            st.session_state["pick"] = (float(pts[0]["y"]), float(pts[0]["x"]))
-
-    lat_s, lon_s = st.session_state.get("pick", (15.0, 88.0))
-    with c2:
-        zz, pred = L.profile(date, lat_s, lon_s)
-        fig = go.Figure()
+        dap = sub(L.field(date, depth, "prediction"))
+        fig = heatmap(dap, f"Reconstruction — {depth} m (click to sample)",
+                      zrange=temp_range(depth), depth=depth, height=470)
+        # Plotly heatmaps are not selectable, so a click on one never reaches Streamlit.
+        # One invisible selectable point per ocean cell makes the whole map clickable, and
+        # plotly's own selected-style draws the ring on the picked cell client-side.
+        LA, LO = np.meshgrid(dap.lat.values, dap.lon.values, indexing="ij")
+        v = dap.values
+        wet = np.isfinite(v)
+        fig.add_trace(go.Scattergl(
+            x=LO[wet], y=LA[wet], customdata=v[wet], mode="markers", showlegend=False,
+            marker=dict(symbol="circle-open", size=16, color=c["fg"], opacity=0,
+                        line=dict(width=3)),
+            selected=dict(marker=dict(opacity=1)), unselected=dict(marker=dict(opacity=0)),
+            hovertemplate="%{y:.2f}°N  %{x:.2f}°E<br><b>%{customdata:.2f} °C</b><extra></extra>"))
+        fl = floats_near(date)
+        fl = fl[(fl.lon >= lon0) & (fl.lon <= lon1)]
         fig.add_trace(go.Scatter(
-            x=pred, y=zz, name="OTER", mode="lines+markers",
-            line=dict(color=series(0), width=2), marker=dict(size=8),
-            hovertemplate="%{y:.0f} m<br><b>%{x:.2f} °C</b><extra>OTER</extra>"))
+            x=fl.lon, y=fl.lat, mode="markers", name="Argo float (±3 days)", text=fl.index,
+            marker=dict(symbol="diamond", size=10, color=series(2),
+                        line=dict(width=1.5, color=c["edge"])),
+            selected=dict(marker=dict(color=c["fg"], size=14)),
+            unselected=dict(marker=dict(opacity=1)),
+            hovertemplate="Argo %{text}<br>%{y:.2f}°N  %{x:.2f}°E<extra>click to compare</extra>"))
+        fig.update_layout(legend=dict(yanchor="top", y=-0.06), margin=dict(b=70))
+        st.plotly_chart(fig, width="stretch", on_select="rerun",
+                        selection_mode="points", key="clickmap")
 
-        cmp = L.argo_comparison(date, lat_s, lon_s)
-        if cmp:
+    zz, pred = L.profile(date, lat_s, lon_s)
+    cmp = None
+    with c2:
+        if not np.isfinite(pred).any():
+            st.info("That point is land — click on the ocean.")
+        else:
+            cmp = L.argo_comparison(date, lat_s, lon_s)
+            _, glo = L.profile(date, lat_s, lon_s, source="truth")
+            rmse = (skill_table().set_index("Depth (m)")["RMSE (°C)"]
+                    .reindex(zz.astype(int)).values)
+            ok = np.isfinite(pred) & np.isfinite(rmse)
+            y = zz + DZ
+            fig = go.Figure()
+            # A basin-wide error, not a per-point interval -- labelled as such.
             fig.add_trace(go.Scatter(
-                x=cmp["temp"], y=cmp["pres"], name="Argo float (independent)",
-                mode="lines", line=dict(color=series(1), width=2),
-                hovertemplate="%{y:.0f} m<br><b>%{x:.2f} °C</b><extra>Argo</extra>"))
-        fig.update_yaxes(autorange="reversed", title="Depth (m)")
-        fig.update_xaxes(title="Temperature (°C)")
-        # No chart title: the legend sits along the top and the two would collide. The
-        # caption below carries the coordinates instead.
-        base_layout(fig, height=470, hovermode="y unified")
-        # st.markdown(f"**Column at {lat_s:.2f}°N, {lon_s:.2f}°E**")
-        st.plotly_chart(fig, use_container_width=True, key="prof")
-        st.markdown(f"**Column at {lat_s:.2f}°N, {lon_s:.2f}°E**")
+                x=np.r_[pred[ok] - rmse[ok], (pred[ok] + rmse[ok])[::-1]],
+                y=np.r_[y[ok], y[ok][::-1]], fill="toself", line=dict(width=0),
+                fillcolor="rgba(57,135,229,0.32)", name="Typical error (±RMSE vs Argo)",
+                hoverinfo="skip"))
+            fig.add_trace(go.Scatter(
+                x=glo, y=y, customdata=zz, name="GLORYS (training target)", mode="lines",
+                line=dict(color=series(3), width=2, dash="dash"),
+                hovertemplate="%{customdata:.0f} m<br><b>%{x:.2f} °C</b><extra>GLORYS</extra>"))
+            fig.add_trace(go.Scatter(
+                x=pred, y=y, customdata=zz, name="OTER", mode="lines+markers",
+                line=dict(color=series(0), width=2), marker=dict(size=8),
+                hovertemplate="%{customdata:.0f} m<br><b>%{x:.2f} °C</b><extra>OTER</extra>"))
+            if cmp:
+                keep = cmp["pres"] <= 1000
+                fig.add_trace(go.Scatter(
+                    x=cmp["temp"][keep], y=cmp["pres"][keep] + DZ,
+                    customdata=cmp["pres"][keep], name="Argo float (independent)",
+                    mode="lines", line=dict(color=series(1), width=2),
+                    hovertemplate="%{customdata:.0f} m<br><b>%{x:.2f} °C</b><extra>Argo</extra>"))
+            fig.update_xaxes(title="Temperature (°C)")
+            # No chart title: the legend sits along the top and the two would collide. The
+            # caption below carries the coordinates instead.
+            base_layout(fig, height=470, hovermode="closest")
+            depth_axis(fig)
+            st.plotly_chart(fig, width="stretch", key="prof")
+            st.markdown(f"**Column at {lat_s:.2f}°N, {lon_s:.2f}°E** · depth axis is "
+                        f"stretched near the surface, where the thermocline is")
 
     if cmp:
         st.success(
@@ -621,9 +925,9 @@ with t_profile:
         m[3].metric("Levels compared", cmp["n_levels"])
         st.caption("One profile is a noisy sample — these numbers will bounce around as "
                    "you click. The headline 0.786 °C is over ~6,000 of them.")
-    else:
-        st.info("No Argo float within 1.5° and 3 days of this point. Try another date or "
-                "click elsewhere — coverage is sparse, which is the entire reason this "
+    elif np.isfinite(pred).any():
+        st.info("No Argo float within 1.5° and 3 days of this point. Click one of the "
+                "diamonds on the map — coverage is sparse, which is the entire reason this "
                 "project exists.")
 
 # --- ④ does it actually work ----------------------------------------------------------
@@ -642,16 +946,17 @@ with t_skill:
                                      ("GLORYS RMSE", "GLORYS reanalysis")]):
         if col in tab:
             fig.add_trace(go.Scatter(
-                x=tab[col], y=tab["Depth (m)"], name=name, mode="lines+markers",
-                line=dict(color=series([2, 0, 3][i]), width=2), marker=dict(size=8),
-                hovertemplate="%{y:.0f} m<br><b>%{x:.3f} °C</b><extra>" + name + "</extra>"))
-    fig.update_yaxes(autorange="reversed", title="Depth (m)")
+                x=tab[col], y=tab["Depth (m)"] + DZ, customdata=tab["Depth (m)"], name=name,
+                mode="lines+markers", line=dict(color=series([2, 0, 3][i]), width=2),
+                marker=dict(size=8),
+                hovertemplate="%{customdata:.0f} m<br><b>%{x:.3f} °C</b><extra>" + name + "</extra>"))
     fig.update_xaxes(title="RMSE (°C) — lower is better")
     # Title lives in the markdown above, not in the figure: a top-anchored horizontal
     # legend and a top-left title occupy the same strip and overlap.
-    base_layout(fig, height=460, hovermode="y unified")
+    base_layout(fig, height=460, hovermode="y")
+    depth_axis(fig)
     st.markdown("**Error against Argo, by depth**")
-    st.plotly_chart(fig, use_container_width=True, key="skill")
+    st.plotly_chart(fig, width="stretch", key="skill")
 
     html_table(tab, formats={"Depth (m)": "{:.0f}",
                              **{c: "{:.3f}" for c in tab.columns if c != "Depth (m)"}})

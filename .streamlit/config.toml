@@ -1,11 +1,11 @@
 # base is not cosmetic: it is what makes Streamlit paint its OWN chrome -- the dataframe
 # grid, select popovers and tooltips are canvas-rendered and the page CSS in
 # streamlit_app.py cannot reach them at all, so they follow this config, not the glass
-# theme's :root vars. The app's own CSS is unconditionally dark (--app-bg is a near-black
-# gradient); base was left at "light" from an earlier design and never updated when the
-# glass theme went dark, which is why the dataframe grid alone rendered light-on-dark.
-# Colours below are picked to match the CSS's own --glass-bg/--body-color, not chosen
-# fresh, so native chrome and the CSS-styled panels read as one surface.
+# theme's :root vars. The app's own CSS is dark by default (--app-bg is a near-black
+# gradient), so base is dark too. Colours below are picked to match the CSS's own
+# --glass-bg/--body-color, so native chrome and the CSS-styled panels read as one surface.
+# This is the startup theme only: the Light/Dark button in the app swaps these values at
+# runtime (streamlit_app.py THEMES) and charts follow via ui().
 [theme]
 base = "dark"
 primaryColor = "#6b7a8a"
