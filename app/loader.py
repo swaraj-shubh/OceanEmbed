@@ -31,13 +31,19 @@ from metrics import blend_all  # noqa: E402
 
 # Streamlit's cache when running in the app, a plain lru_cache otherwise, so this module
 # stays importable (and testable) outside Streamlit.
+#
+# cache_resource, not cache_data: cache_data hands back a fresh unpickled copy on every
+# call, so each map or profile lookup copied a whole quarter cube (~150 MB) and a single
+# rerun could hold several at once. Everything here is read-only, so one shared copy is
+# correct.
 try:
     import streamlit as st
-    cache = st.cache_data(show_spinner=False)
-    # Quarter chunks are ~150 MB each decoded; eight of them would be 3.2 GB, past every
-    # free host's ceiling. Bound the chunk caches to the current quarter plus the previous
-    # one, so scrubbing back and forth over a boundary does not reload on every step.
-    chunk_cache = st.cache_data(show_spinner=False, max_entries=2)
+    cache = st.cache_resource(show_spinner=False)
+    # Quarter chunks are ~75 MB each decoded (float32); eight of them would be 1.6 GB per
+    # kind, past every free host's ceiling. Bound the chunk caches to the current quarter
+    # plus the previous one, so scrubbing back and forth over a boundary does not reload on
+    # every step.
+    chunk_cache = st.cache_resource(show_spinner=False, max_entries=2)
 except ModuleNotFoundError:                                   # pragma: no cover
     def cache(fn):
         return lru_cache(maxsize=None)(fn)
@@ -88,20 +94,20 @@ def _quarter(date):
 @chunk_cache
 def _inputs_q(q):
     """7 surface fields for one quarter, (time, lat, lon) each. int16 on disk."""
-    return xr.open_dataset(_need(DATA / f"inputs_{q}.nc")).load()
+    return xr.open_dataset(_need(DATA / f"inputs_{q}.nc")).load().astype("float32")
 
 
 @chunk_cache
 def _prediction_q(q):
     """The frozen bias-corrected ensemble for one quarter: (time, depth, lat, lon) degC."""
-    return xr.open_dataset(_need(DATA / f"pred_{q}.nc")).thetao.load()
+    return xr.open_dataset(_need(DATA / f"pred_{q}.nc")).thetao.load().astype("float32")
 
 
 @chunk_cache
 def _truth_q(q):
     """GLORYS12V1 for one quarter, for the side-by-side toggle. NOT ground truth -- it
     carries a +0.72 degC warm bias at 100 m, which is the whole point of docs/09 sec.4."""
-    return xr.open_dataset(_need(DATA / f"truth_{q}.nc")).thetao.load()
+    return xr.open_dataset(_need(DATA / f"truth_{q}.nc")).thetao.load().astype("float32")
 
 
 def inputs(date):
@@ -152,6 +158,26 @@ def field(date, depth, source="prediction"):
         return p
     t = _truth_q(q).sel(time=date, depth=depth)
     return t if source == "truth" else (p - t)
+
+
+def quarter_field(date, depth, source="prediction"):
+    """Every day of the quarter `date` falls in, at one depth: (time, lat, lon). Served from
+    the chunk already resident for `date`, so an animation over it loads nothing new."""
+    q = _quarter(date)
+    p = _prediction_q(q).sel(depth=depth)
+    if source == "prediction":
+        return p
+    t = _truth_q(q).sel(depth=depth)
+    return t if source == "truth" else (p - t)
+
+
+def each_quarter(kind):
+    """Open every quarter file of one kind ('inputs' | 'pred' | 'truth') in turn, uncached.
+    For whole-period statistics (fixed colour ranges): read the slice you need and move on,
+    so the two-quarter chunk cache holding the user's current view is never evicted."""
+    for q in manifest()["quarters"]:
+        with xr.open_dataset(_need(DATA / f"{kind}_{q}.nc")) as ds:
+            yield ds
 
 
 def profile(date, lat, lon, source="prediction"):
@@ -283,6 +309,13 @@ if __name__ == "__main__":
 
     tab = metrics("ens_mix6_bc_test_argo.csv")
     assert {"depth_m", "rmse", "bias", "corr"} <= set(tab.columns)
+
+    # The app reads its fixed colour scales from here (build_demo_bundle.colour_ranges); a
+    # manifest without them, or missing a depth/channel, would fail only on that view.
+    cr = m["colour_ranges"]
+    assert sorted(map(int, cr["temp"])) == sorted(m["depths_m"]) == sorted(map(int, cr["diff"]))
+    assert set(cr["inputs"]) == set(m["channels"]) and set(cr["speed"]) == {"cur", "wind"}
+    assert all(lo < hi for lo, hi in cr["temp"].values()), "a depth has an empty colour range"
 
     # The blended FINAL-vs-GLORYS comparison: known values, checked to 3dp so a future
     # change to either source CSV is caught here before it silently drifts in the UI.

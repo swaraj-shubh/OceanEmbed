@@ -87,6 +87,38 @@ def build_prediction():
     return apply_offset(mean, np.asarray(meta["offset"])), meta
 
 
+# Channels with a meaningful zero get a symmetric range; the app draws them diverging.
+SIGNED = {"sla", "cur_u", "cur_v", "wind_u", "wind_v"}
+
+
+def colour_ranges(pred_at, truth_at, input_of):
+    """Fixed colour ranges over the whole test split, one per depth / channel, so the app's
+    colours change with the ocean, never with the date. Stored in the manifest because
+    computing them at app time means decoding every quarter file (~15 s on first load).
+
+    pred_at/truth_at: depth -> (time, lat, lon) array; input_of: channel -> array. Callables
+    so the same code runs on the in-memory cubes here and on the bundle's own files.
+    """
+    temp, diff = {}, {}
+    for d in DEPTHS:
+        p, t = pred_at(d), truth_at(d)
+        lo, hi = np.nanpercentile(np.concatenate([p.ravel(), t.ravel()]), [1, 99])
+        temp[str(d)] = [round(float(lo), 4), round(float(hi), 4)]
+        diff[str(d)] = round(float(np.nanpercentile(np.abs(p - t), 98)), 4)
+    x = {c: input_of(c) for c in CHANNELS}
+    inputs = {}
+    for c, v in x.items():
+        if c in SIGNED:
+            m = float(np.nanpercentile(np.abs(v), 98))
+            inputs[c] = [round(-m, 4), round(m, 4)]
+        else:
+            lo, hi = np.nanpercentile(v, [1, 99])
+            inputs[c] = [round(float(lo), 4), round(float(hi), 4)]
+    speed = {k: round(float(np.nanpercentile(np.hypot(x[f"{k}_u"], x[f"{k}_v"]), 99)), 4)
+             for k in ("cur", "wind")}
+    return {"temp": temp, "diff": diff, "inputs": inputs, "speed": speed}
+
+
 def quarter_labels(dates):
     """'2023Q1' etc, in the order they first appear -- the chunk boundaries."""
     periods = pd.PeriodIndex(pd.DatetimeIndex(dates), freq="Q")
@@ -166,6 +198,9 @@ def main():
         "depths_m": DEPTHS,
         "channels": CHANNELS,
         "argo_profiles": int(argo.profile.nunique()),
+        "colour_ranges": colour_ranges(lambda d: pred.sel(depth=d).values,
+                                       lambda d: truth.thetao.sel(depth=d).values,
+                                       lambda c: inputs[c].values),
         "git_sha": sha,
         "note": "int16-packed, ~0.0002 degC round-trip error. Chunked by calendar quarter "
                 "(quarters_ + inputs_/pred_/truth_<quarter>.nc) so no single tracked file "
