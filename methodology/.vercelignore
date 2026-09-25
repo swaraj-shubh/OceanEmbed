@@ -1,0 +1,3 @@
+make_assets.py
+.env*
+.vercel

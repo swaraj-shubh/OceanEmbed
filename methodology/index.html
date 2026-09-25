@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OTER — How it works</title>
+<meta name="description" content="How OTER reconstructs ocean temperature down to 1,000 m from seven satellite surface fields: data, 7-day window, CNN–ConvLSTM–U-Net, training, ensemble, bias correction and independent Argo evaluation.">
+<meta property="og:title" content="OTER — seeing 1,000 m below the ocean surface">
+<meta property="og:description" content="An animated walkthrough of the OTER methodology (SIH 2026, PS 26066).">
+<meta name="theme-color" content="#04121f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%2304121f'/%3E%3Cpath d='M4 17c4-3 8 3 12 0s8 3 12 0' stroke='%237fd8ff' stroke-width='2.5' fill='none'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="ocean"></div>
+<div class="rays"></div>
+<canvas id="snow" aria-hidden="true"></canvas>
+<div class="tooltip" id="tip" role="status"></div>
+
+<nav class="gauge" aria-label="Sections">
+  <div class="track"><div class="fill"></div><div class="dot"></div><div class="readout mono">0 m<small>Surface</small></div></div>
+  <ol id="gauge-list"></ol>
+</nav>
+<div class="mbar" id="mbar"><span id="mbar-step">OTER</span><b id="mbar-depth">0 m</b><div class="prog"></div></div>
+
+<!-- ============================ HERO ============================ -->
+<header class="hero" id="top" data-title="Surface">
+  <svg class="hero-scene" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="deep" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#1b7fa8" stop-opacity="0.35"/>
+        <stop offset="0.35" stop-color="#0f5a78" stop-opacity="0.18"/>
+        <stop offset="1" stop-color="#08306b" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="beamg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#7fd8ff" stop-opacity="0.55"/>
+        <stop offset="1" stop-color="#7fd8ff" stop-opacity="0.02"/>
+      </linearGradient>
+      <path id="wavetile" d="M0 0 q75 -18 150 0 t150 0 t150 0 t150 0 v400 h-600z"/>
+    </defs>
+    <g fill="#fff" opacity="0.5">
+      <circle cx="120" cy="90" r="1.2"/><circle cx="340" cy="60" r="1"/><circle cx="560" cy="140" r="1.4"/>
+      <circle cx="760" cy="70" r="1"/><circle cx="1260" cy="110" r="1.2"/><circle cx="1380" cy="210" r="1"/>
+      <circle cx="660" cy="250" r="0.9"/><circle cx="220" cy="230" r="1"/>
+    </g>
+    <g class="sat">
+      <polygon class="beam" points="1080,176 960,560 1200,560" fill="url(#beamg)"/>
+      <g transform="translate(1080 160)">
+        <rect x="-16" y="-12" width="32" height="24" rx="4" fill="#dfe9f2"/>
+        <rect x="-78" y="-8" width="54" height="16" rx="2" fill="#3987e5"/>
+        <rect x="24" y="-8" width="54" height="16" rx="2" fill="#3987e5"/>
+        <path d="M-78 0h54M24 0h54" stroke="#9cc7f5" stroke-width="1"/>
+        <circle r="5" cy="16" fill="#7fd8ff"/>
+      </g>
+    </g>
+    <rect x="0" y="560" width="1440" height="340" fill="url(#deep)"/>
+    <g opacity="0.55" fill="none" stroke="#fd8d3c" stroke-width="1.2" stroke-dasharray="3 7">
+      <path d="M0 650 C 300 630, 600 680, 900 650 S 1300 640, 1440 660"><animate attributeName="d" dur="9s" repeatCount="indefinite" values="M0 650 C 300 630, 600 680, 900 650 S 1300 640, 1440 660;M0 660 C 300 680, 600 640, 900 665 S 1300 670, 1440 650;M0 650 C 300 630, 600 680, 900 650 S 1300 640, 1440 660"/></path>
+      <path d="M0 740 C 280 760, 640 720, 960 745 S 1300 760, 1440 735" stroke="#6baed6"><animate attributeName="d" dur="11s" repeatCount="indefinite" values="M0 740 C 280 760, 640 720, 960 745 S 1300 760, 1440 735;M0 750 C 280 730, 640 760, 960 735 S 1300 730, 1440 750;M0 740 C 280 760, 640 720, 960 745 S 1300 760, 1440 735"/></path>
+    </g>
+    <g transform="translate(0 560)">
+      <g class="wave" style="--d:14s" opacity="0.35"><use href="#wavetile" x="0" fill="#1b7fa8"/><use href="#wavetile" x="600" fill="#1b7fa8"/><use href="#wavetile" x="1200" fill="#1b7fa8"/><use href="#wavetile" x="1800" fill="#1b7fa8"/></g>
+      <g transform="translate(-150 10)"><g class="wave" style="--d:9s" opacity="0.35"><use href="#wavetile" x="0" fill="#0f5a78"/><use href="#wavetile" x="600" fill="#0f5a78"/><use href="#wavetile" x="1200" fill="#0f5a78"/><use href="#wavetile" x="1800" fill="#0f5a78"/></g></g>
+    </g>
+    <g transform="translate(1010 612)"><g class="float-bob">
+      <line x1="0" y1="-40" x2="0" y2="-66" stroke="#dfe9f2" stroke-width="2"/>
+      <rect x="-9" y="-40" width="18" height="96" rx="9" fill="#ffd166"/>
+      <rect x="-9" y="20" width="18" height="10" fill="#c98500"/>
+    </g></g>
+  </svg>
+  <div class="wrap">
+    <p class="eyebrow reveal">SIH 2026 · PS 26066 · Ministry of Earth Sciences / INCOIS</p>
+    <h1 class="reveal" style="--i:1">Seeing <span class="glow">1,000 m</span> below the surface — from space.</h1>
+    <p class="lede reveal" style="--i:2">Satellites only see the top of the ocean. <b>OTER</b> (Ocean Thermal Embedding Reconstruction) learns what that surface is telling us about the water beneath it, and rebuilds the temperature at 15 depths, every day, over the Arabian Sea and the Bay of Bengal.</p>
+    <div class="chips reveal" style="--i:3">
+      <span class="chip">7 satellite maps in</span>
+      <span class="chip">15 depths out · 0–1000 m</span>
+      <span class="chip">0.25° (~28 km) · daily</span>
+      <span class="chip" id="chip-casts">checked against real Argo floats</span>
+    </div>
+    <a class="cta reveal" style="--i:4" href="#why">Dive in
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v11M3 8l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></a>
+  </div>
+</header>
+
+<!-- ============================ WHY ============================ -->
+<section id="why" data-title="Why">
+  <div class="wrap">
+    <div class="step-head reveal">
+      <p class="eyebrow">The problem</p>
+      <h2>Two ways to look at the ocean. Neither is enough alone.</h2>
+    </div>
+    <div class="why-grid">
+      <div class="card reveal" style="--i:1">
+        <h3>Satellites</h3>
+        <p class="plain" style="margin:0">See <em>everywhere</em>, every day — but only the thin surface layer.</p>
+        <div class="why-map"><img src="img/in_sst.webp" alt="Satellite sea surface temperature over the Arabian Sea and Bay of Bengal" loading="lazy"><div class="scan"></div></div>
+        <div class="stat" id="stat-cells">16,896<small>grid cells observed every single day</small></div>
+      </div>
+      <div class="bridge reveal" style="--i:2">
+        OTER learns the link
+        <svg class="arrow" viewBox="0 0 90 24" aria-hidden="true"><path d="M2 12h80" stroke="#7fd8ff" stroke-width="2.5" fill="none"/><path d="M74 4l10 8-10 8" stroke="#7fd8ff" stroke-width="2.5" fill="none"/></svg>
+        between the two
+      </div>
+      <div class="card reveal" style="--i:3" id="why-argo">
+        <h3>Argo floats</h3>
+        <p class="plain" style="margin:0">Measure <em>all the way down</em> — but they are few and far between.</p>
+        <div class="why-map dark" id="argo-map"><img src="img/in_sst.webp" alt="" loading="lazy"></div>
+        <div class="stat" id="stat-argo">—<small>deep profiles in the whole region, within 5 days of 4 Dec 2023</small></div>
+      </div>
+    </div>
+    <p class="plain reveal" style="max-width:820px">So we train a model on years of surface maps paired with full-depth temperatures, then ask it to fill in the ocean below — everywhere, every day. And we grade it on the <em>real floats</em>, which it never saw.</p>
+  </div>
+</section>
+
+<!-- ============================ 1 DATA ============================ -->
+<section id="data" data-title="1 · Data">
+  <div class="wrap">
+    <div class="step-head reveal">
+      <p class="eyebrow"><span class="num">1</span>Data &amp; preprocessing</p>
+      <h2>Seven views of the sea surface</h2>
+      <p class="plain">Five satellite products measure the surface in seven ways. They come on different grids, days and units — so first we make them <em>speak the same language</em>. <span class="note">Tap a map to see what it tells us.</span></p>
+    </div>
+    <div class="tiles reveal" id="tiles"></div>
+    <div class="pipeline reveal" id="pipeline"></div>
+    <p class="note reveal">Real maps from 4 Dec 2023, when Cyclone Michaung was crossing the Bay of Bengal.</p>
+  </div>
+</section>
+
+<!-- ============================ 2 WINDOW ============================ -->
+<section id="window" data-title="2 · 7-day window" style="padding-block:0">
+  <div class="wrap window-stage" id="window-stage">
+    <div class="window-sticky">
+      <div>
+        <p class="eyebrow"><span class="num">2</span>7-day input window</p>
+        <h2>A short video, not a photo</h2>
+        <p class="plain">The water below reacts to what happened at the surface over the past days. So to predict day <em>t</em>, the model watches the <em>previous 7 days</em> — keep scrolling to stack them.</p>
+        <div class="tensor">X ∈ ℝ<sup>7 × 7 × 96 × 176</sup></div>
+        <div class="dims"><span><b>7</b> days</span><span><b>7</b> variables</span><span><b>96</b> × <b>176</b> grid cells (0–25°N, 55–100°E)</span></div>
+      </div>
+      <div class="film" id="film" aria-label="Seven daily sea-surface-temperature maps stacking into one input"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 3 MODEL ============================ -->
+<section id="model" data-title="3 · Model">
+  <div class="wrap">
+    <div class="step-head reveal">
+      <p class="eyebrow"><span class="num">3</span>Model architecture</p>
+      <h2>Read · remember · paint</h2>
+      <p class="plain">Three parts, each with one job. Scroll through them — the diagram follows.</p>
+    </div>
+    <div class="arch-stage">
+      <div class="arch-sticky card">
+        <svg class="arch-svg" id="arch" viewBox="0 0 1000 470" data-active="all" role="img" aria-label="CNN encoder, ConvLSTM and U-Net decoder architecture">
+          <defs>
+            <linearGradient id="gEnc" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#6aa9f0"/><stop offset="1" stop-color="#3987e5"/></linearGradient>
+            <linearGradient id="gDec" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e3a634"/><stop offset="1" stop-color="#c98500"/></linearGradient>
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <path id="flow" d="M104 220 H815"/>
+          </defs>
+          <!-- titles -->
+          <g class="part p-enc"><text class="big" x="60" y="40" text-anchor="middle">Input</text><text x="60" y="60" text-anchor="middle">7 days</text></g>
+          <g class="part p-enc"><text class="big" x="222" y="40" text-anchor="middle">CNN encoder</text><text x="222" y="60" text-anchor="middle">96×176 → 12×22 · ×7 days</text></g>
+          <g class="part p-lstm"><text class="big" x="430" y="40" text-anchor="middle">ConvLSTM</text><text x="430" y="60" text-anchor="middle">7 recurrent steps</text></g>
+          <g class="part p-dec"><text class="big" x="665" y="40" text-anchor="middle">U-Net decoder</text><text x="665" y="60" text-anchor="middle">12×22 → 96×176</text></g>
+          <g class="part p-out"><text class="big" x="895" y="40" text-anchor="middle">Output</text><text x="895" y="60" text-anchor="middle">15 depths</text></g>
+          <!-- input frames -->
+          <g class="part p-enc" id="arch-input"></g>
+          <!-- encoder -->
+          <g class="part p-enc" id="arch-enc"></g>
+          <!-- skip connections -->
+          <g class="part p-skip" fill="none" stroke="#c98500" stroke-width="2" stroke-dasharray="0">
+            <path class="skip" d="M147 345 C147 430, 713 430, 713 345"/>
+            <path class="skip" d="M186 310 C186 395, 676 395, 676 310"/>
+            <path class="skip" d="M234 280 C234 360, 632 360, 632 280"/>
+            <text x="430" y="452" text-anchor="middle" stroke="none" style="fill:#e3a634">skip connections carry fine detail straight across</text>
+          </g>
+          <!-- convlstm -->
+          <g class="part p-lstm" id="arch-lstm">
+            <circle cx="430" cy="220" r="62" fill="rgba(217,89,38,0.10)" stroke="#d95926" stroke-width="2"/>
+            <circle cx="430" cy="220" r="62" fill="none" stroke="#ffb38a" stroke-width="3" stroke-dasharray="40 350" stroke-linecap="round" class="spin"/>
+            <text x="430" y="216" text-anchor="middle" style="fill:#fff;font-size:12px">memory</text>
+            <text x="430" y="233" text-anchor="middle" style="font-size:11px">day <tspan id="lstm-day">t−6</tspan></text>
+          </g>
+          <!-- latent -->
+          <g class="part p-latent">
+            <rect x="520" y="184" width="62" height="72" rx="8" fill="#199e70" filter="url(#glow)"/>
+            <text x="551" y="286" text-anchor="middle" style="fill:#5fd6a6;font-size:12px">OceanEmbed</text>
+            <text x="551" y="302" text-anchor="middle" style="font-size:11px">256 × 12 × 22</text>
+          </g>
+          <!-- decoder -->
+          <g class="part p-dec" id="arch-dec"></g>
+          <!-- output slabs -->
+          <g class="part p-out" id="arch-out"></g>
+          <!-- flow particles -->
+          <g id="particles"></g>
+        </svg>
+      </div>
+      <div class="arch-steps">
+        <article class="card" data-part="enc">
+          <p class="tag" style="color:#6aa9f0">① CNN encoder — read</p>
+          <h3>Turns each day's maps into patterns</h3>
+          <p>The same convolutional network reads each of the 7 days. Every layer halves the map and doubles the detail it describes: <b>96×176</b> cells become <b>12×22</b>, while <b>7</b> variables become <b>32 → 64 → 128 → 256</b> features — things like fronts, eddies and upwelling, not raw numbers.</p>
+        </article>
+        <article class="card" data-part="lstm">
+          <p class="tag" style="color:#ff9a6b">② ConvLSTM — remember</p>
+          <h3>Watches how the week unfolds</h3>
+          <p>A recurrent memory steps through the 7 days in order, keeping what matters and forgetting what doesn't. Its final state — <b>256 × 12 × 22</b> numbers — is the <b style="color:#5fd6a6">OceanEmbed</b>: a compact fingerprint of the ocean's recent history.</p>
+        </article>
+        <article class="card" data-part="dec">
+          <p class="tag" style="color:#e3a634">③ U-Net decoder — paint</p>
+          <h3>Paints the temperature back at full size</h3>
+          <p>The decoder upsamples the fingerprint back to <b>96×176</b>. Skip connections hand over the sharp details the encoder saw on the last day, so coastlines and fronts stay crisp.</p>
+        </article>
+        <article class="card" data-part="out">
+          <p class="tag" style="color:#7fd8ff">④ Output — 15 depths at once</p>
+          <h3>A full 3-D ocean, every day</h3>
+          <p>One temperature map for each of the 15 standard depths. Drag to dive through the real reconstruction for 4 Dec 2023:</p>
+          <div class="depth-picker">
+            <img id="depth-img" src="img/out_0.webp" alt="Reconstructed temperature map">
+            <div class="colorbar"></div>
+            <div class="readout"><span id="depth-lo"></span><b id="depth-val">0 m</b><span id="depth-hi"></span></div>
+            <input type="range" id="depth-range" min="0" max="14" value="0" step="1" aria-label="Depth">
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 4 TRAINING ============================ -->
+<section id="training" data-title="4 · Training">
+  <div class="wrap">
+    <div class="step-head reveal">
+      <p class="eyebrow"><span class="num">4</span>Training · target GLORYS12V1</p>
+      <h2>Learning from a teacher</h2>
+      <p class="plain">GLORYS12V1 is a global ocean reanalysis — a physics model fed with every available observation — with full temperature profiles everywhere. The model learns to reproduce it at <em>15 depths from 0 to 1000 m</em>, from surface data alone.</p>
+    </div>
+    <div class="card reveal">
+      <h3>Split by time, never shuffled</h3>
+      <p class="note" style="margin-top:0">The model is always judged on a future it has never seen.</p>
+      <div class="timeline">
+        <div class="tl-bar">
+          <div class="tl-seg"><i style="background:var(--blue)"></i><span>TRAIN<br>2015–2021</span></div>
+          <div class="tl-seg"><i style="background:var(--orange)"></i><span>VAL<br>2022</span></div>
+          <div class="tl-seg"><i style="background:var(--green)"></i><span>TEST<br>2023–24</span></div>
+        </div>
+        <div class="legend tl-legend"><span><i style="background:var(--blue)"></i>Train 2015–2021</span><span><i style="background:var(--orange)"></i>Val 2022</span><span><i style="background:var(--green)"></i>Test 2023–24</span></div>
+        <div class="tl-years"><span>2015</span><span>2016</span><span>2017</span><span>2018</span><span>2019</span><span>2020</span><span>2021</span><span>2022</span><span>2023</span><span>2024</span></div>
+      </div>
+      <p class="note">Validation 2022 is used for calibration (step 6); test 2023–24 is only used once, for the final score.</p>
+    </div>
+    <div class="grid2" style="margin-top:24px">
+      <div class="card reveal" style="--i:1">
+        <h3>Masked loss</h3>
+        <p class="note" style="margin-top:0">Land, missing cells and depths below the seafloor are masked out — the model is never rewarded or punished there.</p>
+        <div class="mask-demo" id="mask-demo"><img src="img/out_100.webp" alt="Reconstruction at 100 m with land and shallow shelf masked"><div class="hatch"></div></div>
+        <p class="note">At 100 m, the shallow shelves (hatched) have no water to predict.</p>
+        <div class="depth-chips" id="depth-chips"></div>
+      </div>
+      <div class="card reveal" style="--i:2">
+        <h3>Two loss variants</h3>
+        <div class="toggle" role="tablist">
+          <button class="on" data-mode="mse" role="tab" aria-selected="true">MSE</button>
+          <button data-mode="dw" role="tab" aria-selected="false">Depth-weighted MSE</button>
+        </div>
+        <p class="note" id="loss-explain" style="margin-top:0"></p>
+        <div id="wbars"></div>
+        <p class="note">Weight given to each depth's error. Depth-weighted shape shown from GLORYS variability (1 / variance, mean = 1).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 5 ENSEMBLE ============================ -->
+<section id="ensemble" data-title="5 · Ensemble">
+  <div class="wrap">
+    <div class="step-head reveal">
+      <p class="eyebrow"><span class="num">5</span>Ensemble · 6 models</p>
+      <h2>Six students, one answer</h2>
+      <p class="plain">The same network is trained six times — 3 random seeds with each loss. Each copy makes slightly different mistakes; <em>averaging</em> them cancels much of the noise. Tap a model to see its guess.</p>
+    </div>
+    <div class="ens">
+      <div class="card reveal" style="--i:1">
+        <div class="seeds">
+          <div class="seed-row"><span class="who">M4 + MSE</span><button class="seed mse" data-k="0">seed 1</button><button class="seed mse" data-k="1">seed 2</button><button class="seed mse" data-k="2">seed 3</button></div>
+          <div class="seed-row"><span class="who">M4 + depth-weighted MSE</span><button class="seed dw" data-k="3">seed 1</button><button class="seed dw" data-k="4">seed 2</button><button class="seed dw" data-k="5">seed 3</button></div>
+        </div>
+        <svg class="funnel" viewBox="0 0 400 60" preserveAspectRatio="none" aria-hidden="true"><path d="M40 0 C40 40, 200 20, 200 60 M200 0 V60 M360 0 C360 40, 200 20, 200 60" stroke="#5fd6a6" stroke-width="2" fill="none"/></svg>
+        <div class="merge">Ensemble mean<small>arithmetic average of the 6 models</small></div>
+        <div class="kpi">
+          <div><span id="k-single"></span><small>one model<br>(error vs Argo)</small></div>
+          <span class="arrow">→</span>
+          <div style="color:#5fd6a6"><span id="k-ens"></span><small>average of six</small></div>
+        </div>
+      </div>
+      <div class="card reveal" style="--i:2">
+        <div class="legend" id="ens-legend"></div>
+        <svg class="chart" id="ens-chart" viewBox="0 0 520 400"></svg>
+        <p class="note">Thick line: the real ensemble column at <span id="ens-where"></span>. Thin lines illustrate how individual members scatter around it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 6 BIAS ============================ -->
+<section id="bias" data-title="6 · Bias correction">
+  <div class="wrap">
+    <div class="step-head reveal">
+      <p class="eyebrow"><span class="num">6</span>Bias correction · calibrated on Argo 2022</p>
+      <h2>Fixing a known habit</h2>
+      <p class="plain">Even the average runs <em>too warm around 100 m</em> — a habit inherited from its teacher, GLORYS. Using 2022 only, we measure the average error at each depth, then subtract exactly that — the same 15 numbers, unchanged — from every 2023–24 prediction.</p>
+    </div>
+    <div class="grid2">
+      <div class="card reveal" style="--i:1">
+        <h3>1 · Measure on 2022 Argo</h3>
+        <div class="eq"><span class="hat">b<sub>d</sub></span> = mean( Ŷ<sub>ens,d</sub> − T<sub>d</sub><sup>Argo</sup> )</div>
+        <p class="note" style="margin-top:0">over all valid 2022 profiles, for each depth <i>d</i></p>
+        <svg class="chart" id="bias-chart" viewBox="0 0 520 420"></svg>
+      </div>
+      <div class="card reveal" style="--i:2">
+        <h3>2 · Apply to 2023–24, unchanged</h3>
+        <div class="eq"><span class="hat">Ŷ<sub>final,d</sub></span> = Ŷ<sub>ens,d</sub> − <span class="hat">b<sub>d</sub></span></div>
+        <div class="legend" id="bc-legend"></div>
+        <svg class="chart" id="bc-chart" viewBox="0 0 520 380"></svg>
+        <div class="kpi"><div><span id="k-before"></span><small>before</small></div><span class="arrow">→</span><div style="color:#7fd8ff"><span id="k-after"></span><small>after correction</small></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 7 EVALUATION ============================ -->
+<section id="evaluation" data-title="7 · Evaluation">
+  <div class="wrap">
+    <div class="step-head reveal">
+      <p class="eyebrow"><span class="num">7</span>Independent evaluation · Argo</p>
+      <h2>The exam it never studied for</h2>
+      <p class="plain">Argo floats are robots that sink to the deep, drift, then rise to the surface measuring temperature all the way up. <em>None of them were used for training</em> — so they are a fair, independent test.</p>
+    </div>
+    <div class="grid2">
+      <div class="card reveal" style="--i:1">
+        <svg class="argo-cycle" id="argo-cycle" viewBox="0 0 700 380" role="img" aria-label="Argo float profiling cycle"></svg>
+        <p class="note" id="cycle-note"></p>
+      </div>
+      <div class="card reveal" style="--i:2">
+        <div class="legend" id="eval-legend"></div>
+        <svg class="chart" id="eval-chart" viewBox="0 0 520 400"></svg>
+        <p class="note" id="eval-note"></p>
+      </div>
+    </div>
+    <div class="eval-steps reveal">
+      <div class="ev"><b>Match</b><p>Same 0.25° grid cell, within ±1 day, at valid depths.</p><div class="eval-map" id="eval-map" style="margin-top:12px"><img src="img/out_0.webp" alt="Map showing the matched float location"></div></div>
+      <div class="ev"><b>Interpolate</b><p>Resample the float's hundreds of readings onto our 15 depths (valid depths only).</p></div>
+      <div class="ev"><b>Compare</b><p>Model vs float, at every matched location and depth.</p></div>
+      <div class="ev"><b>Score</b><p>RMSE, MAE, bias and correlation — reported depth by depth.</p></div>
+    </div>
+    <p class="note reveal">Primary benchmark: raw Argo profiles (2023–2024). Secondary: INCOIS gridded Argo (1° / 10-day), compared after averaging our output up to its coarser grid.</p>
+  </div>
+</section>
+
+<!-- ============================ RESULT ============================ -->
+<section id="result" data-title="Result">
+  <div class="wrap">
+    <div class="step-head reveal">
+      <p class="eyebrow">The result</p>
+      <div class="big-number"><span id="big">0.000</span><small> °C</small></div>
+      <p class="plain">Typical temperature error (RMSE) across all 15 depths, against <em id="res-casts"></em> independent Argo profiles in 2023–24 — years the model never saw.</p>
+    </div>
+    <div class="grid2">
+      <div class="card reveal" style="--i:1">
+        <h3>Lower is better</h3>
+        <div id="hbars"></div>
+      </div>
+      <div class="card reveal" style="--i:2">
+        <h3>Error at each depth</h3>
+        <div class="legend" id="res-legend"></div>
+        <svg class="chart" id="res-chart" viewBox="0 0 520 400"></svg>
+      </div>
+    </div>
+    <p class="honest reveal">GLORYS is the teacher, so the student isn't expected to beat it overall. Getting within <b id="gap"></b> of it from surface data alone — and beating it at 125, 700 and 1000 m — is the result. OTER beats climatology at <b>all 15 depths</b>.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>OTER · Smart India Hackathon 2026 · Problem statement 26066</p>
+    <div class="links">
+      <a class="primary" href="https://oter.shubhh.xyz" target="_blank" rel="noopener">Try the live demo</a>
+      <a href="https://github.com/swaraj-shubh/OceanEmbed" target="_blank" rel="noopener">Source on GitHub</a>
+      <a href="#top">Back to the surface ↑</a>
+    </div>
+  </div>
+</footer>
+
+<script src="data.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

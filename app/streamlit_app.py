@@ -574,7 +574,7 @@ def isotherms(z, lon, lat, zrange):
     lo, hi = zrange
     step = next((s for s in (0.25, 0.5, 1, 2) if (hi - lo) / s <= 12), 5)
     return go.Contour(
-        z=z, x=lon, y=lat, showscale=False, hoverinfo="skip",
+        z=z, x=lon, y=lat, showscale=False, showlegend=False, hoverinfo="skip",
         contours=dict(coloring="none", start=np.ceil(lo / step) * step, end=hi, size=step,
                       showlabels=True, labelfont=dict(size=10, color="rgba(0,0,0,0.75)")),
         line=dict(width=0.8, color="rgba(0,0,0,0.45)"))
@@ -844,7 +844,7 @@ with t_profile:
     with c1:
         dap = sub(L.field(date, depth, "prediction"))
         fig = heatmap(dap, f"Reconstruction — {depth} m (click to sample)",
-                      zrange=temp_range(depth), depth=depth, height=470)
+                      zrange=temp_range(depth), depth=depth, contours=True, height=470)
         # Plotly heatmaps are not selectable, so a click on one never reaches Streamlit.
         # One invisible selectable point per ocean cell makes the whole map clickable, and
         # plotly's own selected-style draws the ring on the picked cell client-side.
