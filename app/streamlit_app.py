@@ -796,7 +796,7 @@ with t_map:
                 "runs about **+0.72 °C too warm at 100 m** against Argo floats in this basin. "
                 "Measuring that is what let us correct it."
             )
-            st.caption("Lines are isotherms. Colours are fixed per depth across the whole "
+            st.caption("Colours are fixed per depth across the whole "
                        "test period, so changing the date only recolours what actually changed.")
     diff = view.startswith("Difference")
     when = f"{depth} m, {pd.Timestamp(date):%d %b %Y}"
@@ -814,7 +814,7 @@ with t_map:
                                    ("truth", "GLORYS reanalysis", "recon_glorys")):
                 st.plotly_chart(
                     heatmap(sub(L.field(date, depth, src)), f"{name} — {when}",
-                            zrange=temp_range(depth), depth=depth, contours=True,
+                            zrange=temp_range(depth), depth=depth,
                             height=430),
                     width="stretch", key=key)
 
@@ -844,7 +844,7 @@ with t_profile:
     with c1:
         dap = sub(L.field(date, depth, "prediction"))
         fig = heatmap(dap, f"Reconstruction — {depth} m (click to sample)",
-                      zrange=temp_range(depth), depth=depth, contours=True, height=470)
+                      zrange=temp_range(depth), depth=depth, height=470)
         # Plotly heatmaps are not selectable, so a click on one never reaches Streamlit.
         # One invisible selectable point per ocean cell makes the whole map clickable, and
         # plotly's own selected-style draws the ring on the picked cell client-side.
