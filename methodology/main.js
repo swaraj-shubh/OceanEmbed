@@ -144,13 +144,13 @@ addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimat
 // ---------- 1: inputs + pipeline ----------
 (() => {
   const T = [
-    ["sst", "Sea surface temperature", "°C", "NOAA OISST v2.1", "How warm the very top of the sea is — the first clue to how much heat is stored below."],
-    ["sss", "Sea surface salinity", "PSU", "NASA SMAP · 8-day mean", "How salty the surface is. River water and monsoon rain freshen the Bay of Bengal into a light 'lid' that traps heat near the top."],
-    ["sla", "Sea level anomaly", "m", "Copernicus DUACS altimetry", "Bumps and dips in sea level. A raised surface usually sits over a thick warm layer; a dip means cold water pushed up from below."],
-    ["cur_u", "Current · east–west", "m/s", "NASA OSCAR v2.0", "How fast surface water flows east (red) or west (blue). Currents carry heat sideways."],
-    ["cur_v", "Current · north–south", "m/s", "NASA OSCAR v2.0", "How fast surface water flows north (red) or south (blue)."],
-    ["wind_u", "Wind · east–west", "m/s", "Copernicus scatterometer", "Wind stirs and mixes the upper ocean, pushing warm water down or cold water up."],
-    ["wind_v", "Wind · north–south", "m/s", "Copernicus scatterometer", "The monsoon reverses these winds each season — and the ocean below responds."],
+    ["sst", "SST — Sea surface temperature", "°C", "NOAA OISST v2.1", "Daily optimum interpolation SST at 0.25° grid."],
+    ["sss", "SSS — Sea surface salinity", "PSU", "SMAP RSS V6", "Remote Sensing Systems SMAP Level-3 8-day running mean salinity."],
+    ["sla", "SLA — Sea level anomaly", "m", "DUACS L4", "Multi-mission altimeter satellite gridded sea level anomaly."],
+    ["cur_u", "U Current — Zonal current", "m/s", "OSCAR v2.0", "Ocean Surface Current Analysis Real-time zonal surface currents."],
+    ["cur_v", "V Current — Meridional current", "m/s", "OSCAR v2.0", "Ocean Surface Current Analysis Real-time meridional surface currents."],
+    ["wind_u", "Wind U — Zonal wind", "m/s", "ASCAT L3", "Advanced Scatterometer 10m zonal ocean wind velocity."],
+    ["wind_v", "Wind V — Meridional wind", "m/s", "ASCAT L3", "Advanced Scatterometer 10m meridional ocean wind velocity."],
   ];
   const box = $("#tiles");
   T.forEach(([k, name, unit, src, why], i) => {
@@ -163,17 +163,17 @@ addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimat
     t.addEventListener("click", () => t.classList.toggle("flip"));
     box.appendChild(t);
   });
-  box.appendChild(h("div", "tile-hint", "Seven maps.<br>Every day since 2015.<br><span style='color:#7fd8ff'>Tap any map ↺</span>"));
+  box.appendChild(h("div", "tile-hint", "<b>Indian Ocean Domain</b><br><span style='color:#7fd8ff'>0–25°N, 55–100°E</span><br><span style='font-size:12.5px'>0.25° × 0.25° · Daily · 2015–2024</span><br><small style='color:var(--ink-3); margin-top:6px; display:block;'>Tap any map ↺</small>"));
   reveal(box);
 
   const S = [
-    ["Quality control", "Drop flagged or physically impossible values from every product."],
-    ["Land mask", "Mark land cells so they are never used as input or scored."],
-    ["Regrid to 0.25° (bilinear)", "Put every product on the same 0.25° grid — about 28 km per cell."],
-    ["Daily alignment", "Line all seven fields up on the same calendar days."],
-    ["Z-score (train stats only)", "Rescale each variable with averages from the training years only — no hint of the future leaks in."],
-    ["Missing-value mask", "Remember where data is missing (e.g. satellite gaps) instead of inventing it."],
-    ["Domain 0–25°N, 55–100°E", "Crop to the Arabian Sea and Bay of Bengal: 96 × 176 cells."],
+    ["Quality control", "Outliers, spikes, and sensor artifacts removed across all products."],
+    ["Land masking", "Land cells masked out to prevent land contamination in inputs and targets."],
+    ["Indian Ocean spatial subset", "Cropped to Arabian Sea & Bay of Bengal domain (0–25°N, 55–100°E: 96 × 176 cells)."],
+    ["Regrid to 0.25° (bilinear)", "Standardised via bilinear spatial interpolation to uniform 0.25° grid resolution."],
+    ["Daily temporal alignment", "Synchronised to common daily calendar observation timestamps."],
+    ["Missing-value masking", "Sensor gaps preserved with explicit masks rather than synthetic imputation."],
+    ["Z-score normalization (TRAIN only)", "Normalized using training set statistics only (μ_train, σ_train) with zero temporal leakage."],
   ];
   const pipe = $("#pipeline");
   S.forEach(([name, tipTxt], i) => {
@@ -196,9 +196,10 @@ D.window.forEach((d, k) => {
 });
 function filmScrub() {
   const r = stage.getBoundingClientRect();
-  const p = reduce ? 1 : clamp((-r.top) / (r.height - innerHeight) * 1.25);
+  const vh = window.innerHeight;
+  const p = reduce ? 1 : clamp((vh - r.top) / (vh + r.height * 0.45));
   const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;     // ease in-out
-  const small = innerWidth < 900, sx = small ? 34 : 58, cube = small ? 0.72 : 1;
+  const small = innerWidth < 900, sx = small ? 30 : 54, cube = small ? 0.72 : 1;
   $$(".frame", film).forEach((f, k) => {
     const o = k - 3;
     const fan = { x: o * sx, y: Math.abs(o) * 6, z: 0, rz: o * 7, rx: 0, s: 0.86 };
@@ -279,38 +280,334 @@ function rowTip(d, rows) {
   });
   blocks($("#arch-enc"), [[140, 14, 250, "32"], [176, 20, 180, "64"], [220, 28, 120, "128"], [268, 38, 72, "256"]], "url(#gEnc)", true);
   blocks($("#arch-dec"), [[618, 28, 120, "128"], [666, 20, 180, "64"], [706, 14, 250, "32"]], "url(#gDec)", false);
+
   // ConvLSTM beads, one per day
   const lstm = $("#arch-lstm"), beads = [];
   for (let k = 0; k < 7; k++) {
     const a = -Math.PI / 2 + k * (2 * Math.PI / 7);
     beads.push(el("circle", { cx: 430 + 62 * Math.cos(a), cy: 220 + 62 * Math.sin(a), r: 6, fill: "#5a2a18", stroke: "#d95926", "stroke-width": 2, class: "bead" }, lstm));
   }
+
+  // Branching bus lines from decoder to 15 depths
+  const fanG = $("#output-fan");
+  if (fanG) {
+    D.depths.forEach((d, i) => {
+      const y = 104 + i * 16.5 + 6;
+      el("path", { d: `M720 220 C760 220, 790 ${y}, 840 ${y}`, fill: "none", stroke: "rgba(127, 216, 255, 0.22)", "stroke-width": 1.2 }, fanG);
+    });
+  }
+
   // output slabs, surface (warm) to 1000 m (cold)
   const out = $("#arch-out");
+  const slabElements = [];
   D.depths.forEach((d, i) => {
     const y = 104 + i * 16.5;
-    el("rect", { x: 840, y, width: 112, height: 12, rx: 3, fill: hexMix(SEQ, 1 - i / 14 * 0.92) }, out);
+    const rect = el("rect", {
+      x: 840, y, width: 112, height: 12, rx: 3,
+      fill: hexMix(SEQ, 1 - i / 14 * 0.92),
+      class: "depth-slab" + (i === 0 ? " selected" : ""),
+      "data-depth": d,
+      "data-idx": i
+    }, out);
+    rect.setAttribute("role", "button");
+    rect.setAttribute("tabindex", "0");
+    rect.setAttribute("aria-label", `Depth layer ${d} m`);
     if (i === 0 || i === 7 || i === 14) el("text", { x: 832, y: y + 10, "text-anchor": "end", text: d + " m", style: "font-size:11px" }, out);
+    slabElements.push(rect);
   });
-  // flowing particles
+
+  // flowing particles along master flow path
   const pg = $("#particles");
-  if (!reduce) for (let k = 0; k < 8; k++) {
-    const c = el("circle", { r: 3.2, fill: "#7fd8ff", opacity: 0.9 }, pg);
-    const am = el("animateMotion", { dur: "3.6s", repeatCount: "indefinite", begin: (k * 0.45) + "s" }, c);
-    el("mpath", { href: "#flow" }, am);
+  if (!reduce && pg) {
+    for (let k = 0; k < 12; k++) {
+      const c = el("circle", { r: 3.2, fill: "#7fd8ff", opacity: 0.9, filter: "url(#glow)" }, pg);
+      const am = el("animateMotion", { dur: "3.2s", repeatCount: "indefinite", begin: (k * 0.26) + "s" }, c);
+      el("mpath", { href: "#flow" }, am);
+    }
   }
-  // step highlighting as the text cards pass the middle of the screen
+
+  // Step cards in .arch-steps
   const cards = $$(".arch-steps .card");
-  const ob = new IntersectionObserver(es => es.forEach(e => {
-    if (!e.isIntersecting) return;
-    cards.forEach(c => c.classList.toggle("now", c === e.target));
-    svg.dataset.active = e.target.dataset.part;
-  }), { rootMargin: "-68% 0px -27% 0px" });
-  cards.forEach(c => ob.observe(c));
+
+  // Component Information Metadata
+  const COMP_DATA = {
+    input: {
+      tag: "INPUT DATA · 7 DAYS",
+      title: "7-Day Surface Observation Sequence",
+      desc: "Captures 7 satellite-observable ocean surface variables (SST, SSS, SLA, east/north current, east/north wind) across 7 consecutive days over the Arabian Sea and Bay of Bengal.",
+      chips: ["7 surface variables", "7 daily timesteps", "96 × 176 grid", "0.25° (~28 km)"],
+      color: "#6aa9f0",
+      part: "input"
+    },
+    enc: {
+      tag: "① CNN ENCODER · READ",
+      title: "Spatial Feature Extraction",
+      desc: "Extracts spatial features from ocean surface observations. A shared deep convolutional network compresses 96×176 grid cells to 12×22 while expanding detail across 32 → 64 → 128 → 256 channels for each day.",
+      chips: ["Shared weights across days", "4 downsampling stages", "12 × 22 spatial bottleneck", "256 feature channels"],
+      color: "#6aa9f0",
+      part: "enc"
+    },
+    lstm: {
+      tag: "② CONVLSTM · REMEMBER",
+      title: "Spatiotemporal Recurrent Memory",
+      desc: "Watches how the week unfolds by stepping through the 7 days in temporal order. Its recurrent memory gates preserve relevant trends and discard high-frequency surface noise.",
+      chips: ["7 recurrent steps", "Maintains spatial coordinates", "Memory state tracking", "No future leakage"],
+      color: "#ff9a6b",
+      part: "lstm"
+    },
+    latent: {
+      tag: "LATENT BOTTLENECK · 256 × 12 × 22",
+      title: "OceanEmbed (Latent Fingerprint)",
+      desc: "The core latent representation learned by the system. A compact 256 × 12 × 22 bottleneck tensor summarizing multi-day subsurface thermal memory, condensed from 7 surface fields and 7 temporal steps.",
+      chips: ["256 latent channels", "12 × 22 spatial grid", "Bottle-neck representation", "Zero future leakage"],
+      color: "#5fd6a6",
+      part: "lstm"
+    },
+    dec: {
+      tag: "③ U-NET DECODER · PAINT",
+      title: "Spatial Reconstruction & Skip Fusion",
+      desc: "Upsamples the latent fingerprint back to full 96×176 resolution. Skip connections directly transfer fine spatial boundary details from the final day's encoder, keeping coastlines and eddies crisp.",
+      chips: ["3 skip connections", "Direct feature handover", "Upsampling to 96×176", "Preserves sharp gradients"],
+      color: "#e3a634",
+      part: "dec"
+    },
+    out: {
+      tag: "④ OUTPUT · 15 DEPTHS",
+      title: "Full 3-D Ocean Temperature Column",
+      desc: "Simultaneously predicts subsurface ocean temperature across 15 standard depths from surface (0 m) down to the abyss (1,000 m). Tap any depth bar or drag the slider below to inspect that layer.",
+      chips: ["15 standard depths", "0–1,000 m vertical range", "Daily 3D reconstruction", "Evaluated on Argo floats"],
+      color: "#7fd8ff",
+      part: "out"
+    }
+  };
+
+  const DEPTH_INFO = {
+    0: { zone: "Surface Mixed Layer", desc: "Directly in contact with atmosphere, solar heating, and monsoon winds. Measured directly by satellite infrared radiometers." },
+    5: { zone: "Surface Mixed Layer", desc: "Top 10 meters remain thoroughly mixed by wind waves, with nearly uniform temperature across the upper ocean." },
+    10: { zone: "Upper Mixed Layer", desc: "Homogeneous mixed layer base in summer; deepens to 40-60m during strong winter and monsoon wind stirring." },
+    20: { zone: "Mixed Layer Transition", desc: "Beginning of the seasonal pycnocline where surface salinity lids trap solar heat near the top." },
+    30: { zone: "Upper Thermocline", desc: "Transition boundary where solar penetration drops off and vertical density stratification increases." },
+    50: { zone: "Main Thermocline Entry", desc: "Rapid vertical temperature gradient begins; vertical mixing drops and barrier layer physics become active." },
+    75: { zone: "Core Thermocline", desc: "Steepest temperature drop. Internal waves and mesoscale eddy pumping cause large localized variations." },
+    100: { zone: "Core Thermocline Peak", desc: "Peak thermal gradient zone. GLORYS reanalysis exhibits its largest warm bias (+0.59 °C) here, cleanly fixed by OTER bias correction." },
+    125: { zone: "Deep Thermocline", desc: "Strong subsurface stratification. OTER achieves an independent RMSE of 1.158 °C, beating the teacher model GLORYS." },
+    150: { zone: "Lower Thermocline", desc: "Temperature drops below 18 °C. Internal thermocline displacement closely mirrors surface sea-level anomalies." },
+    200: { zone: "Permanent Thermocline", desc: "Below the direct reach of seasonal winds; temperatures vary between 12 and 19 °C." },
+    300: { zone: "Intermediate Water Mass", desc: "Transition into Red Sea and Persian Gulf outflow water in the Arabian Sea, with characteristic salinity intrusions." },
+    500: { zone: "Intermediate Ocean", desc: "Calm intermediate waters (9–13 °C) with minimal daily variance; vertical gradient loss maintains physical stability." },
+    700: { zone: "Deep Ocean Layer", desc: "Deep ocean waters (8–11 °C) where OTER achieves 0.224 °C error, outperforming GLORYS reanalysis." },
+    1000: { zone: "Abyssal Benchmark", desc: "Deep boundary at 1,000 m (6–9 °C). Validated against Argo float parking and profiling depths with exceptional 0.216 °C accuracy." }
+  };
+
+  const infoCard = $("#arch-info");
+  const infoTag = $("#arch-info-tag");
+  const infoTitle = $("#arch-info-title");
+  const infoDesc = $("#arch-info-desc");
+  const infoChips = $("#arch-info-chips");
+  const infoClose = $("#arch-info-close");
+
+  let selectedComp = null; // null = auto scroll tracking; string = locked component
+
+  function motionTap(target) {
+    if (window.Motion && typeof window.Motion.animate === "function" && target) {
+      window.Motion.animate(target, { scale: [1, 0.96, 1] }, { duration: 0.18, easing: "ease-out" });
+    }
+  }
+
+  function showInfoCard(data) {
+    if (!infoCard) return;
+    infoTag.textContent = data.tag;
+    infoTag.style.color = data.color || "#7fd8ff";
+    infoTitle.textContent = data.title;
+    infoDesc.textContent = data.desc;
+    infoChips.innerHTML = (data.chips || []).map(c => `<span>${c}</span>`).join("");
+    infoCard.classList.add("on");
+
+    if (window.Motion && typeof window.Motion.animate === "function") {
+      window.Motion.animate(infoCard, { opacity: [0, 1], y: [-8, 0], scale: [0.99, 1] }, { duration: 0.26, easing: [0.2, 0.8, 0.2, 1] });
+    }
+  }
+
+  function hideInfoCard() {
+    if (!infoCard) return;
+    if (window.Motion && typeof window.Motion.animate === "function") {
+      window.Motion.animate(infoCard, { opacity: [1, 0], y: [0, -6] }, { duration: 0.18 }).then(() => {
+        infoCard.classList.remove("on");
+      });
+    } else {
+      infoCard.classList.remove("on");
+    }
+  }
+
+  function selectComponent(compKey, clickedEl) {
+    if (!compKey || !COMP_DATA[compKey]) {
+      deselectComponent();
+      return;
+    }
+    selectedComp = compKey;
+    svg.setAttribute("data-selected", compKey);
+    svg.setAttribute("data-active", COMP_DATA[compKey].part);
+
+    cards.forEach(c => c.classList.toggle("now", c.dataset.part === COMP_DATA[compKey].part));
+    showInfoCard(COMP_DATA[compKey]);
+    if (clickedEl) motionTap(clickedEl);
+  }
+
+  function deselectComponent() {
+    selectedComp = null;
+    svg.removeAttribute("data-selected");
+    slabElements.forEach(s => s.classList.remove("selected"));
+    hideInfoCard();
+    cards.forEach(c => c.classList.remove("now"));
+    svg.dataset.active = "all";
+  }
+
+  if (infoClose) {
+    infoClose.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deselectComponent();
+    });
+  }
+
+  // Interactive targets for components
+  $$("[data-comp]", svg).forEach(elNode => {
+    elNode.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const comp = elNode.getAttribute("data-comp");
+      if (selectedComp === comp) {
+        deselectComponent();
+      } else {
+        selectComponent(comp, elNode);
+      }
+    });
+
+    // Subtle Motion hover indication
+    elNode.addEventListener("pointerenter", () => {
+      if (window.Motion && typeof window.Motion.animate === "function" && selectedComp !== elNode.getAttribute("data-comp")) {
+        window.Motion.animate(elNode, { scale: 1.015 }, { duration: 0.15 });
+      }
+    });
+    elNode.addEventListener("pointerleave", () => {
+      if (window.Motion && typeof window.Motion.animate === "function") {
+        window.Motion.animate(elNode, { scale: 1 }, { duration: 0.15 });
+      }
+    });
+  });
+
+  // Depth selection logic
+  const rng = $("#depth-range"), img = $("#depth-img");
+  D.depths.forEach(d => { const i = new Image(); i.src = `img/out_${d}.webp`; });
+
+  function updDepthView(idx) {
+    const d = D.depths[idx], [lo, hi] = D.colour_ranges.temp[String(d)] || [0, 35];
+    img.src = `img/out_${d}.webp`;
+    img.alt = `Reconstructed temperature at ${d} m`;
+    $("#depth-val").textContent = d + " m";
+    $("#depth-lo").textContent = lo.toFixed(1) + " °C";
+    $("#depth-hi").textContent = hi.toFixed(1) + " °C";
+    slabElements.forEach((s, k) => s.classList.toggle("selected", k === idx));
+    const outC = $("#depth-chips-output");
+    if (outC) $$("span", outC).forEach((s, k) => s.classList.toggle("chip-active", k === idx));
+  }
+
+  function selectDepth(depthIdx, fromUser = true, clickedEl) {
+    depthIdx = clamp(depthIdx, 0, D.depths.length - 1);
+    const d = D.depths[depthIdx];
+    rng.value = depthIdx;
+    updDepthView(depthIdx);
+
+    if (fromUser) {
+      if (selectedComp === "depth-" + d) {
+        deselectComponent();
+        return;
+      }
+      selectedComp = "depth-" + d;
+      svg.setAttribute("data-selected", "depth");
+      svg.setAttribute("data-active", "out");
+      cards.forEach(c => c.classList.toggle("now", c.dataset.part === "out"));
+      const info = DEPTH_INFO[d] || { zone: "Subsurface Layer", desc: `Reconstructed temperature layer at ${d} m.` };
+      const [lo, hi] = D.colour_ranges.temp[String(d)] || [0, 35];
+      showInfoCard({
+        tag: `DEPTH OUTPUT · ${d} M`,
+        title: `${info.zone} (${d} m)`,
+        desc: `${info.desc}`,
+        chips: [
+          `Depth: ${d} m`,
+          `Observed T: ${lo.toFixed(1)} – ${hi.toFixed(1)} °C`,
+          `OTER RMSE: ${D.rmse.final[depthIdx].toFixed(3)} °C vs Argo`,
+          `Teacher bias: ${(D.offset[depthIdx] > 0 ? "+" : "") + D.offset[depthIdx].toFixed(2)} °C`
+        ],
+        color: "#7fd8ff"
+      });
+      if (clickedEl) motionTap(clickedEl);
+    }
+  }
+
+  slabElements.forEach((slab, i) => {
+    slab.addEventListener("click", (e) => {
+      e.stopPropagation();
+      selectDepth(i, true, slab);
+    });
+    slab.addEventListener("pointerenter", () => {
+      if (window.Motion && typeof window.Motion.animate === "function" && !slab.classList.contains("selected")) {
+        window.Motion.animate(slab, { scale: 1.02 }, { duration: 0.12 });
+      }
+    });
+    slab.addEventListener("pointerleave", () => {
+      if (window.Motion && typeof window.Motion.animate === "function") {
+        window.Motion.animate(slab, { scale: 1 }, { duration: 0.12 });
+      }
+    });
+  });
+
+  rng.addEventListener("input", () => {
+    const idx = +rng.value;
+    selectDepth(idx, true);
+  });
+
+  const outChips = $("#depth-chips-output");
+  if (outChips) {
+    D.depths.forEach((d, i) => {
+      const s = h("span", d === 0 ? "chip-active" : "", d + " m");
+      s.style.setProperty("--i", i);
+      s.style.cursor = "pointer";
+      s.addEventListener("click", () => {
+        selectDepth(i, true);
+      });
+      outChips.appendChild(s);
+    });
+  }
+
+  updDepthView(0);
+
+  // Step cards in .arch-steps
+  cards.forEach(card => {
+    card.addEventListener("click", () => {
+      if (selectedComp === card.dataset.part) {
+        deselectComponent();
+      } else {
+        selectComponent(card.dataset.part, card);
+      }
+    });
+    card.addEventListener("pointerenter", () => {
+      if (window.Motion && typeof window.Motion.animate === "function") {
+        window.Motion.animate(card, { y: -3 }, { duration: 0.2 });
+      }
+    });
+    card.addEventListener("pointerleave", () => {
+      if (window.Motion && typeof window.Motion.animate === "function") {
+        window.Motion.animate(card, { y: 0 }, { duration: 0.2 });
+      }
+    });
+  });
+
   // ConvLSTM ticks through the 7 days while visible
   let day = 0, timer = null;
   const tick = () => {
-    beads.forEach((b, i) => { b.setAttribute("fill", i <= day ? "#ff9a6b" : "#5a2a18"); b.setAttribute("r", i === day ? 8 : 6); });
+    beads.forEach((b, i) => {
+      b.setAttribute("fill", i <= day ? "#ff9a6b" : "#5a2a18");
+      b.setAttribute("r", i === day ? 8 : 6);
+    });
     $$(".in-frame", inp).forEach((f, i) => f.setAttribute("opacity", i === day ? 1 : 0.45));
     $("#lstm-day").textContent = day === 6 ? "t" : "t−" + (6 - day);
     day = (day + 1) % 7;
@@ -319,22 +616,21 @@ function rowTip(d, rows) {
     clearInterval(timer);
     if (e.isIntersecting && !reduce) timer = setInterval(tick, 650); else tick();
   }), { threshold: 0.2 }).observe(svg);
-  // depth picker
-  const rng = $("#depth-range"), img = $("#depth-img");
-  D.depths.forEach(d => { const i = new Image(); i.src = `img/out_${d}.webp`; });
-  const upd = () => {
-    const d = D.depths[+rng.value], [lo, hi] = D.colour_ranges.temp[String(d)];
-    img.src = `img/out_${d}.webp`; img.alt = `Reconstructed temperature at ${d} m`;
-    $("#depth-val").textContent = d + " m";
-    $("#depth-lo").textContent = lo.toFixed(1) + " °C"; $("#depth-hi").textContent = hi.toFixed(1) + " °C";
-  };
-  rng.addEventListener("input", upd); upd();
 })();
 
 // ---------- 4: training ----------
 (() => {
   const chips = $("#depth-chips");
-  D.depths.forEach((d, i) => { const s = h("span", "", d + " m"); s.style.setProperty("--i", i); chips.appendChild(s); });
+  D.depths.forEach((d, i) => {
+    const s = h("span", d === 100 ? "chip-active" : "", d + " m");
+    s.style.setProperty("--i", i);
+    s.style.cursor = "pointer";
+    s.addEventListener("click", () => {
+      $$("span", chips).forEach(c => c.classList.remove("chip-active"));
+      s.classList.add("chip-active");
+    });
+    chips.appendChild(s);
+  });
   reveal(chips);
   reveal($("#mask-demo"));
   const box = $("#wbars"), rows = [];
@@ -378,14 +674,90 @@ function rowTip(d, rows) {
   const ch = profileChart(svg, { x0: lo, x1: hi, xticks: ticks, xlabel: "temperature (°C)", series: ser,
     tipRow: (i, d) => rowTip(d, [["ensemble mean", C.green, S.pred[i].toFixed(2) + " °C"]]) });
   reveal(svg);
-  legend($("#ens-legend"), [["MSE seeds", C.blue], ["DW-MSE seeds", C.orange], ["ensemble mean", C.green]]);
+  legend($("#ens-legend"), [["M4-MSE seeds (1–3)", C.blue], ["M4-DW seeds (1–3)", C.orange], ["Ensemble Mean", C.green]]);
   $("#ens-where").textContent = `${S.lat.toFixed(1)}°N ${S.lon.toFixed(1)}°E on 4 Dec 2023`;
-  $$(".seed").forEach(b => b.addEventListener("click", () => {
-    const k = +b.dataset.k, on = !b.classList.contains("on");
-    $$(".seed").forEach(o => o.classList.remove("on"));
-    ch.paths.slice(0, 6).forEach((p, j) => { p.setAttribute("opacity", on ? (j === k ? 1 : 0.15) : 0.75); p.setAttribute("stroke-width", on && j === k ? 3 : 1.6); });
-    if (on) b.classList.add("on");
-  }));
+
+  // Draw 6 convergence connection paths from seeds to Ensemble Mean
+  const ensG = $("#ens-paths");
+  function drawEnsembleConnections() {
+    if (!ensG) return;
+    ensG.innerHTML = "";
+    const seedBtns = $$(".seed-btns .seed");
+    const container = $(".ens-diagram-wrap");
+    if (!container) return;
+    const cRect = container.getBoundingClientRect();
+    const cx = 230, cy = 42;
+
+    seedBtns.forEach((btn, idx) => {
+      const bRect = btn.getBoundingClientRect();
+      const startX = cRect.width > 0 ? ((bRect.left + bRect.width / 2 - cRect.left) / cRect.width) * 460 : (idx < 3 ? 45 + idx * 70 : 275 + (idx - 3) * 70);
+      const color = idx < 3 ? "#3987e5" : "#d95926";
+      el("path", {
+        d: `M ${startX} 0 C ${startX} ${cy * 0.75}, ${cx} ${cy * 0.75}, ${cx} ${cy}`,
+        fill: "none",
+        stroke: color,
+        "stroke-width": "2",
+        "stroke-dasharray": "5 5",
+        opacity: "0.85",
+        class: `ens-conn-path ens-conn-${idx}`
+      }, ensG);
+    });
+
+    // Convergence junction line to merge box with arrowhead
+    el("line", {
+      x1: cx, y1: cy, x2: cx, y2: 66,
+      stroke: "#5fd6a6",
+      "stroke-width": "2.5",
+      "marker-end": "url(#arrow-ens)"
+    }, ensG);
+  }
+
+  drawEnsembleConnections();
+  addEventListener("resize", drawEnsembleConnections);
+
+  // Clickable seeds with Motion animations & selection persistence
+  let activeSeed = null;
+  $$(".seed-btns .seed").forEach(b => {
+    b.addEventListener("click", () => {
+      const k = +b.dataset.k;
+      const isAlreadyOn = activeSeed === k;
+      $$(".seed-btns .seed").forEach(o => o.classList.remove("on"));
+      $$(".ens-conn-path", ensG).forEach(p => p.classList.remove("active"));
+
+      if (isAlreadyOn) {
+        activeSeed = null;
+        ch.paths.slice(0, 6).forEach(p => {
+          p.setAttribute("opacity", "0.75");
+          p.setAttribute("stroke-width", "1.6");
+        });
+      } else {
+        activeSeed = k;
+        b.classList.add("on");
+        if (window.Motion && typeof window.Motion.animate === "function") {
+          window.Motion.animate(b, { scale: [1, 0.94, 1] }, { duration: 0.18 });
+        }
+        ch.paths.slice(0, 6).forEach((p, j) => {
+          p.setAttribute("opacity", j === k ? "1" : "0.15");
+          p.setAttribute("stroke-width", j === k ? "3.2" : "1.6");
+        });
+        const activePath = $(`.ens-conn-${k}`, ensG);
+        if (activePath) activePath.classList.add("active");
+      }
+    });
+
+    // Hover effect with Motion
+    b.addEventListener("pointerenter", () => {
+      if (window.Motion && typeof window.Motion.animate === "function" && activeSeed !== +b.dataset.k) {
+        window.Motion.animate(b, { y: -2 }, { duration: 0.15 });
+      }
+    });
+    b.addEventListener("pointerleave", () => {
+      if (window.Motion && typeof window.Motion.animate === "function") {
+        window.Motion.animate(b, { y: 0 }, { duration: 0.15 });
+      }
+    });
+  });
+
   $("#k-single").textContent = D.blended.single.toFixed(3) + " °C";
   $("#k-ens").textContent = D.blended.ensemble.toFixed(3) + " °C";
 })();
@@ -488,8 +860,10 @@ function rowTip(d, rows) {
   legend($("#eval-legend"), [["Argo float (truth)", C.orange], ["OTER", C.blue], ["GLORYS", C.gold, true]]);
   $("#eval-note").textContent = `Float ${S.float}, ${S.lat.toFixed(2)}°N ${S.lon.toFixed(2)}°E, 4 Dec 2023 — never seen in training. Error over this column: ${S.rmse.toFixed(2)} °C RMSE.`;
   const map = $("#eval-map");
-  const pin = h("span", "pin"), box = h("span", "cell-box");
-  [pin, box].forEach(n => { n.style.left = pct(S.lon, 55.5, 99.5) + "%"; n.style.top = (100 - pct(S.lat, 0.5, 24.5)) + "%"; map.appendChild(n); });
+  if (map) {
+    const pin = h("span", "pin"), box = h("span", "cell-box");
+    [pin, box].forEach(n => { n.style.left = pct(S.lon, 55.5, 99.5) + "%"; n.style.top = (100 - pct(S.lat, 0.5, 24.5)) + "%"; map.appendChild(n); });
+  }
 })();
 
 // ---------- result ----------
