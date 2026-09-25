@@ -11,8 +11,8 @@ Runs **fully offline**. No torch, no GPU, no network — predictions for the who
 split are precomputed into `app/demo_data/` (478 MB, committed), so a click is an array
 lookup.
 
-A hosted copy runs at **<https://oter.shubhh.xyz>** (also reachable at
-<https://65.2.207.204>) — see *Deployment* below.
+A hosted copy runs at **[https://oter.shubhh.xyz](https://oter.shubhh.xyz)** (also reachable at
+[https://65.2.207.204](https://65.2.207.204)) — see *Deployment* below.
 
 ## What the judge does
 
@@ -128,9 +128,7 @@ websocket through -- without it the page paints once, returns a healthy 200, and
 ignores every click, which reads as a broken app rather than a broken proxy. And
 `proxy_read_timeout 3600s` overrides nginx's 60 s default, which would otherwise drop the
 idle socket while you talk over a slide and leave the judge looking at "Connection lost".
-Verify with `curl -i -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H
-'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ=='
-http://<ip>/_stcore/stream` -- it must answer **101 Switching Protocols**, not 200.
+Verify with `curl -i -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' http://<ip>/_stcore/stream` -- it must answer **101 Switching Protocols**, not 200.
 
 The
 address is an **Elastic IP** (`eipalloc-048b0502fbb0f9f5d`), so it survives a stop/start --
