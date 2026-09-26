@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>OTER — How it works</title>
+<title>OTER - How it works</title>
 <meta name="description" content="How OTER reconstructs ocean temperature down to 1,000 m from seven satellite surface fields: data, 7-day window, CNN–ConvLSTM–U-Net, training, ensemble, bias correction and independent Argo evaluation.">
-<meta property="og:title" content="OTER — seeing 1,000 m below the ocean surface">
+<meta property="og:title" content="OTER - seeing 1,000 m below the ocean surface">
 <meta property="og:description" content="An animated walkthrough of the OTER methodology (SIH 2026, PS 26066).">
 <meta name="theme-color" content="#04121f">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%2304121f'/%3E%3Cpath d='M4 17c4-3 8 3 12 0s8 3 12 0' stroke='%237fd8ff' stroke-width='2.5' fill='none'/%3E%3C/svg%3E">
@@ -27,176 +27,16 @@
 <div class="mbar" id="mbar"><span id="mbar-step">OTER</span><b id="mbar-depth">0 m</b><div class="prog"></div></div>
 
 <!-- ============================ HERO ============================ -->
-<header class="hero" id="top" data-title="Surface">
-  <svg class="hero-scene" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-    <defs>
-      <linearGradient id="deep" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#1b7fa8" stop-opacity="0.35"/>
-        <stop offset="0.35" stop-color="#0f5a78" stop-opacity="0.18"/>
-        <stop offset="1" stop-color="#08306b" stop-opacity="0"/>
-      </linearGradient>
-      <linearGradient id="beamg" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#7fd8ff" stop-opacity="0.55"/>
-        <stop offset="1" stop-color="#7fd8ff" stop-opacity="0.02"/>
-      </linearGradient>
-      <path id="wavetile" d="M0 0 q75 -18 150 0 t150 0 t150 0 t150 0 v400 h-600z"/>
-    </defs>
-    <g fill="#fff" opacity="0.5">
-      <circle cx="120" cy="90" r="1.2"/><circle cx="340" cy="60" r="1"/><circle cx="560" cy="140" r="1.4"/>
-      <circle cx="760" cy="70" r="1"/><circle cx="1260" cy="110" r="1.2"/><circle cx="1380" cy="210" r="1"/>
-      <circle cx="660" cy="250" r="0.9"/><circle cx="220" cy="230" r="1"/>
-    </g>
-    <g class="sat">
-      <polygon class="beam" points="1080,176 960,560 1200,560" fill="url(#beamg)"/>
-      <g transform="translate(1080 160)">
-        <rect x="-16" y="-12" width="32" height="24" rx="4" fill="#dfe9f2"/>
-        <rect x="-78" y="-8" width="54" height="16" rx="2" fill="#3987e5"/>
-        <rect x="24" y="-8" width="54" height="16" rx="2" fill="#3987e5"/>
-        <path d="M-78 0h54M24 0h54" stroke="#9cc7f5" stroke-width="1"/>
-        <circle r="5" cy="16" fill="#7fd8ff"/>
-      </g>
-    </g>
-    <rect x="0" y="560" width="1440" height="340" fill="url(#deep)"/>
-    <g opacity="0.55" fill="none" stroke="#fd8d3c" stroke-width="1.2" stroke-dasharray="3 7">
-      <path d="M0 650 C 300 630, 600 680, 900 650 S 1300 640, 1440 660"><animate attributeName="d" dur="9s" repeatCount="indefinite" values="M0 650 C 300 630, 600 680, 900 650 S 1300 640, 1440 660;M0 660 C 300 680, 600 640, 900 665 S 1300 670, 1440 650;M0 650 C 300 630, 600 680, 900 650 S 1300 640, 1440 660"/></path>
-      <path d="M0 740 C 280 760, 640 720, 960 745 S 1300 760, 1440 735" stroke="#6baed6"><animate attributeName="d" dur="11s" repeatCount="indefinite" values="M0 740 C 280 760, 640 720, 960 745 S 1300 760, 1440 735;M0 750 C 280 730, 640 760, 960 735 S 1300 730, 1440 750;M0 740 C 280 760, 640 720, 960 745 S 1300 760, 1440 735"/></path>
-    </g>
-    <g transform="translate(0 560)">
-      <g class="wave" style="--d:14s" opacity="0.35"><use href="#wavetile" x="0" fill="#1b7fa8"/><use href="#wavetile" x="600" fill="#1b7fa8"/><use href="#wavetile" x="1200" fill="#1b7fa8"/><use href="#wavetile" x="1800" fill="#1b7fa8"/></g>
-      <g transform="translate(-150 10)"><g class="wave" style="--d:9s" opacity="0.35"><use href="#wavetile" x="0" fill="#0f5a78"/><use href="#wavetile" x="600" fill="#0f5a78"/><use href="#wavetile" x="1200" fill="#0f5a78"/><use href="#wavetile" x="1800" fill="#0f5a78"/></g></g>
-    </g>
-    <g transform="translate(1010 612)"><g class="float-bob">
-      <line x1="0" y1="-40" x2="0" y2="-66" stroke="#dfe9f2" stroke-width="2"/>
-      <rect x="-9" y="-40" width="18" height="96" rx="9" fill="#ffd166"/>
-      <rect x="-9" y="20" width="18" height="10" fill="#c98500"/>
-    </g></g>
-  </svg>
-  <div class="wrap">
-    <p class="eyebrow reveal">SIH 2026 · PS 26066 · Ministry of Earth Sciences / INCOIS</p>
-    <h1 class="reveal" style="--i:1">Seeing <span class="glow">1,000 m</span> below the surface — from space.</h1>
-    <p class="lede reveal" style="--i:2">Satellites only see the top of the ocean. <b>OTER</b> (Ocean Thermal Embedding Reconstruction) learns what that surface is telling us about the water beneath it, and rebuilds the temperature at 15 depths, every day, over the Arabian Sea and the Bay of Bengal.</p>
-    <div class="chips reveal" style="--i:3">
-      <span class="chip">7 satellite maps in</span>
-      <span class="chip">15 depths out · 0–1000 m</span>
-      <span class="chip">0.25° (~28 km) · daily</span>
-      <span class="chip" id="chip-casts">checked against real Argo floats</span>
-    </div>
-    <a class="cta reveal" style="--i:4" href="#why">Dive in
-      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v11M3 8l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></a>
-  </div>
-</header>
-
-<!-- ============================ WHY ============================ -->
-<section id="why" data-title="Why">
-  <div class="wrap">
-    <div class="step-head reveal">
-      <p class="eyebrow">The problem</p>
-      <h2>Two ways to look at the ocean. Neither is enough alone.</h2>
-    </div>
-    <div class="why-grid">
-      <div class="card reveal" style="--i:1">
-        <h3>Satellites</h3>
-        <p class="plain" style="margin:0">See <em>everywhere</em>, every day — but only the thin surface layer.</p>
-        <div class="why-map"><img src="img/in_sst.webp" alt="Satellite sea surface temperature over the Arabian Sea and Bay of Bengal" loading="lazy"><div class="scan"></div></div>
-        <div class="stat" id="stat-cells">16,896<small>grid cells observed every single day</small></div>
-      </div>
-      <div class="bridge reveal" style="--i:2">
-        OTER learns the link
-        <svg class="arrow" viewBox="0 0 90 24" aria-hidden="true"><path d="M2 12h80" stroke="#7fd8ff" stroke-width="2.5" fill="none"/><path d="M74 4l10 8-10 8" stroke="#7fd8ff" stroke-width="2.5" fill="none"/></svg>
-        between the two
-      </div>
-      <div class="card reveal" style="--i:3" id="why-argo">
-        <h3>Argo floats</h3>
-        <p class="plain" style="margin:0">Measure <em>all the way down</em> — but they are few and far between.</p>
-        <div class="why-map dark" id="argo-map"><img src="img/in_sst.webp" alt="" loading="lazy"></div>
-        <div class="stat" id="stat-argo">—<small>deep profiles in the whole region, within 5 days of 4 Dec 2023</small></div>
-      </div>
-    </div>
-    <p class="plain reveal" style="max-width:820px">So we train a model on years of surface maps paired with full-depth temperatures, then ask it to fill in the ocean below — everywhere, every day. And we grade it on the <em>real floats</em>, which it never saw.</p>
-  </div>
-</section>
-
-<!-- ============================ 1 OBSERVATIONS ============================ -->
-<section id="observations" data-title="1 · Observations">
-  <div class="wrap">
-    <div class="step-head reveal">
-      <p class="eyebrow"><span class="num">1</span>Observations (Inputs)</p>
-      <h2>7 satellite &amp; reanalysis surface variables</h2>
-      <p class="plain">Seven satellite and reanalysis feeds observed daily across the Indian Ocean domain. Tap any map to inspect its sensor specifications and units.</p>
-      <div class="obs-meta-chips">
-        <span class="obs-chip"><b>Domain:</b> 0–25°N, 55–100°E</span>
-        <span class="obs-chip"><b>Resolution:</b> 0.25° × 0.25° (~28 km)</span>
-        <span class="obs-chip"><b>Period:</b> 2015–2024 daily</span>
-      </div>
-    </div>
-    <div class="tiles reveal" id="tiles"></div>
-  </div>
-</section>
-
-<!-- ============================ 2 PREPROCESSING ============================ -->
-<section id="preprocessing" data-title="2 · Preprocessing">
-  <div class="wrap">
-    <div class="step-head reveal">
-      <p class="eyebrow"><span class="num">2</span>Preprocessing (Harmonisation)</p>
-      <h2>Standardising multi-source surface observations</h2>
-      <p class="plain">Harmonising distinct satellite and reanalysis observation streams into a clean, uniform grid with strict temporal isolation.</p>
-    </div>
-    <div class="pipeline reveal" id="pipeline"></div>
-  </div>
-</section>
-
-<!-- ============================ 3 INPUT TENSOR ============================ -->
-<section id="window" data-title="3 · Input Tensor">
-  <div class="wrap window-stage" id="window-stage">
-    <div class="window-sticky">
-      <div>
-        <p class="eyebrow"><span class="num">3</span>Input Tensor · 7-Day Window</p>
-        <h2>Spatiotemporal surface input &amp; target</h2>
-        <p class="plain">Subsurface dynamics lag behind surface forcing. For each prediction day <em>t</em>, OceanEmbed consumes the past 7 consecutive days:</p>
-        <div class="timeline-window">
-          <span>t−6</span><span>→</span>
-          <span>t−5</span><span>→</span>
-          <span>t−4</span><span>→</span>
-          <span>t−3</span><span>→</span>
-          <span>t−2</span><span>→</span>
-          <span>t−1</span><span>→</span>
-          <span class="active-t">t</span>
-        </div>
-        <div class="tensor-card">
-          <div class="tensor-subhead">INPUT TENSOR (X)</div>
-          <div class="tensor">X ∈ ℝ<sup>7 × 7 × 96 × 176</sup></div>
-          <div class="dims">
-            <span><b>Time:</b> 7 days (t−6 … t)</span>
-            <span><b>Channels:</b> 7 surface variables</span>
-            <span><b>Lat:</b> 96 (0–25°N)</span>
-            <span><b>Lon:</b> 176 (55–100°E)</span>
-          </div>
-        </div>
-        <div class="tensor-card target-card" style="margin-top:16px;">
-          <div class="tensor-subhead" style="color:#7fd8ff">TRAINING TARGET (Y FROM GLORYS12V1)</div>
-          <div class="tensor" style="color:#7fd8ff">Y ∈ ℝ<sup>15 × 96 × 176</sup></div>
-          <p class="plain" style="margin:6px 0 10px; font-size:13.5px;">15 standard ocean depths (in °C):</p>
-          <div class="depth-tags">
-            <span>0 m</span><span>5 m</span><span>10 m</span><span>20 m</span><span>30 m</span>
-            <span>50 m</span><span>75 m</span><span>100 m</span><span>125 m</span><span>150 m</span>
-            <span>200 m</span><span>300 m</span><span>500 m</span><span>700 m</span><span>1,000 m</span>
-          </div>
-        </div>
-      </div>
-      <div class="film" id="film" aria-label="Seven daily sea-surface-temperature maps stacking into one input"></div>
-    </div>
-  </div>
-</section>
-
 <!-- ============================ 4 MODEL ARCHITECTURE ============================ -->
-<section id="model" data-title="4 · Architecture">
+<section id="model" data-title="Architecture">
   <div class="wrap">
-    <div class="step-head reveal">
-      <p class="eyebrow"><span class="num">4</span>Model Architecture · OceanEmbed M4</p>
+    <div class="arch-stage">
+      <div class="step-head arch-head reveal">
+      <p class="eyebrow">Model Architecture · OceanEmbed M4</p>
       <h2>Read · remember · paint</h2>
       <p class="plain">7 daily inputs → CNN Encoder → ConvLSTM → U-Net Decoder → 15-depth output. Tap any component or depth slab to inspect its details.</p>
     </div>
-    <div class="arch-stage">
+    
       <div class="arch-sticky card">
         <svg class="arch-svg" id="arch" viewBox="0 0 1000 470" data-active="all" role="img" aria-label="CNN encoder, ConvLSTM and U-Net decoder architecture">
           <defs>
@@ -302,17 +142,17 @@
       </div>
       <div class="arch-steps">
         <article class="card" data-part="enc">
-          <p class="tag" style="color:#6aa9f0">① CNN encoder — read</p>
+          <p class="tag" style="color:#6aa9f0">① CNN encoder - read</p>
           <h3>Shared convolutional feature extraction</h3>
           <p>Shared across time. Four downsampling stages: <b>7 → 32</b> (96×176), <b>32 → 64</b> (48×88), <b>64 → 128</b> (24×44), and <b>128 → 256</b> (12×22). Compresses spatial maps while expanding channel abstractions like fronts and eddies.</p>
         </article>
         <article class="card" data-part="lstm">
-          <p class="tag" style="color:#ff9a6b">② ConvLSTM — remember</p>
+          <p class="tag" style="color:#ff9a6b">② ConvLSTM - remember</p>
           <h3>Spatiotemporal recurrent latent memory</h3>
           <p>Steps through 7 recurrent temporal steps. Its final hidden state (h<sub>t</sub>) forms a compact <b>256 × 12 × 22</b> tensor: the <b style="color:#5fd6a6">OceanEmbed</b> spatiotemporal latent fingerprint summarizing subsurface thermal memory.</p>
         </article>
         <article class="card" data-part="dec">
-          <p class="tag" style="color:#e3a634">③ U-Net decoder — paint</p>
+          <p class="tag" style="color:#e3a634">③ U-Net decoder - paint</p>
           <h3>Reconstruction with skip connections</h3>
           <p>Upsamples the latent fingerprint across <b>128</b> (24×44) → <b>64</b> (48×88) → <b>32</b> (96×176) → <b>15 depths</b> (96×176). Three direct skip connections carry fine spatial gradients straight across, preserving sharp coastlines and fronts.</p>
         </article>
@@ -321,97 +161,11 @@
   </div>
 </section>
 
-<!-- ============================ 5 MODEL OUTPUT ============================ -->
-<section id="output" data-title="5 · Model Output">
-  <div class="wrap">
-    <div class="step-head reveal">
-      <p class="eyebrow"><span class="num">5</span>Model Output</p>
-      <h2>15 ocean depths reconstructed</h2>
-      <div class="tensor" style="color:#7fd8ff; font-size: clamp(24px, 3vw, 36px); margin: 12px 0;">
-        Ŷ ∈ ℝ<sup>15 × 96 × 176</sup>
-        <span style="font-size:15px; color:var(--ink-2); font-family:var(--body); font-weight:normal; margin-left:8px;">(temperature in °C)</span>
-      </div>
-      <p class="plain">Daily prediction for day <em>t</em> across 15 standard ocean depths from surface (0 m) down to the abyss (1,000 m).</p>
-    </div>
-    <div class="card reveal" style="max-width:860px; margin: 0 auto;">
-      <div class="depth-picker">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
-          <h3 style="margin:0; font-size:18px;">Subsurface Thermal Profile Explorer</h3>
-          <span style="font:500 13px var(--mono); color:var(--ink-3);">Slide or tap to inspect any depth</span>
-        </div>
-        <img id="depth-img" src="img/out_0.webp" alt="Reconstructed temperature map">
-        <div class="colorbar"></div>
-        <div class="readout"><span id="depth-lo"></span><b id="depth-val">0 m</b><span id="depth-hi"></span></div>
-        <input type="range" id="depth-range" min="0" max="14" value="0" step="1" aria-label="Depth">
-        <div class="depth-chips" id="depth-chips-output" style="margin-top:16px;"></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================ 6 TRAINING ============================ -->
-<section id="training" data-title="6 · Training">
-  <div class="wrap">
-    <div class="step-head reveal">
-      <p class="eyebrow"><span class="num">6</span>Training · Two Loss Variants</p>
-      <h2>Learning from GLORYS12V1 with masked loss</h2>
-      <p class="plain">The model learns from the GLORYS12V1 ocean reanalysis target using masked supervision to avoid land and bathymetry artifacts.</p>
-    </div>
-    <div class="card reveal">
-      <div class="card-head-row">
-        <h3>Training Data Split (Chronological)</h3>
-        <span class="badge-pill">Zero Temporal Leakage</span>
-      </div>
-      <p class="note" style="margin-top:0">Chronologically partitioned so future ocean states never leak into model weights or calibration.</p>
-      <div class="timeline">
-        <div class="tl-bar">
-          <div class="tl-seg"><i style="background:var(--blue)"></i><span>TRAIN<br>2015–2021</span></div>
-          <div class="tl-seg"><i style="background:var(--orange)"></i><span>VAL<br>2022</span></div>
-          <div class="tl-seg"><i style="background:var(--green)"></i><span>TEST<br>2023–24</span></div>
-        </div>
-        <div class="legend tl-legend"><span><i style="background:var(--blue)"></i>Train 2015–2021</span><span><i style="background:var(--orange)"></i>Val 2022</span><span><i style="background:var(--green)"></i>Test 2023–24</span></div>
-        <div class="tl-years"><span>2015</span><span>2016</span><span>2017</span><span>2018</span><span>2019</span><span>2020</span><span>2021</span><span>2022</span><span>2023</span><span>2024</span></div>
-      </div>
-      <div class="split-roles">
-        <div class="split-role"><span class="dot-role" style="background:var(--blue)"></span><span><b>TRAIN (2015–2021):</b> Fitting network weights</span></div>
-        <div class="split-role"><span class="dot-role" style="background:var(--orange)"></span><span><b>VALIDATION (2022):</b> Calibrating per-depth bias correction only</span></div>
-        <div class="split-role"><span class="dot-role" style="background:var(--green)"></span><span><b>TEST (2023–2024):</b> Final independent evaluation</span></div>
-      </div>
-    </div>
-    <div class="grid2" style="margin-top:24px">
-      <div class="card reveal" style="--i:1">
-        <h3>Masked Loss Computation</h3>
-        <div class="eq" style="font-size:16px;">
-          L = <sup>1</sup>/<sub>N<sub>valid</sub></sub> ∑<sub>i ∈ valid</sub> w<sub>depth(i)</sub> (Ŷ<sub>i</sub> − Y<sub>i</sub>)<sup>2</sup>
-        </div>
-        <ul class="clean-list">
-          <li><b>Land points:</b> Masked out across all inputs and targets</li>
-          <li><b>Missing values:</b> Mask missing GLORYS cells</li>
-          <li><b>Seafloor bathymetry:</b> Computed only on valid (depth, lat, lon) ocean cells</li>
-        </ul>
-        <div class="mask-demo" id="mask-demo"><img src="img/out_100.webp" alt="Reconstruction at 100 m with land and shallow shelf masked"><div class="hatch"></div></div>
-        <p class="note" style="margin-top:10px;">At 100 m, shallow continental shelves (hatched) have no water and are excluded from the loss.</p>
-        <div class="depth-chips" id="depth-chips"></div>
-      </div>
-      <div class="card reveal" style="--i:2">
-        <h3>Two Loss Variants</h3>
-        <div class="toggle" role="tablist">
-          <button class="on" data-mode="mse" role="tab" aria-selected="true">Variant A · M4-MSE</button>
-          <button data-mode="dw" role="tab" aria-selected="false">Variant B · M4-DW</button>
-        </div>
-        <p class="note" id="loss-explain" style="margin-top:0"></p>
-        <div id="wbars"></div>
-        <p class="note"><b>w<sub>depth</sub> = 1</b> for M4-MSE. Inverse-variance weights <b>w<sub>depth</sub> = 1 / σ²<sub>depth</sub></b> (from training set) for M4-DW ensure calm deep waters and energetic thermocline contribute balanced gradients.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ============================ 7 ENSEMBLE ============================ -->
-<section id="ensemble" data-title="7 · Ensemble">
+<section id="ensemble" data-title="Ensemble">
   <div class="wrap">
     <div class="step-head reveal">
-      <p class="eyebrow"><span class="num">7</span>Ensemble · 6 Models</p>
+      <p class="eyebrow">Ensemble · 6 Models</p>
       <h2>6 models → Ensemble Mean</h2>
       <p class="plain">Three random seed runs for each loss variant combine to cancel member variance and produce the robust ensemble prediction.</p>
     </div>
@@ -466,10 +220,10 @@
 </section>
 
 <!-- ============================ 8 BIAS CORRECTION ============================ -->
-<section id="bias" data-title="8 · Bias Correction">
+<section id="bias" data-title="Bias Correction">
   <div class="wrap">
     <div class="step-head reveal">
-      <p class="eyebrow"><span class="num">8</span>Bias Correction (Calibration)</p>
+      <p class="eyebrow">Bias Correction (Calibration)</p>
       <h2>Calibrated on 2022 Argo validation period</h2>
       <p class="plain">Eliminating systematic depth-dependent warm bias inherited from the teacher model (GLORYS) before deployment on test data.</p>
     </div>
@@ -483,159 +237,12 @@
       <div class="card reveal" style="--i:2">
         <h3>2 · Apply to test period (2023–2024, unchanged)</h3>
         <div class="eq"><span class="hat">Ŷ<sub>final,d</sub></span> = Ŷ<sub>ens,d</sub> − <span class="hat">b<sub>d</sub></span></div>
-        <p class="note" style="margin-top:0">Fixed 15 calibration values subtracted from every test day — zero future leakage.</p>
+        <p class="note" style="margin-top:0">Fixed 15 calibration values subtracted from every test day - zero future leakage.</p>
         <div class="legend" id="bc-legend"></div>
         <svg class="chart" id="bc-chart" viewBox="0 0 520 380"></svg>
         <div class="kpi"><div><span id="k-before"></span><small>Before calibration</small></div><span class="arrow">→</span><div style="color:#7fd8ff"><span id="k-after"></span><small>After calibration</small></div></div>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ============================ 9 FINAL OUTPUT ============================ -->
-<section id="final-output" data-title="9 · Final Output">
-  <div class="wrap">
-    <div class="step-head reveal">
-      <p class="eyebrow"><span class="num">9</span>Final Output</p>
-      <h2>Bias-corrected 3-D ocean temperature product</h2>
-      <p class="plain">The end-to-end OceanEmbed pipeline yields calibrated daily 3-D ocean thermal fields across the Indian Ocean.</p>
-    </div>
-    <div class="final-output-card card reveal">
-      <div class="final-output-grid">
-        <div class="final-info">
-          <span class="tag" style="color:#5fd6a6">BIAS-CORRECTED ENSEMBLE</span>
-          <div class="tensor" style="color:#5fd6a6; margin: 12px 0 16px;">
-            Ŷ<sub>final</sub> ∈ ℝ<sup>15 × 96 × 176</sup>
-            <small style="font-size:16px; color:var(--ink-2); font-family:var(--body);">(°C)</small>
-          </div>
-          <div class="final-specs">
-            <div class="spec-row"><b>Temporal Cadence:</b><span>Daily, 2023–2024</span></div>
-            <div class="spec-row"><b>Vertical Levels:</b><span>15 standard depths (0–1,000 m)</span></div>
-            <div class="spec-row"><b>Spatial Domain:</b><span>0–25°N, 55–100°E (Indian Ocean)</span></div>
-            <div class="spec-row"><b>Horizontal Grid:</b><span>96 × 176 cells (0.25° ~28 km)</span></div>
-            <div class="spec-row"><b>Calibration:</b><span>Argo 2022 validation offset subtracted</span></div>
-          </div>
-        </div>
-        <div class="final-visual">
-          <img src="img/out_0.webp" alt="Final reconstructed surface temperature" class="final-preview-img">
-          <div class="final-stat-box">
-            <span class="final-stat-val">0.786 °C</span>
-            <span class="final-stat-lbl">Blended RMSE vs Independent Argo (2023–2024)</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================ 10 EVALUATION ============================ -->
-<section id="evaluation" data-title="10 · Evaluation">
-  <div class="wrap">
-    <div class="step-head reveal">
-      <p class="eyebrow"><span class="num">10</span>Independent Evaluation</p>
-      <h2>Rigorous validation on unseen in-situ observations</h2>
-      <p class="plain">Argo floats provide direct subsurface observations across the water column. None of them were used for training.</p>
-    </div>
-    <div class="grid2">
-      <!-- Track B2: Raw Argo -->
-      <div class="card reveal" style="--i:1">
-        <div class="card-tag" style="color:var(--orange)">PRIMARY BENCHMARK · TRACK B2</div>
-        <h3 style="margin-top:6px;">Raw Argo Float Profiles</h3>
-        <div class="benchmark-stats">
-          <div class="bm-stat"><b>5,980</b><small>Valid casts</small></div>
-          <div class="bm-stat"><b>147</b><small>Profiling floats</small></div>
-          <div class="bm-stat"><b>2023–2024</b><small>Strict test period</small></div>
-        </div>
-        <ul class="clean-list" style="margin-top:14px;">
-          <li>Quality-controlled real-time &amp; delayed-mode profiles</li>
-          <li>Depth interpolation to 15 standard target levels</li>
-          <li>Evaluated depth-by-depth and blended</li>
-        </ul>
-        <svg class="argo-cycle" id="argo-cycle" viewBox="0 0 700 380" role="img" aria-label="Argo float profiling cycle"></svg>
-        <p class="note" id="cycle-note"></p>
-      </div>
-      <!-- Track B1: INCOIS LAS Gridded Argo -->
-      <div class="card reveal" style="--i:2">
-        <div class="card-tag" style="color:var(--blue)">SECONDARY BENCHMARK · TRACK B1</div>
-        <h3 style="margin-top:6px;">INCOIS LAS Gridded Argo</h3>
-        <div class="benchmark-stats">
-          <div class="bm-stat"><b>1° × 1°</b><small>Spatial grid</small></div>
-          <div class="bm-stat"><b>10-day</b><small>Temporal composite</small></div>
-          <div class="bm-stat"><b>Objectively Analyzed</b><small>INCOIS product</small></div>
-        </div>
-        <ul class="clean-list" style="margin-top:14px;">
-          <li>Spatial aggregate OTER model predictions to 1° × 1°</li>
-          <li>Temporal aggregate predictions to 10-day periods</li>
-          <li>Compare on intersecting common depth levels</li>
-        </ul>
-        <div class="legend" id="eval-legend" style="margin-top:16px;"></div>
-        <svg class="chart" id="eval-chart" viewBox="0 0 520 400"></svg>
-        <p class="note" id="eval-note"></p>
-      </div>
-    </div>
-    <!-- 5-step Evaluation Procedure -->
-    <div class="card reveal" style="margin-top:24px;">
-      <h3 style="margin-bottom:18px;">Evaluation Procedure</h3>
-      <div class="eval-steps" style="margin-top:0;">
-        <div class="ev"><b>1 · Match</b><p>Match each Argo profile to nearest model calendar day (±1 day).</p></div>
-        <div class="ev"><b>2 · Extract</b><p>Extract model prediction at float coordinates (nearest 0.25° cell).</p></div>
-        <div class="ev"><b>3 · Interpolate</b><p>Resample float readings to the 15 standard model depths.</p></div>
-        <div class="ev"><b>4 · Filter</b><p>Compare only at valid observed depths (where Argo exists).</p></div>
-        <div class="ev"><b>5 · Metrics</b><p>Compute RMSE, MAE, Bias, Corr &amp; R² per depth and blended.</p></div>
-      </div>
-    </div>
-    <!-- Key Metrics Reported -->
-    <div class="card reveal" style="margin-top:24px;">
-      <h3 style="margin-bottom:14px;">Key Metrics Reported</h3>
-      <div class="metrics-grid">
-        <div class="m-card"><b>Depth-wise Metrics</b><span>RMSE, MAE, Bias, Correlation (r), R², Sample count (n)</span></div>
-        <div class="m-card"><b>Blended RMSE</b><span>Sample-weighted (n-weighted) average across all 15 depths: <b>0.786 °C</b></span></div>
-        <div class="m-card"><b>Skill vs Climatology</b><span>Beats long-term historical climatology at all 15 depths</span></div>
-        <div class="m-card"><b>Skill vs GLORYS</b><span>Student model beats GLORYS teacher at 125, 700 &amp; 1,000 m</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================ IMPORTANT PRINCIPLES ============================ -->
-<section id="principles" style="padding-block: 40px 0;">
-  <div class="wrap">
-    <div class="principles-banner card reveal">
-      <div class="principles-head">
-        <span class="principles-tag">METHODOLOGY INTEGRITY</span>
-        <h3>Important Principles (No Data Leakage)</h3>
-      </div>
-      <div class="principles-grid">
-        <div class="principle-item"><span class="check">✓</span><span><b>Argo is never an input</b> to the model.</span></div>
-        <div class="principle-item"><span class="check">✓</span><span><b>GLORYS is used only</b> as the training target.</span></div>
-        <div class="principle-item"><span class="check">✓</span><span><b>Normalization uses TRAIN</b> stats only.</span></div>
-        <div class="principle-item"><span class="check">✓</span><span><b>Bias correction fitted on 2022 only</b>, applied to 2023–2024 only.</span></div>
-        <div class="principle-item"><span class="check">✓</span><span><b>Test period (2023–2024) never influences</b> training or any calibration.</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================ RESULT ============================ -->
-<section id="result" data-title="Result">
-  <div class="wrap">
-    <div class="step-head reveal">
-      <p class="eyebrow">The result</p>
-      <div class="big-number"><span id="big">0.000</span><small> °C</small></div>
-      <p class="plain">Typical temperature error (RMSE) across all 15 depths, against <em id="res-casts"></em> independent Argo profiles in 2023–24 — years the model never saw.</p>
-    </div>
-    <div class="grid2">
-      <div class="card reveal" style="--i:1">
-        <h3>Lower is better</h3>
-        <div id="hbars"></div>
-      </div>
-      <div class="card reveal" style="--i:2">
-        <h3>Error at each depth</h3>
-        <div class="legend" id="res-legend"></div>
-        <svg class="chart" id="res-chart" viewBox="0 0 520 400"></svg>
-      </div>
-    </div>
-    <p class="honest reveal">GLORYS is the teacher, so the student isn't expected to beat it overall. Getting within <b id="gap"></b> of it from surface data alone — and beating it at 125, 700 and 1000 m — is the result. OTER beats climatology at <b>all 15 depths</b>.</p>
   </div>
 </section>
 
@@ -645,7 +252,7 @@
     <div class="links">
       <a class="primary" href="https://oter.shubhh.xyz" target="_blank" rel="noopener">Try the live demo</a>
       <a href="https://github.com/swaraj-shubh/OceanEmbed" target="_blank" rel="noopener">Source on GitHub</a>
-      <a href="#top">Back to the surface ↑</a>
+      <a href="#model">Back to the surface ↑</a>
     </div>
   </div>
 </footer>
