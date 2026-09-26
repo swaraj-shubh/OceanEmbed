@@ -123,93 +123,8 @@ function onScroll() {
   mbar.classList.toggle("on", scrollY > innerHeight * 0.6);
   $("#mbar-step").textContent = cur.dataset.title; $("#mbar-depth").textContent = depthM + " m";
   $("#mbar .prog").style.width = p * 100 + "%";
-  filmScrub();
 }
 addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
-
-// ---------- why ----------
-(() => {
-  const [la0, la1] = [0.5, 24.5], [lo0, lo1] = [55.5, 99.5];
-  const map = $("#argo-map");
-  D.argo_dots.forEach(([lat, lon], i) => {
-    const d = h("span", "argo-dot"); d.style.left = pct(lon, lo0, lo1) + "%"; d.style.top = (100 - pct(lat, la0, la1)) + "%";
-    d.style.setProperty("--i", i); map.appendChild(d);
-  });
-  reveal(map);
-  $("#stat-argo").firstChild.textContent = D.argo_dots.length;
-  $("#stat-cells").firstChild.textContent = (96 * 176).toLocaleString("en-IN");
-  $("#chip-casts").textContent = `checked on ${D.argo_casts} real Argo profiles`;
-})();
-
-// ---------- 1: inputs + pipeline ----------
-(() => {
-  const T = [
-    ["sst", "SST — Sea surface temperature", "°C", "NOAA OISST v2.1", "Daily optimum interpolation SST at 0.25° grid."],
-    ["sss", "SSS — Sea surface salinity", "PSU", "SMAP RSS V6", "Remote Sensing Systems SMAP Level-3 8-day running mean salinity."],
-    ["sla", "SLA — Sea level anomaly", "m", "DUACS L4", "Multi-mission altimeter satellite gridded sea level anomaly."],
-    ["cur_u", "U Current — Zonal current", "m/s", "OSCAR v2.0", "Ocean Surface Current Analysis Real-time zonal surface currents."],
-    ["cur_v", "V Current — Meridional current", "m/s", "OSCAR v2.0", "Ocean Surface Current Analysis Real-time meridional surface currents."],
-    ["wind_u", "Wind U — Zonal wind", "m/s", "ASCAT L3", "Advanced Scatterometer 10m zonal ocean wind velocity."],
-    ["wind_v", "Wind V — Meridional wind", "m/s", "ASCAT L3", "Advanced Scatterometer 10m meridional ocean wind velocity."],
-  ];
-  const box = $("#tiles");
-  T.forEach(([k, name, unit, src, why], i) => {
-    const t = h("button", "tile");
-    t.style.setProperty("--i", i);
-    t.setAttribute("aria-label", `${name}: ${why}`);
-    t.innerHTML = `<img src="img/in_${k}.webp" alt="" loading="lazy"><div class="cap"><b>${name}</b><span>${unit} · ${src}</span></div>
-      <div class="back"><b>${name}</b>${why}</div>`;
-    t.style.font = "inherit"; t.style.color = "inherit"; t.style.textAlign = "left"; t.style.padding = "0";
-    t.addEventListener("click", () => t.classList.toggle("flip"));
-    box.appendChild(t);
-  });
-  box.appendChild(h("div", "tile-hint", "<b>Indian Ocean Domain</b><br><span style='color:#7fd8ff'>0–25°N, 55–100°E</span><br><span style='font-size:12.5px'>0.25° × 0.25° · Daily · 2015–2024</span><br><small style='color:var(--ink-3); margin-top:6px; display:block;'>Tap any map ↺</small>"));
-  reveal(box);
-
-  const S = [
-    ["Quality control", "Outliers, spikes, and sensor artifacts removed across all products."],
-    ["Land masking", "Land cells masked out to prevent land contamination in inputs and targets."],
-    ["Indian Ocean spatial subset", "Cropped to Arabian Sea & Bay of Bengal domain (0–25°N, 55–100°E: 96 × 176 cells)."],
-    ["Regrid to 0.25° (bilinear)", "Standardised via bilinear spatial interpolation to uniform 0.25° grid resolution."],
-    ["Daily temporal alignment", "Synchronised to common daily calendar observation timestamps."],
-    ["Missing-value masking", "Sensor gaps preserved with explicit masks rather than synthetic imputation."],
-    ["Z-score normalization (TRAIN only)", "Normalized using training set statistics only (μ_train, σ_train) with zero temporal leakage."],
-  ];
-  const pipe = $("#pipeline");
-  S.forEach(([name, tipTxt], i) => {
-    const c = h("div", "pipe", `${name}<span class="tip">${tipTxt}</span>`);
-    c.dataset.n = i + 1; c.tabIndex = 0;
-    c.addEventListener("click", () => { $$(".pipe.show").forEach(o => o !== c && o.classList.remove("show")); c.classList.toggle("show"); });
-    pipe.appendChild(c);
-    if (i < S.length - 1) pipe.appendChild(h("span", "pipe-arrow", "→"));
-  });
-  reveal(pipe, () => $$(".pipe", pipe).forEach((c, i) => setTimeout(() => c.classList.add("lit"), 350 + i * 420)));
-})();
-
-// ---------- 2: 7-day window (scroll-scrubbed stack) ----------
-const film = $("#film"), stage = $("#window-stage");
-D.window.forEach((d, k) => {
-  const f = h("div", "frame" + (k === 6 ? " today" : ""));
-  const date = new Date(d + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
-  f.innerHTML = `<img src="img/win_${k}.webp" alt="Sea surface temperature on ${date}"><span class="lbl">${k === 6 ? "t" : "t−" + (6 - k)} · ${date}</span>`;
-  f.style.zIndex = k; film.appendChild(f);
-});
-function filmScrub() {
-  const r = stage.getBoundingClientRect();
-  const vh = window.innerHeight;
-  const p = reduce ? 1 : clamp((vh - r.top) / (vh + r.height * 0.45));
-  const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;     // ease in-out
-  const small = innerWidth < 900, sx = small ? 30 : 54, cube = small ? 0.72 : 1;
-  $$(".frame", film).forEach((f, k) => {
-    const o = k - 3;
-    const fan = { x: o * sx, y: Math.abs(o) * 6, z: 0, rz: o * 7, rx: 0, s: 0.86 };
-    const stk = { x: o * 12 * cube, y: -o * 14 * cube, z: o * 26, rz: -32, rx: 56, s: 1 };
-    const v = k2 => lerp(fan[k2], stk[k2], e);
-    f.style.transform = `translate3d(${v("x")}px, ${v("y")}px, ${v("z")}px) rotateX(${v("rx")}deg) rotateZ(${v("rz")}deg) scale(${v("s")})`;
-    f.style.opacity = String(lerp(0.55 + 0.45 * (k / 6), 1, e));
-  });
-}
-filmScrub();
 
 // ---------- chart helpers ----------
 const DEPTH_TICKS = [0, 10, 20, 50, 100, 200, 500, 1000];
@@ -469,6 +384,12 @@ function rowTip(d, rows) {
     });
   }
 
+  // A click on the diagram's empty background lights every component again. Components and
+  // depth slabs stop propagation, so only true background clicks get here.
+  $(".arch-sticky").addEventListener("click", (e) => {
+    if (!e.target.closest("#arch-info")) deselectComponent();
+  });
+
   // Interactive targets for components
   $$("[data-comp]", svg).forEach(elNode => {
     elNode.addEventListener("click", (e) => {
@@ -500,11 +421,13 @@ function rowTip(d, rows) {
 
   function updDepthView(idx) {
     const d = D.depths[idx], [lo, hi] = D.colour_ranges.temp[String(d)] || [0, 35];
-    img.src = `img/out_${d}.webp`;
-    img.alt = `Reconstructed temperature at ${d} m`;
-    $("#depth-val").textContent = d + " m";
-    $("#depth-lo").textContent = lo.toFixed(1) + " °C";
-    $("#depth-hi").textContent = hi.toFixed(1) + " °C";
+    if (img) {                       // the depth-map picker is optional on this page
+      img.src = `img/out_${d}.webp`;
+      img.alt = `Reconstructed temperature at ${d} m`;
+      $("#depth-val").textContent = d + " m";
+      $("#depth-lo").textContent = lo.toFixed(1) + " °C";
+      $("#depth-hi").textContent = hi.toFixed(1) + " °C";
+    }
     slabElements.forEach((s, k) => s.classList.toggle("selected", k === idx));
     const outC = $("#depth-chips-output");
     if (outC) $$("span", outC).forEach((s, k) => s.classList.toggle("chip-active", k === idx));
@@ -513,7 +436,7 @@ function rowTip(d, rows) {
   function selectDepth(depthIdx, fromUser = true, clickedEl) {
     depthIdx = clamp(depthIdx, 0, D.depths.length - 1);
     const d = D.depths[depthIdx];
-    rng.value = depthIdx;
+    if (rng) rng.value = depthIdx;
     updDepthView(depthIdx);
 
     if (fromUser) {
@@ -560,7 +483,7 @@ function rowTip(d, rows) {
     });
   });
 
-  rng.addEventListener("input", () => {
+  rng?.addEventListener("input", () => {
     const idx = +rng.value;
     selectDepth(idx, true);
   });
@@ -616,45 +539,6 @@ function rowTip(d, rows) {
     clearInterval(timer);
     if (e.isIntersecting && !reduce) timer = setInterval(tick, 650); else tick();
   }), { threshold: 0.2 }).observe(svg);
-})();
-
-// ---------- 4: training ----------
-(() => {
-  const chips = $("#depth-chips");
-  D.depths.forEach((d, i) => {
-    const s = h("span", d === 100 ? "chip-active" : "", d + " m");
-    s.style.setProperty("--i", i);
-    s.style.cursor = "pointer";
-    s.addEventListener("click", () => {
-      $$("span", chips).forEach(c => c.classList.remove("chip-active"));
-      s.classList.add("chip-active");
-    });
-    chips.appendChild(s);
-  });
-  reveal(chips);
-  reveal($("#mask-demo"));
-  const box = $("#wbars"), rows = [];
-  const max = Math.max(...D.dw_weights);
-  D.depths.forEach((d, i) => {
-    const r = h("div", "wbar", `<span>${d} m</span><div><div class="b"></div></div><span class="v"></span>`);
-    box.appendChild(r); rows.push(r);
-  });
-  const text = {
-    mse: "Every °C of error counts the same at every depth — so the busy thermocline (50–200 m), where errors are largest, dominates training.",
-    dw: "Each depth's error is divided by how much that depth naturally varies — so the calm deep ocean and the surface count as much as the thermocline.",
-  };
-  function set(mode) {
-    $$(".toggle button").forEach(b => { const on = b.dataset.mode === mode; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
-    $("#loss-explain").textContent = text[mode];
-    rows.forEach((r, i) => {
-      const w = mode === "mse" ? 1 : D.dw_weights[i];
-      const b = $(".b", r); b.style.width = (w / max * 100) + "%"; b.style.background = mode === "mse" ? C.blue : C.orange;
-      $(".v", r).textContent = w.toFixed(2);
-    });
-  }
-  $$(".toggle button").forEach(b => b.addEventListener("click", () => set(b.dataset.mode)));
-  rows.forEach(r => { $(".b", r).style.width = "0"; });
-  reveal(box, () => set("mse"));
 })();
 
 // ---------- 5: ensemble ----------
@@ -770,7 +654,7 @@ function rowTip(d, rows) {
   const g = el("g", { class: "grid" }, svg);
   [-0.2, 0, 0.2, 0.4, 0.6].forEach(v => { el("line", { x1: X(v), x2: X(v), y1: m.t, y2: H - m.b }, g); el("text", { x: X(v), y: H - m.b + 18, "text-anchor": "middle", text: (v > 0 ? "+" : "") + v.toFixed(1) }, svg); });
   el("line", { x1: X(0), x2: X(0), y1: m.t, y2: H - m.b, stroke: "#b3c6d6", "stroke-width": 1.5 }, svg);
-  el("text", { x: (m.l + W - m.r) / 2, y: H - 4, "text-anchor": "middle", text: "b_d  (°C) — positive = model too warm" }, svg);
+  el("text", { x: (m.l + W - m.r) / 2, y: H - 4, "text-anchor": "middle", text: "b_d  (°C) - positive = model too warm" }, svg);
   const iMax = D.offset.indexOf(Math.max(...D.offset));
   D.depths.forEach((d, i) => {
     const v = D.offset[i], y = m.t + i * rowH + 3, x = Math.min(X(0), X(v)), w = Math.abs(X(v) - X(0));
@@ -793,111 +677,6 @@ function rowTip(d, rows) {
   legend($("#bc-legend"), [["before correction", "#8fa6b8", true], ["after correction", C.sky]]);
   $("#k-before").textContent = D.blended.ensemble.toFixed(3) + " °C";
   $("#k-after").textContent = D.blended.final.toFixed(3) + " °C";
-})();
-
-// ---------- 7: Argo cycle + evaluation ----------
-(() => {
-  const svg = $("#argo-cycle"), S = D.sample;
-  const SURF = 50, BOT = 340, Yd = d => SURF + d / 1000 * (BOT - SURF);
-  const defs = el("defs", {}, svg);
-  const lg = el("linearGradient", { id: "wcol", x1: 0, x2: 0, y1: 0, y2: 1 }, defs);
-  el("stop", { offset: 0, "stop-color": "#1b7fa8", "stop-opacity": 0.55 }, lg);
-  el("stop", { offset: 1, "stop-color": "#04121f", "stop-opacity": 0.1 }, lg);
-  el("rect", { x: 0, y: SURF, width: 470, height: BOT - SURF + 20, fill: "url(#wcol)", rx: 10 }, svg);
-  el("path", { d: `M0 ${SURF} q30 -6 60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0`, stroke: "#7fd8ff", "stroke-width": 2, fill: "none" }, svg);
-  [0, 250, 500, 750, 1000].forEach(d => el("text", { x: 8, y: Yd(d) + (d ? 4 : 16), text: d + " m" }, svg));
-  el("path", { d: `M70 ${SURF} C 90 ${Yd(500)}, 110 ${Yd(1000)}, 150 ${Yd(1000)} H 340 C 380 ${Yd(1000)}, 400 ${Yd(400)}, 410 ${SURF}`, stroke: "rgba(255,209,102,0.35)", "stroke-width": 1.5, "stroke-dasharray": "4 6", fill: "none" }, svg);
-  const sat = el("g", { transform: "translate(440 18)" }, svg);
-  el("rect", { x: -7, y: -5, width: 14, height: 10, rx: 2, fill: "#dfe9f2" }, sat);
-  el("rect", { x: -26, y: -3, width: 16, height: 6, fill: C.blue }, sat); el("rect", { x: 10, y: -3, width: 16, height: 6, fill: C.blue }, sat);
-  const waves = el("g", { opacity: 0 }, svg);
-  [10, 20, 30].forEach(r => el("path", { d: `M${410 - r} ${SURF - 8 - r * 0.2} A ${r} ${r} 0 0 1 ${410 + r} ${SURF - 8 - r * 0.2}`, stroke: "#7fd8ff", "stroke-width": 1.5, fill: "none" }, waves));
-  const fl = el("g", {}, svg);
-  el("line", { x1: 0, y1: -18, x2: 0, y2: -30, stroke: "#dfe9f2", "stroke-width": 1.5 }, fl);
-  el("rect", { x: -5, y: -18, width: 10, height: 34, rx: 5, fill: "#ffd166" }, fl);
-  // profile panel
-  const px0 = 500, px1 = 690, t0 = 5, t1 = 31, PX = t => px0 + (t - t0) / (t1 - t0) * (px1 - px0);
-  el("rect", { x: px0 - 6, y: SURF, width: px1 - px0 + 12, height: BOT - SURF, fill: "rgba(0,0,0,0.2)", rx: 8 }, svg);
-  [10, 20, 30].forEach(t => el("text", { x: PX(t), y: BOT + 18, "text-anchor": "middle", text: t + "°" }, svg));
-  el("text", { x: (px0 + px1) / 2, y: SURF - 10, "text-anchor": "middle", text: "temperature it measures" }, svg);
-  const prof = el("path", { fill: "none", stroke: C.orange, "stroke-width": 2.5, "stroke-linejoin": "round" }, svg);
-  const P = S.argo_raw.p.map((p, i) => [p, S.argo_raw.t[i]]).sort((a, b) => b[0] - a[0]);
-  const note = $("#cycle-note");
-  const phases = [["① Sinks to about 1,000 m", 2200], ["② Drifts with the currents for days", 1800],
-                  ["③ Rises, measuring temperature all the way up", 3400], ["④ Sends its profile home by satellite", 1600], ["", 1000]];
-  const total = phases.reduce((a, p) => a + p[1], 0);
-  const path = [[70, SURF], [150, Yd(1000)], [340, Yd(1000)], [410, SURF]];
-  let start = null, running = false;
-  function at(tms) {
-    let t = tms % total, k = 0; while (t > phases[k][1]) { t -= phases[k][1]; k++; }
-    const u = t / phases[k][1], e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
-    let x, y, depthNow = 1000;
-    if (k === 0) { x = lerp(path[0][0], path[1][0], e); y = lerp(path[0][1], path[1][1], e); prof.setAttribute("d", ""); }
-    else if (k === 1) { x = lerp(path[1][0], path[2][0], u); y = path[1][1]; }
-    else if (k === 2) { x = lerp(path[2][0], path[3][0], e); y = lerp(path[2][1], path[3][1], e); depthNow = lerp(1000, 0, e); }
-    else { x = path[3][0]; y = SURF; depthNow = 0; }
-    if (k >= 2) prof.setAttribute("d", P.filter(q => q[0] >= depthNow).map((q, i) => (i ? "L" : "M") + PX(q[1]).toFixed(1) + " " + Yd(q[0]).toFixed(1)).join(""));
-    fl.setAttribute("transform", `translate(${x} ${y})`);
-    waves.setAttribute("opacity", k === 3 ? 0.5 + 0.5 * Math.sin(u * 20) : 0);
-    if (phases[k][0]) note.textContent = phases[k][0];
-  }
-  function loop(ts) { if (!running) return; if (start === null) start = ts; at(ts - start); requestAnimationFrame(loop); }
-  new IntersectionObserver(es => es.forEach(e => {
-    if (reduce) { at(total - 1100); note.textContent = "Argo floats sink, drift, then rise measuring temperature, and report by satellite."; return; }
-    running = e.isIntersecting; if (running) { start = null; requestAnimationFrame(loop); }
-  }), { threshold: 0.25 }).observe(svg);
-
-  // comparison chart
-  const ev = $("#eval-chart");
-  const lo = 5, hi = 31;
-  profileChart(ev, { x0: lo, x1: hi, xticks: [10, 15, 20, 25, 30], xlabel: "temperature (°C)",
-    series: [{ x: S.argo_raw.t, y: S.argo_raw.p, color: C.orange, width: 2, delay: 0 },
-             { x: S.glorys, y: D.depths, color: C.gold, width: 2, dash: "6 5", delay: 0.8 },
-             { x: S.pred, y: D.depths, color: C.blue, width: 3, dots: true, delay: 0.5 }],
-    tipRow: (i, d) => rowTip(d, [["Argo", C.orange, Number.isFinite(S.argo15[i]) ? S.argo15[i].toFixed(2) + " °C" : "—"],
-                                 ["OTER", C.blue, S.pred[i].toFixed(2) + " °C"], ["GLORYS", C.gold, S.glorys[i].toFixed(2) + " °C"]]) });
-  reveal(ev);
-  legend($("#eval-legend"), [["Argo float (truth)", C.orange], ["OTER", C.blue], ["GLORYS", C.gold, true]]);
-  $("#eval-note").textContent = `Float ${S.float}, ${S.lat.toFixed(2)}°N ${S.lon.toFixed(2)}°E, 4 Dec 2023 — never seen in training. Error over this column: ${S.rmse.toFixed(2)} °C RMSE.`;
-  const map = $("#eval-map");
-  if (map) {
-    const pin = h("span", "pin"), box = h("span", "cell-box");
-    [pin, box].forEach(n => { n.style.left = pct(S.lon, 55.5, 99.5) + "%"; n.style.top = (100 - pct(S.lat, 0.5, 24.5)) + "%"; map.appendChild(n); });
-  }
-})();
-
-// ---------- result ----------
-(() => {
-  const B = D.blended;
-  $("#res-casts").textContent = D.argo_casts;
-  $("#gap").textContent = (B.final - B.glorys).toFixed(2) + " °C";
-  const big = $("#big");
-  reveal(big.closest(".step-head"), () => {
-    if (reduce) { big.textContent = B.final.toFixed(3); return; }
-    const t0 = performance.now(), dur = 1800;
-    (function step(t) { const u = clamp((t - t0) / dur), e = 1 - Math.pow(1 - u, 3); big.textContent = (B.final * e).toFixed(3); if (u < 1) requestAnimationFrame(step); })(t0);
-  });
-  const rows = [["Climatology", "long-term average, no AI", B.climatology, C.green],
-                ["One model", "single ConvLSTM network", B.single, "#5d7890"],
-                ["Six-model ensemble", "before bias correction", B.ensemble, "#6f8ca6"],
-                ["OTER · final", "ensemble + bias correction", B.final, C.blue, true],
-                ["GLORYS12V1", "the teacher (reanalysis)", B.glorys, C.gold]];
-  const box = $("#hbars"), max = 1.7;
-  rows.forEach(([name, sub, v, col, hl], i) => {
-    const r = h("div", "hbar" + (hl ? " hl" : ""), `<div class="name">${name}<small>${sub}</small></div><div class="track"><div class="bar" style="background:${col};--i:${i}"></div><span class="val" style="--i:${i};left:0">${v.toFixed(3)} °C</span></div>`);
-    box.appendChild(r);
-  });
-  reveal(box, () => $$(".hbar", box).forEach((r, i) => {
-    const w = rows[i][2] / max * 100; $(".bar", r).style.width = w + "%"; $(".val", r).style.left = w + "%";
-  }));
-  const svg = $("#res-chart");
-  profileChart(svg, { x0: 0, x1: 2.3, xticks: [0, 0.5, 1, 1.5, 2], xlabel: "error vs Argo (RMSE °C)",
-    series: [{ x: D.rmse.climatology, y: D.depths, color: C.green, width: 2, delay: 0 },
-             { x: D.rmse.glorys, y: D.depths, color: C.gold, width: 2, dash: "6 5", delay: 0.6 },
-             { x: D.rmse.final, y: D.depths, color: C.blue, width: 3, dots: true, delay: 0.4 }],
-    tipRow: (i, d) => rowTip(d, [["climatology", C.green, f3(D.rmse.climatology[i])], ["OTER", C.blue, f3(D.rmse.final[i])], ["GLORYS", C.gold, f3(D.rmse.glorys[i])]]) });
-  reveal(svg);
-  legend($("#res-legend"), [["Climatology", C.green], ["OTER", C.blue], ["GLORYS (teacher)", C.gold, true]]);
 })();
 
 onScroll();
