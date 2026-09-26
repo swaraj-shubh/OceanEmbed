@@ -30,13 +30,12 @@
 <!-- ============================ 4 MODEL ARCHITECTURE ============================ -->
 <section id="model" data-title="Architecture">
   <div class="wrap">
-    <div class="arch-stage">
-      <div class="step-head arch-head reveal">
+    <div class="step-head reveal">
       <p class="eyebrow">Model Architecture · OceanEmbed M4</p>
       <h2>Read · remember · paint</h2>
       <p class="plain">7 daily inputs → CNN Encoder → ConvLSTM → U-Net Decoder → 15-depth output. Tap any component or depth slab to inspect its details.</p>
     </div>
-    
+    <div class="arch-stage">
       <div class="arch-sticky card">
         <svg class="arch-svg" id="arch" viewBox="0 0 1000 470" data-active="all" role="img" aria-label="CNN encoder, ConvLSTM and U-Net decoder architecture">
           <defs>
@@ -139,23 +138,6 @@
           <p id="arch-info-desc">Extracts multi-scale spatial patterns from 7 surface fields across the 7-day window.</p>
           <div class="arch-info-chips" id="arch-info-chips"></div>
         </div>
-      </div>
-      <div class="arch-steps">
-        <article class="card" data-part="enc">
-          <p class="tag" style="color:#6aa9f0">① CNN encoder - read</p>
-          <h3>Shared convolutional feature extraction</h3>
-          <p>Shared across time. Four downsampling stages: <b>7 → 32</b> (96×176), <b>32 → 64</b> (48×88), <b>64 → 128</b> (24×44), and <b>128 → 256</b> (12×22). Compresses spatial maps while expanding channel abstractions like fronts and eddies.</p>
-        </article>
-        <article class="card" data-part="lstm">
-          <p class="tag" style="color:#ff9a6b">② ConvLSTM - remember</p>
-          <h3>Spatiotemporal recurrent latent memory</h3>
-          <p>Steps through 7 recurrent temporal steps. Its final hidden state (h<sub>t</sub>) forms a compact <b>256 × 12 × 22</b> tensor: the <b style="color:#5fd6a6">OceanEmbed</b> spatiotemporal latent fingerprint summarizing subsurface thermal memory.</p>
-        </article>
-        <article class="card" data-part="dec">
-          <p class="tag" style="color:#e3a634">③ U-Net decoder - paint</p>
-          <h3>Reconstruction with skip connections</h3>
-          <p>Upsamples the latent fingerprint across <b>128</b> (24×44) → <b>64</b> (48×88) → <b>32</b> (96×176) → <b>15 depths</b> (96×176). Three direct skip connections carry fine spatial gradients straight across, preserving sharp coastlines and fronts.</p>
-        </article>
       </div>
     </div>
   </div>
