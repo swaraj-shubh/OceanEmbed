@@ -727,3 +727,16 @@ footer .links a.primary { background: #7fd8ff; color: #04121f; border-color: #7f
   .metrics-grid { grid-template-columns: 1fr; }
   .benchmark-stats { grid-template-columns: 1fr; }
 }
+
+/* hovering any architecture part makes every piece of it glow */
+.arch-svg[data-hover="input"] .part[data-comp="input"],
+.arch-svg[data-hover="enc"] .part[data-comp="enc"],
+.arch-svg[data-hover="lstm"] .part[data-comp="lstm"],
+.arch-svg[data-hover="latent"] .part[data-comp="latent"],
+.arch-svg[data-hover="dec"] .part[data-comp="dec"],
+.arch-svg[data-hover="out"] .part[data-comp="out"] {
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 6px rgba(127, 216, 255, 0.95)) drop-shadow(0 0 16px rgba(127, 216, 255, 0.55)) !important;
+}
+#click-hint { transition: opacity 0.18s ease; filter: drop-shadow(0 0 8px rgba(127, 216, 255, 0.8)); }
+.arch-svg .click-hint-text { font: 700 12px var(--mono); fill: #04121f; letter-spacing: 0.04em; }

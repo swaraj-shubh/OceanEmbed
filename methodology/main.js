@@ -679,4 +679,27 @@ function rowTip(d, rows) {
   $("#k-after").textContent = D.blended.final.toFixed(3) + " °C";
 })();
 
+// ---------- architecture: hover glow + "click here" hint ----------
+(() => {
+  const svg = $("#arch");
+  if (!svg) return;
+  const hint = el("g", { id: "click-hint", "pointer-events": "none", opacity: 0 }, svg);
+  const pill = el("rect", { rx: 11, y: 0, height: 22, fill: "#7fd8ff" }, hint);
+  const label = el("text", { x: 0, y: 15, "text-anchor": "middle", class: "click-hint-text", text: "click here" }, hint);
+  // Pill sits just under each part's title; the latent box has no title, so it goes above the box.
+  const spot = c => c === "latent" ? [551, 160] : [+($(`[data-comp="${c}"] text.big`, svg)?.getAttribute("x") || 500), 76];
+  $$("[data-comp]", svg).forEach(n => {
+    n.addEventListener("pointerenter", () => {
+      const c = n.getAttribute("data-comp"), [x, y] = spot(c);
+      svg.setAttribute("data-hover", c);
+      const w = label.getComputedTextLength() + 24;
+      pill.setAttribute("x", -w / 2); pill.setAttribute("width", w);
+      hint.setAttribute("transform", `translate(${x} ${y})`);
+      svg.appendChild(hint);                 // keep the pill on top of everything
+      hint.setAttribute("opacity", 1);
+    });
+    n.addEventListener("pointerleave", () => { svg.removeAttribute("data-hover"); hint.setAttribute("opacity", 0); });
+  });
+})();
+
 onScroll();
