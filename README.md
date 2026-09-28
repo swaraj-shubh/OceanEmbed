@@ -17,7 +17,7 @@ Reconstructs ocean temperature at **15 depths (0–1000 m)** from **7 satellite 
 
 ---
 
-## 🌊 Problem & Approach
+## Problem & Approach
 
 Argo floats measure subsurface temperature but cover ~0.01% of the ocean per depth level. Satellites see the surface (SST, SSS, SSH, currents, winds) continuously and at high resolution, and that surface state carries an indirect signature of what's underneath.
 
@@ -36,7 +36,7 @@ Argo floats measure subsurface temperature but cover ~0.01% of the ocean per dep
 
 ---
 
-## 📊 Results
+## Results
 
 Validated against **6,056 held-out Argo casts (2023–24)**:
 
@@ -54,7 +54,7 @@ Full experiment log, including negative results (attention, gradient loss): [`do
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 - Satellite-only inference — no in-situ data needed at prediction time
 - ~0.5 s per reconstruction on a 4-core CPU, 6.65M parameters, no GPU required
@@ -63,7 +63,7 @@ Full experiment log, including negative results (attention, gradient loss): [`do
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 **Live demo:** <https://oter.shubhh.xyz>
 
@@ -92,7 +92,7 @@ python src/audit_leakage.py
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 configs/        YAML configs (one per experiment)
@@ -110,7 +110,7 @@ deploy/         demo_ec2.sh (hosting), setup.sh (training)
 
 ---
 
-## 🛰️ Datasets
+## Datasets
 
 | Variable | Product | Resolution · Cadence |
 |---|---|---|
@@ -124,23 +124,21 @@ deploy/         demo_ec2.sh (hosting), setup.sh (training)
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 Full methodology, docs site: **<https://oceanembed-sih26.vercel.app>**
 
 - [Problem Statement Interpretation](docs/01-problem-statement.md)
 - [Architecture](docs/03-architecture.md)
 - [Data Pipeline](docs/04-data.md)
-- [Training & Evaluation](docs/05-training-evaluation.md)
-- [Results & Final Number](docs/11-day3-handover.md)
-- [Experiment Programme (incl. failures)](docs/10-experiment-programme.md)
+- [Experiment Programme & Final Results](docs/10-experiment-programme.md)
 
 ---
 
-## 🙏 Acknowledgements
+## Acknowledgements
 
 Ministry of Earth Sciences (MoES) and INCOIS for the problem statement · Copernicus Marine Service, NASA PO.DAAC, NOAA NCEI, Ifremer Argo for open data · Smart India Hackathon 2026 organisers.
 
-## 📄 License
+## License
 
 [MIT](LICENSE) for the code. Datasets retain their original terms (Copernicus Marine, NASA PO.DAAC, NOAA, Argo programme).
