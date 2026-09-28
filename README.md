@@ -1,6 +1,6 @@
 <div align="center">
 
-# OTER — Ocean Thermal Embedding Reconstruction
+# OTER: Ocean Thermal Embedding Reconstruction
 
 **Satellite Embedding-Based Deep Learning Framework for Reconstruction of Subsurface Ocean Temperature**
 
@@ -56,9 +56,9 @@ Full experiment log, including negative results (attention, gradient loss): [`do
 
 ## Key Features
 
-- Satellite-only inference — no in-situ data needed at prediction time
+- Satellite-only inference, no in-situ data needed at prediction time
 - ~0.5 s per reconstruction on a 4-core CPU, 6.65M parameters, no GPU required
-- Interactive Streamlit demo — pick a date/depth, click the map for a 0–1000 m profile with the nearest Argo cast overlaid
+- Interactive Streamlit demo: pick a date/depth, click the map for a 0–1000 m profile with the nearest Argo cast overlaid
 - Reproducible: time-based train/val/test splits, leakage audit, float-blocked bootstrap for error bars
 
 ---
@@ -120,7 +120,7 @@ deploy/         demo_ec2.sh (hosting), setup.sh (training)
 | Currents (U, V) | NASA OSCAR v2.0 | 0.25° · daily |
 | Winds (U, V) | Copernicus ASCAT L3 | 0.25° · daily |
 
-**Target:** GLORYS12V1 reanalysis (`doi:10.48670/moi-00021`). **Validation:** raw Argo profiles (Ifremer ERDDAP) and INCOIS LAS Gridded Argo — both PS-named, neither ever used as a training input or target.
+**Target:** GLORYS12V1 reanalysis (`doi:10.48670/moi-00021`). **Validation:** raw Argo profiles (Ifremer ERDDAP) and INCOIS LAS Gridded Argo, both PS-named, neither ever used as a training input or target.
 
 ---
 

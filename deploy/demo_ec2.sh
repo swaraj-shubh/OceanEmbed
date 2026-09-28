@@ -2,8 +2,14 @@
 # Host the OceanEmbed Streamlit demo on a fresh Ubuntu 24.04 EC2 box:
 #   sudo bash demo_ec2.sh
 # nginx serves HTTPS for every Let's Encrypt certificate under /etc/letsencrypt/live/,
-# and plain HTTP until one exists. To add a name: point DNS at the box, run the certbot
-# command in app/README.md, then re-run this -- there is nothing here to edit.
+# and plain HTTP until one exists. To add a domain: point an A record at the box, then
+#   sudo certbot certonly --webroot -w /var/www/html -d demo.example.com -n
+# For a bare-IP certificate instead (no domain needed, 6-day lifetime, Ubuntu's apt
+# certbot 2.9.0 predates IP support -- use the snap, 5.8.0+):
+#   sudo snap install --classic certbot && sudo ln -sf /snap/bin/certbot /usr/bin/certbot
+#   sudo certbot certonly --webroot -w /var/www/html --ip-address <ip> \
+#     --required-profile shortlived --email you@example.com --agree-tos --no-eff-email -n
+# Then re-run this script -- there is nothing here to edit.
 # Idempotent: re-run to redeploy the latest main.
 set -euo pipefail
 

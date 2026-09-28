@@ -9,8 +9,9 @@ nav_order: 7
 
 > **Built and hosted.** Live at **<https://oter.shubhh.xyz>** (EC2 t3.medium, ap-south-1, nginx + Let's Encrypt; the bare IP <https://65.2.207.204> also works),
 > or `streamlit run app/streamlit_app.py` locally — see [`app/README.md`](https://github.com/swaraj-shubh/OceanEmbed/blob/main/app/README.md)
-> for the 90-second demo path and the deployment recipe. The spec below is what was
-> implemented, with two deliberate deviations recorded in the implementation rules.
+> for the 90-second demo path; deployment is documented in `deploy/demo_ec2.sh`. The spec
+> below is what was implemented, with two deliberate deviations recorded in the
+> implementation rules.
 
 ```mermaid
 flowchart LR
