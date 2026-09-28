@@ -5,7 +5,7 @@ nav_order: 10
 
 # 09 — Day 2: Multi-Seed, Four Interventions, and a Measured Ceiling
 
-> **Superseded by [doc 10](10-experiment-programme.html).** The final model scores
+> **Superseded by [doc 10](10-experiment-programme.md).** The final model scores
 > **0.786 °C** and beats climatology at all 15 depths; this page's 0.890 is the best
 > *single* model, which is no longer what we ship. Two claims here were later corrected:
 > "no model trained on GLORYS can beat 0.728" bounds only an *uncorrected* model, and the
@@ -19,7 +19,7 @@ Day 1 ended with one model, one seed, and a headline of 0.908 °C. **Every numbe
 run is superseded by this one.** Day 2 added error bars, three new interventions, a
 temporal architecture, and one measurement that reframes the whole problem.
 
-**[Doc 10](10-experiment-programme.html) supersedes this page's headline.**
+**[Doc 10](10-experiment-programme.md) supersedes this page's headline.**
 The current best model is 0.786 °C (an ensemble + bias correction, not a single
 architecture), and the attention question §8 leaves open below is now closed — attention
 combined with the ConvLSTM was built and tested, and it lost. Read this page for the
@@ -246,7 +246,7 @@ received `[B, C, H, W]` where it wanted `[B, T, C, H, W]`.
 
 ## 8. What is left
 
-*(§8 as originally written on Day 2, kept for history. See [doc 10](10-experiment-programme.html) for the current state of each item.)*
+*(§8 as originally written on Day 2, kept for history. See [doc 10](10-experiment-programme.md) for the current state of each item.)*
 
 **1. The Streamlit demo — not built.** The largest outstanding item and an explicit PS
 requirement: date + depth → map, the 7 surface inputs, click → 0–1000 m profile, nearby

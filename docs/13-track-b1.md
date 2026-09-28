@@ -24,7 +24,7 @@ analysis: raw Argo casts interpolated onto a **1° × 1° grid in 10-day windows
 levels to 2000 m. It is not an observation; it is a smoothed *field* fitted to
 observations, filling every cell including those no float visited that window.
 
-That makes it categorically weaker evidence than track B2 (raw profiles, [doc 10](10-experiment-programme.html)),
+That makes it categorically weaker evidence than track B2 (raw profiles, [doc 10](10-experiment-programme.md)),
 and the project has always said so. It is here because the PS names it, and because a
 second reference with different failure modes is a real cross-check on the one result that
 mattered.

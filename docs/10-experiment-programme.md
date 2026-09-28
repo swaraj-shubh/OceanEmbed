@@ -13,7 +13,7 @@ nav_order: 11
 
 **Tech Stack:** PyTorch, xarray/Zarr, NumPy, pandas. Kaggle T4 for training (~8 GPU-hours total), local CPU for all evaluation and post-processing.
 
-**Spec:** the 10-item list below, plus [doc 09 §8](09-day2-handover.html) ("What is left").
+**Spec:** the 10-item list below, plus [doc 09 §8](09-day2-handover.md) ("What is left").
 
 > **This page is the programme and the current results** — headline, full depth-wise table,
 > screening, and the post-programme audit are all below.
@@ -1415,11 +1415,10 @@ Every task above says "record". Consolidate: one table of all interventions with
 
 §2b is the frozen-results table the next session reads first. Update the numbers, keep the benchmark rule, and replace "the remaining levers are bias-correcting the target, adding input channels, and ensembling" with what this programme actually found. Update the one-sentence pitch in `docs/index.md` and add row 10 to its table.
 
-- [ ] **Step 7: Rebuild the site and commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-python build_site.py
-git add docs results CLAUDE.md site
+git add docs results CLAUDE.md
 git commit -m "Programme complete: <winner> at <score> vs independent Argo"
 ```
 
@@ -1712,6 +1711,6 @@ without changing the result.
 ### What is left
 
 The Streamlit demo (doc 06's spec, an explicit PS requirement) and track B1 INCOIS gridded
-Argo — both now built; see [doc 13](13-track-b1.html) for the B1 close. Nothing else in this
+Argo — both now built; see [doc 13](13-track-b1.md) for the B1 close. Nothing else in this
 programme is outstanding. Do not add model capacity — seven interventions now say the same
 thing.

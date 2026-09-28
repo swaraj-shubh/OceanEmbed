@@ -70,7 +70,7 @@ Reanalyses (GLORYS12) are dense but are *model outputs* with documented biases (
 > built both, measured both, and neither improves the observational score by a significant
 > margin (attention's 95% bootstrap interval is [−0.011, +0.011]). Claiming them as
 > contributions would hand a judge the counter-question. The real contribution turned out
-> to be somewhere else, and it is a better one. See [doc 10](10-experiment-programme.html).
+> to be somewhere else, and it is a better one. See [doc 10](10-experiment-programme.md).
 
 1. **We measured the training target's own error, and corrected it.** GLORYS12V1 carries a
    **+0.723 °C warm bias at 100 m** in this basin against the same independent Argo casts we

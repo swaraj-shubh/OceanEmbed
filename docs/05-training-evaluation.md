@@ -24,7 +24,7 @@ L = Σ_d Σ_xy  m(xy) · (Ŷ_d(xy) − Y_d(xy))²  /  Σ m
   vs 0.257). Weighting *toward* the thermocline as originally proposed would have made the
   known-weak deep levels worse still. It is kept not as a replacement but as an **ensemble
   member**, because it is complementary to the plain-MSE model. See
-  [doc 10](10-experiment-programme.html).
+  [doc 10](10-experiment-programme.md).
 - A **vertical-gradient loss** (penalising error in level-to-level differences) was also
   tried, on both M2 and M4, and is negative both times. Do not revisit.
 - Normalize targets per depth channel (train-stats), predict in normalized space, denormalize for metrics. This stops the surface layers (high variance) from dominating the loss.
@@ -68,7 +68,7 @@ Report both tables. B1 is what the PS asked for; B2 is the one that proves we re
 
 Argo data is **never** an input or a training target at any stage, in either sub-track. If asked *"but GLORYS assimilated those Argo floats"* — correct, and it's why we report Track B at all rather than resting on Track A; this is the standard protocol (OceanBench, OceanForecastBench, OceanDepths). Genuinely assimilation-free validation would need withheld cruise data we don't have. State the limitation plainly; judges reward that more than an overclaim.
 
-#### B3 — post-processing stages (added in [doc 10](10-experiment-programme.html))
+#### B3 — post-processing stages (added in [doc 10](10-experiment-programme.md))
 
 Two stages sit between the network and the reported number. Both are model-agnostic, both
 are **always reported as their own table rows**, and neither puts Argo into training.
@@ -125,7 +125,7 @@ Filled in, for the frozen final model (6-member ensemble + Argo bias correction)
 | 1000 | 0.216 | 0.165 | −0.014 | 0.973 | 0.945 |
 | **blended** | **0.786** | | | | |
 
-Full 15-depth version in [doc 10](10-experiment-programme.html); regenerate with
+Full 15-depth version in [doc 10](10-experiment-programme.md); regenerate with
 `python src/ablation.py --split test`.
 
 Plus one figure: RMSE-vs-depth curves for M0…M4 plus the final model on one plot (the single
@@ -141,7 +141,7 @@ Same test set, same metrics, rows = M0 climatology · M1 tiny CNN · M2 U-Net 7-
 `results/*_test_argo.csv`, averages across seeds, reports the spread, and writes
 `results/ablation_test.md`. The `--split val` form is what selection decisions are read from.
 
-**Include the failures.** As of [doc 10](10-experiment-programme.html) the table carries
+**Include the failures.** As of [doc 10](10-experiment-programme.md) the table carries
 seven model-side interventions — attention, ConvLSTM, gradient loss, anomaly formulation,
 climatology-as-input, auxiliary channels, depth weighting — **none of which improved the
 observational score on its own**, against two output-side stages that both did. That

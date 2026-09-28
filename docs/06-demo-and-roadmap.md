@@ -46,7 +46,7 @@ Implementation rules:
 | 1–2 | M0 + M1 on OceanDepths | Our metrics code reproduces climatology RMSE ≈ 0.97 °C; tiny CNN trains |
 | 2–3 | Own pipeline | `nio_daily.zarr` exists for 2015–2022; X/Y/M sample plots look physical |
 | 3–4 | M2 (7-var U-Net) | Beats M0 on anomaly correlation at ≥ some depths |
-| 4–5 | M3 (attention) + M4 (ConvLSTM) | Ablation rows filled. *Outcome: M4 best single model at 0.890; the shipped system is a 6-member ensemble + Argo bias correction at 0.786 — see [doc 10](10-experiment-programme.html)* |
+| 4–5 | M3 (attention) + M4 (ConvLSTM) | Ablation rows filled. *Outcome: M4 best single model at 0.890; the shipped system is a 6-member ensemble + Argo bias correction at 0.786 — see [doc 10](10-experiment-programme.md)* |
 | 5 | Argo Track-B evaluation | Headline depth-wise table vs independent Argo |
 | 5–6 | Streamlit demo + freeze | Offline demo runs from checkout on a clean machine |
 | 6 | Deck + rehearsal | 90-second demo path timed; Q&A prep from docs 01–05 |
