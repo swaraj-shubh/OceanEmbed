@@ -1,0 +1,18 @@
+# build_site.py reads docs/*.md and CLAUDE.md at build time; everything else here is
+# upload weight the docs build never touches. data/ alone is 48 GB and crashed the CLI
+# with a V8 out-of-memory before this existed.
+data
+checkpoints
+results
+src
+deploy
+notebooks
+app
+__pycache__
+*.pyc
+*.log
+*.err
+*.nc
+*.pem
+.env*
+.git

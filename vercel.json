@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pip install -r site-requirements.txt && python3 build_site.py",
+  "outputDirectory": "site",
+  "cleanUrls": true,
+  "trailingSlash": false
+}

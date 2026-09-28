@@ -8,7 +8,7 @@
 **Ministry of Earth Sciences · INCOIS · Space Technology**
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-oter.shubhh.xyz-1b4f72)](https://oter.shubhh.xyz)
-[![Documentation](https://img.shields.io/badge/Docs-docs%2F-2a78d6)](docs/index.md)
+[![Documentation](https://img.shields.io/badge/Docs-oceanembed--sih26.vercel.app-2a78d6)](https://oceanembed-sih26.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Reconstructs ocean temperature at **15 depths (0–1000 m)** from **7 satellite surface fields** over the Arabian Sea and Bay of Bengal, at **0.25° daily** resolution.
@@ -126,7 +126,7 @@ deploy/         demo_ec2.sh (hosting), setup.sh (training)
 
 ## Documentation
 
-Full methodology: [`docs/index.md`](docs/index.md)
+Full methodology, docs site: **<https://oceanembed-sih26.vercel.app>**
 
 - [Problem Statement Interpretation](docs/01-problem-statement.md)
 - [Architecture](docs/03-architecture.md)

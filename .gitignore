@@ -23,3 +23,6 @@ __pycache__/
 .DS_Store
 .vercel
 .vercel/
+
+# Built by build_site.py; Vercel generates this at deploy time (see vercel.json).
+site/
