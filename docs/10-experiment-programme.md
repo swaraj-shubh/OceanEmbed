@@ -15,7 +15,8 @@ nav_order: 11
 
 **Spec:** the 10-item list below, plus [doc 09 §8](09-day2-handover.html) ("What is left").
 
-> **This page is the programme.** For the narrative of what happened and the current results in handover form, read [doc 11 (Day 3)](11-day3-handover.html) instead.
+> **This page is the programme and the current results** — headline, full depth-wise table,
+> screening, and the post-programme audit are all below.
 
 ---
 
@@ -1550,6 +1551,30 @@ GLORYS' climatological bias structure — it learns the target's errors more fai
 anomaly, climatology channels, auxiliary channels, depth weighting), none of which improved
 the observational score on its own. Two output-side steps, both of which did.**
 
+### The attention question, closed
+
+M3 alone (attention, no ConvLSTM) scored 0.907 — a null result. The remaining cell in the
+grid was attention *combined with* the ConvLSTM: `configs/m4_attn.yaml` (`m4_convlstm` +
+`attn: true`, attention run once per day inside the encoder, before the recurrence), 3
+seeds, 20 epochs, 32% slower per epoch than plain M4.
+
+**On validation RMSE it looked like a clean win** — every attention seed (0.6507 / 0.6493 /
+0.6492) beat every plain-M4 seed (0.6617 / 0.6551 / 0.6696). Stopping there, the conclusion
+would have been "attention helps, ship it."
+
+**On Argo — the metric that counts — it is worse, outside the noise band:**
+
+| Model | Argo blended RMSE |
+|---|---|
+| M4 ConvLSTM, 3 seeds | **0.890 ± 0.010** |
+| M4 + attention, 3 seeds | 0.917 ± 0.008 |
+
+A 3% gap, larger than either model's own seed spread, and the two metrics disagree in
+*direction*, not just magnitude — attention fit the training distribution slightly better
+and generalised to independent observations worse. This is the exact scenario the
+benchmark rule (above) exists to catch. The full ablation grid is complete and attention is
+not part of the shipped architecture in either configuration tested.
+
 ### Ensemble composition, chosen on val
 
 Selected uncorrected, so the bias offset was never fitted and chosen on the same data:
@@ -1637,8 +1662,56 @@ alignment), `deploy/setup.sh` (auto-start the checkpoint sync), and six `configs
 
 Full tables: `results/ablation_test.md`, `results/ablation_val.md`.
 
+### Post-programme audit: closing the correction and finding the real ceiling
+
+Two further directions were checked against the frozen ensemble before declaring the
+correction finished. Both are null, and a third measurement explains why.
+
+**Six alternative correction forms, cross-validated by float** (40 × 2 repeated half-splits
+over val floats, fit on half, score the other half — blocking by float for the same reason
+`argo_eval.paired_bootstrap` does):
+
+| Correction form | Held-out blended | vs shipped |
+|---|---|---|
+| depth × latitude band | 0.7657 ± 0.0180 | −0.6% (inside fold noise) |
+| **depth only — shipped** | **0.7704 ± 0.0191** | — |
+| depth × basin (AS / BoB) | 0.7705 ± 0.0188 | +0.0% |
+| depth, linear a + b·pred | 0.7711 ± 0.0202 | +0.1% |
+| depth × season (monsoon) | 0.7715 ± 0.0193 | +0.1% |
+| depth × basin × season | 0.7719 ± 0.0187 | +0.2% |
+| no correction | 0.8230 ± 0.0156 | +6.8% |
+
+Every alternative sits within ±0.6% of the shipped depth-only form against ±1.9%
+fold-to-fold noise. Fifteen numbers is the right answer. Per-depth ensemble weights (in
+place of a flat average) were checked the same way and moved the held-out score by −0.1% —
+also null; the plain mean already captures the complementary depth profile of the two
+model families.
+
+**What is left is variance, not bias.** Zeroing the depth-wise bias in-sample and looking
+at what remains:
+
+| Depth (m) | RMSE after zeroing bias | Share of squared error (test) |
+|---|---|---|
+| 75 | 1.137 | 17.7% |
+| 100 | 1.287 | 20.5% |
+| 125 | 1.163 | 14.6% |
+| 150 | 0.936 | 9.3% |
+
+Four of fifteen levels (75–150 m, the thermocline) carry **62% of the squared error**, and
+100 m still scores 1.287 °C with its bias removed. That closes the post-hoc correction
+route: the residual there is the model placing the thermocline in the wrong place on
+individual days, not an offset any lookup table can subtract. An improvement at 75–150 m is
+worth roughly thirty times the same improvement at 1000 m — future work should screen on
+the thermocline band, not only the blended number.
+
+One efficiency finding alongside the two nulls: every final ensemble member reached its
+best val epoch at 14–19 of a 20-epoch budget, with train loss opening at RMSE ≈21 °C against
+a 15–29 °C ocean (the head starts at zero). A short warmup would make training cheaper
+without changing the result.
+
 ### What is left
 
 The Streamlit demo (doc 06's spec, an explicit PS requirement) and track B1 INCOIS gridded
-Argo. Nothing else in this programme is outstanding. Do not add model capacity — seven
-interventions now say the same thing.
+Argo — both now built; see [doc 13](13-track-b1.html) for the B1 close. Nothing else in this
+programme is outstanding. Do not add model capacity — seven interventions now say the same
+thing.

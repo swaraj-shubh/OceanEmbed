@@ -111,13 +111,9 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <li><a href="04-data.html">04 · Data Pipeline</a></li>
 <li><a href="05-training-evaluation.html">05 · Training & Eval</a></li>
 <li><a href="06-demo-and-roadmap.html">06 · Demo & Roadmap</a></li>
-<li><a href="07-results-and-handover.html">07 · Results & Handover</a></li>
-<li><a href="08-challenges.html">08 · Challenges Faced</a></li>
 <li><a href="09-day2-handover.html" class="active">09 · Day 2 Results</a></li>
-<li><a href="10-experiment-programme.html">10 · Experiment Programme</a></li>
-<li><a href="11-day3-handover.html">11 · Day 3 Handover</a></li>
-<li><a href="12-day4-audit.html">12 · Day 4 · Audit</a></li>
-<li><a href="13-track-b1.html">13 · Day 5 · Track B1</a></li>
+<li><a href="10-experiment-programme.html">10 · Experiment Programme & Results</a></li>
+<li><a href="13-track-b1.html">13 · Track B1</a></li>
 <li class="sep"><a href="claude-md.html">Team Working Agreement</a></li></ul></nav>
   <div class="aside-foot">
     <a href="https://github.com/your-username/oceanembed-sih26" target="_blank" rel="noopener">GitHub repo →</a>
@@ -126,20 +122,19 @@ li input[type=checkbox]{margin-right:.5em;accent-color:var(--accent)}
 <main>
   <article><h1 id="09-day-2-multi-seed-four-interventions-and-a-measured-ceiling">09 — Day 2: Multi-Seed, Four Interventions, and a Measured Ceiling</h1>
 <blockquote>
-<p><strong>Superseded by <a href="11-day3-handover.html">doc 11 (Day 3)</a>.</strong> The final model scores
+<p><strong>Superseded by <a href="10-experiment-programme.html">doc 10</a>.</strong> The final model scores
 <strong>0.786 °C</strong> and beats climatology at all 15 depths; this page's 0.890 is the best
-<em>single</em> model, which is no longer what we ship. Two claims here are corrected in doc 11
-§2: "no model trained on GLORYS can beat 0.728" bounds only an <em>uncorrected</em> model, and
-the Day 2 checkpoints were never actually lost.</p>
+<em>single</em> model, which is no longer what we ship. Two claims here were later corrected:
+"no model trained on GLORYS can beat 0.728" bounds only an <em>uncorrected</em> model, and the
+Day 2 checkpoints were never actually lost (they were alive on the training box, unsynced).</p>
 <p>What stands on this page and is still worth reading: §3 (why Argo is the benchmark, not
 GLORYS validation loss) and §4 (the +0.723 °C thermocline bias in the training target) —
-§4 is the measurement that pointed at everything Day 3 built.</p>
+§4 is the measurement that pointed at everything the rest of the programme built.</p>
 </blockquote>
-<p>Day 1 (<a href="07-results-and-handover.html">doc 07</a>) ended with one model, one seed, and a
-headline of 0.908 °C. <strong>Every number on that page is superseded by this one.</strong> Day 2 added
-error bars, three new interventions, a temporal architecture, and one measurement that
-reframes the whole problem.</p>
-<p><strong><a href="11-day3-handover.html">Doc 11</a> supersedes this page's headline.</strong>
+<p>Day 1 ended with one model, one seed, and a headline of 0.908 °C. <strong>Every number from that
+run is superseded by this one.</strong> Day 2 added error bars, three new interventions, a
+temporal architecture, and one measurement that reframes the whole problem.</p>
+<p><strong><a href="10-experiment-programme.html">Doc 10</a> supersedes this page's headline.</strong>
 The current best model is 0.786 °C (an ensemble + bias correction, not a single
 architecture), and the attention question §8 leaves open below is now closed — attention
 combined with the ConvLSTM was built and tested, and it lost. Read this page for the
@@ -209,7 +204,7 @@ unfalsifiable.</p>
 <p><strong>"M3 improves GLORYS RMSE by 11%" was noise.</strong> Reported on Day 1 as a real result. The
 same config with the same seed produced 0.660 on one run and 0.729 on another — a ~10%
 spread from nondeterministic cuDNN kernel selection and dataloader worker ordering, larger
-than the effect being claimed. Corrected in doc 08.</p>
+than the effect being claimed.</p>
 <p><strong>Every Argo number was contaminated by land cells.</strong> A network emits <em>some</em> value on
 land, and Argo matching takes the nearest grid cell, so <strong>42 of 6,093 coastal profiles
 (0.7%)</strong> were scored against output the loss never constrained. Small for M2
@@ -616,7 +611,7 @@ The cache is now keyed to the store it was fitted from.</p>
 received <code>[B, C, H, W]</code> where it wanted <code>[B, T, C, H, W]</code>.</p>
 <hr />
 <h2 id="8-what-is-left">8. What is left</h2>
-<p><em>(§8 as originally written on Day 2, kept for history. See <a href="11-day3-handover.html">doc 11</a> and <a href="12-day4-audit.html">doc 12</a> for the current state of each item.)</em></p>
+<p><em>(§8 as originally written on Day 2, kept for history. See <a href="10-experiment-programme.html">doc 10</a> for the current state of each item.)</em></p>
 <p><strong>1. The Streamlit demo — not built.</strong> The largest outstanding item and an explicit PS
 requirement: date + depth → map, the 7 surface inputs, click → 0–1000 m profile, nearby
 Argo overlay, live metrics. Runs offline from a frozen checkpoint and precomputed samples,

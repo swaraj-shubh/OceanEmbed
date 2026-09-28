@@ -24,10 +24,10 @@ analysis: raw Argo casts interpolated onto a **1° × 1° grid in 10-day windows
 levels to 2000 m. It is not an observation; it is a smoothed *field* fitted to
 observations, filling every cell including those no float visited that window.
 
-That makes it categorically weaker evidence than track B2 (raw profiles, doc 11), and the
-project has always said so. It is here because the PS names it, and because a second
-reference with different failure modes is a real cross-check on the one result Day 3
-produced that mattered.
+That makes it categorically weaker evidence than track B2 (raw profiles, [doc 10](10-experiment-programme.html)),
+and the project has always said so. It is here because the PS names it, and because a
+second reference with different failure modes is a real cross-check on the one result that
+mattered.
 
 **Data:** `INCOIS_Argo_VAM_10d_{2022,2023,2024}.nc`, concatenated time-sorted with
 duplicate windows dropped into `data/interim/argo_10d.nc` (109 windows, 2021-12-30 →
