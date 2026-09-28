@@ -17,7 +17,7 @@ Reconstructs ocean temperature at **15 depths (0–1000 m)** from **7 satellite 
 
 ---
 
-## Problem & Approach
+## 🌊 Problem & Approach
 
 Argo floats measure subsurface temperature but cover ~0.01% of the ocean per depth level. Satellites see the surface (SST, SSS, SSH, currents, winds) continuously and at high resolution, and that surface state carries an indirect signature of what's underneath.
 
@@ -28,9 +28,15 @@ Argo floats measure subsurface temperature but cover ~0.01% of the ocean per dep
 3. A 6-member ensemble is averaged and corrected with a depth-wise bias offset fit on 2022 Argo
 4. Validated against **held-out Argo profiles never used in training**
 
+```
+7 surface fields  →  CNN encoder  →  ConvLSTM (7-day)  →  U-Net decoder  →  15 depth maps
+                                                                                  │
+                                                    Argo-fitted bias correction ◀─┘
+```
+
 ---
 
-## Results
+## 📊 Results
 
 Validated against **6,056 held-out Argo casts (2023–24)**:
 
@@ -48,7 +54,7 @@ Full experiment log, including negative results (attention, gradient loss): [`do
 
 ---
 
-## Key Features
+## ✨ Key Features
 
 - Satellite-only inference — no in-situ data needed at prediction time
 - ~0.5 s per reconstruction on a 4-core CPU, 6.65M parameters, no GPU required
@@ -57,7 +63,7 @@ Full experiment log, including negative results (attention, gradient loss): [`do
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
 **Live demo:** <https://oter.shubhh.xyz>
 
@@ -86,7 +92,7 @@ python src/audit_leakage.py
 
 ---
 
-## Repository Structure
+## 📁 Repository Structure
 
 ```
 configs/        YAML configs (one per experiment)
@@ -94,7 +100,7 @@ docs/           Methodology, experiments, handover notes
 app/            Streamlit demo + precomputed offline bundle
 src/
   download/     one script per data source
-  preprocess/   QC, regrid, align -> Zarr store
+  preprocess/   QC, regrid, align → Zarr store
   models/       U-Net, attention, ConvLSTM
   train.py, predict_cube.py, bias_correct.py, argo_eval.py, incois_eval.py
   ablation.py, audit_leakage.py
@@ -104,7 +110,7 @@ deploy/         demo_ec2.sh (hosting), setup.sh (training)
 
 ---
 
-## Datasets
+## 🛰️ Datasets
 
 | Variable | Product | Resolution · Cadence |
 |---|---|---|
@@ -118,7 +124,7 @@ deploy/         demo_ec2.sh (hosting), setup.sh (training)
 
 ---
 
-## Documentation
+## 📚 Documentation
 
 Full methodology, docs site: **<https://oceanembed-sih26.vercel.app>**
 
@@ -131,10 +137,10 @@ Full methodology, docs site: **<https://oceanembed-sih26.vercel.app>**
 
 ---
 
-## Acknowledgements
+## 🙏 Acknowledgements
 
 Ministry of Earth Sciences (MoES) and INCOIS for the problem statement · Copernicus Marine Service, NASA PO.DAAC, NOAA NCEI, Ifremer Argo for open data · Smart India Hackathon 2026 organisers.
 
-## License
+## 📄 License
 
 [MIT](LICENSE) for the code. Datasets retain their original terms (Copernicus Marine, NASA PO.DAAC, NOAA, Argo programme).
